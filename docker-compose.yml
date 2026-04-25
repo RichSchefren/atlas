@@ -1,0 +1,23 @@
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: neo4j-atlas
+    ports:
+      - "7474:7474"   # HTTP browser UI
+      - "7687:7687"   # Bolt protocol
+    environment:
+      NEO4J_AUTH: neo4j/atlasdev
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: 'apoc.*'
+      NEO4J_dbms_memory_heap_max__size: '2G'
+      NEO4J_dbms_memory_pagecache_size: '1G'
+    volumes:
+      - ./neo4j-data:/data
+      - ./neo4j-logs:/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

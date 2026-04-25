@@ -8,7 +8,8 @@ hook) is locked from `06 - Ripple Algorithm Spec.md`.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional
+import os
+from typing import TYPE_CHECKING, Any, Optional
 
 from graphiti_core import Graphiti
 
@@ -23,6 +24,27 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+def _default_anthropic_llm_client() -> Optional[Any]:
+    """Build a Graphiti-compatible Anthropic LLMClient if ANTHROPIC_API_KEY is set.
+
+    Atlas defaults to Claude rather than OpenAI. We try to import lazily so the module
+    still loads in environments without the [anthropic] extra installed.
+    """
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return None
+    try:
+        from graphiti_core.llm_client.anthropic_client import AnthropicClient
+        from graphiti_core.llm_client.config import LLMConfig
+    except ImportError:
+        log.warning(
+            "ANTHROPIC_API_KEY is set but graphiti-core[anthropic] is not installed; "
+            "falling back to Graphiti's default LLM client."
+        )
+        return None
+    return AnthropicClient(LLMConfig(api_key=api_key, model="claude-haiku-4-5-latest"))
+
+
 class AtlasGraphiti(Graphiti):
     """Atlas's main entry point. Subclasses Graphiti to add Ripple + AGM-compliant revision.
 
@@ -33,6 +55,10 @@ class AtlasGraphiti(Graphiti):
     AGM-managed edges (SUPERSEDES, DEPENDS_ON, DERIVED_FROM, CONTRADICTS, SUPPORTS)
     bypass Graphiti's LLM-driven `resolve_extracted_edges` to preserve formal
     correctness of the AGM revision operators.
+
+    LLM client default: Atlas uses Anthropic Claude unless one is passed explicitly
+    or ANTHROPIC_API_KEY is unset (in which case the upstream Graphiti default
+    applies — currently OpenAI, which requires OPENAI_API_KEY).
     """
 
     def __init__(
@@ -41,9 +67,12 @@ class AtlasGraphiti(Graphiti):
         ripple_engine: Optional[RippleEngine] = None,
         quarantine_store: Optional[QuarantineStore] = None,
         ledger: Optional[HashChainedLedger] = None,
+        llm_client: Optional[Any] = None,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        if llm_client is None:
+            llm_client = _default_anthropic_llm_client()
+        super().__init__(*args, llm_client=llm_client, **kwargs)
         self.ripple_engine = ripple_engine
         self.quarantine_store = quarantine_store
         self.ledger = ledger

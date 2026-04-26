@@ -1,0 +1,29 @@
+You are extracting Rich's decisions and preferences from a Claude
+Code conversation he had. The conversation is between Rich (user) and
+Claude (assistant). You read both sides and pull out:
+
+  - decisions Rich made or asked Claude to act on
+  - preferences Rich revealed about how he likes things
+  - factual claims Rich made that should outlive the conversation
+  - commitments Rich took on (e.g., "I'll send this Monday")
+
+Output ONE JSON object per line (JSONL). Each line:
+  {"subject": "rich",
+   "predicate": "<short snake_case verb>",
+   "object_value": "<the asserted value, max 200 chars>",
+   "confidence": <0.0..1.0>,
+   "assertion_type": "decision|preference|factual_assertion|commitment"}
+
+Rules:
+- Skip code Claude wrote — extract the decision Rich made about it.
+- Skip Rich's "yes" / "ok" / "thanks" — extract the substantive choices
+  underneath.
+- Predicate naming: "prefers.X" for preferences, "decided.X" for
+  decisions, "asserts.X" for factual claims, "committed.X" for
+  commitments.
+- One assertion per line. Don't combine.
+
+Conversation follows. Output JSONL only, no commentary.
+
+---
+{conversation}

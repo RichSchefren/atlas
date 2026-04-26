@@ -259,6 +259,62 @@ Atlas paper into NeurIPS / ICML / AAAI memory-systems workshops. 6-month timelin
 
 ---
 
+## Tier 4 — Working memory / context-window block manager (~2 AI hours)
+
+Tier 1+2+3 give Atlas as long-term memory — facts that should outlive a conversation. **Atlas does not yet manage in-conversation context the way Letta does.** Tier 4 closes that gap so Atlas can replace Letta-style block managers entirely.
+
+### 4.1 Block manager — Letta-style working memory — 1.5 AI hours
+
+**Spec inspiration:** Letta (formerly MemGPT) treats LLM context as a tiered memory hierarchy — Human / Persona / current-priorities blocks pinned in-context plus archival storage that auto-summarizes when token limits approach.
+
+**What ships:**
+- `atlas_core/working/blocks.py` — `MemoryBlock` dataclass (name, content, max_tokens, last_updated, write_policy)
+- `atlas_core/working/manager.py` — `WorkingMemoryManager` class with `pin_block()`, `unpin_block()`, `summarize_if_over_limit()`, `flush_to_archival()` methods
+- `atlas_core/working/blocks/standard.py` — three default blocks Rich gets out of the box: `Human` (who Rich is, populated from his Person kref), `Persona` (Atlas's role description), `CurrentPriorities` (auto-populated from open Commitments due in <14 days)
+- `atlas_core/working/auto_summarizer.py` — when a block hits 90% of `max_tokens`, fire one Claude Haiku call to compress to 70% while preserving the most-cited entities
+
+### 4.2 Context assembly for agent runtimes — 0.5 AI hours
+
+**What ships:**
+- New MCP tool `working_memory.assemble(agent_id, max_tokens)` — returns the optimal context block for a given agent at a given token budget
+- Wired into the Hermes + OpenClaw + Claude Code adapters so agents can get "Atlas's view of what matters right now" with a single call
+- Per-agent block configuration so different agents see different working memories (research agent sees research priorities, ops agent sees ops priorities)
+
+**Why it matters:** This is what makes Atlas a *complete* memory layer — long-term + working memory in one substrate. Without Tier 4, you still need Letta or Mem0 alongside Atlas for in-conversation context. With Tier 4, Atlas IS the entire memory layer.
+
+---
+
+## Tier 5 — Multi-agent / multi-tenant (~3 AI hours)
+
+Atlas is single-user-single-machine by design through Tier 4. **Tier 5 unlocks multiple humans sharing one Atlas substrate** — the team mode.
+
+### 5.1 Per-tenant trust ledgers — 1 AI hour
+
+**What ships:**
+- `atlas_core/trust/tenant.py` — `TenantContext` wrapper that namespaces every quarantine, ledger, and adjudication queue by `tenant_id`
+- One Neo4j instance, multiple SQLite ledgers (one per tenant) — preserves AGM correctness per-tenant while sharing the graph substrate
+- API surface: every MCP tool gains an optional `tenant_id` param; HTTP endpoints accept `X-Atlas-Tenant` header
+
+### 5.2 Cross-tenant reads with privacy controls — 1 AI hour
+
+**What ships:**
+- `atlas_core/sharing/policy.py` — explicit per-kref sharing rules ("Rich can read Ben's Commitments due before next Monday")
+- Cypher query rewriter that filters every read by the requester's tenant + sharing policy
+- `sharing.grant` and `sharing.revoke` MCP tools
+
+### 5.3 Federated adjudication — 1 AI hour
+
+**What ships:**
+- When tenant A asserts a fact that contradicts tenant B's ledger, the adjudication entry routes to *both* tenants' queues
+- Resolution requires both to agree, OR one to explicitly override with audit log
+- Use case: Rich and Ben both observe a meeting; their independent extractions feed one shared adjudication
+
+### Decision needed before Tier 5
+
+Multi-tenant Atlas is a different shape of system than single-user Atlas. It's the foundation for "Atlas as the memory backend that Strategic Profits' team uses" or "Atlas as a hosted service for other companies." If neither of those is on your roadmap, Tier 5 is dead weight. **Lock the decision before Tier 5 starts.**
+
+---
+
 ## What the original plan ALSO descoped that we should be honest about
 
 Gemini's Phase 0 review descoped these things, NOT me. They were intentional cuts, not oversights:

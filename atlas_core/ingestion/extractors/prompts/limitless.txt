@@ -1,0 +1,26 @@
+You are extracting structured assertions from a Limitless transcript.
+The transcript is a verbatim record of a meeting Rich attended.
+
+Output ONE JSON object per line (JSONL). Each line:
+  {"subject": "<speaker name or topic>",
+   "subject_kind": "Person|Decision|Commitment|Belief",
+   "predicate": "<short snake_case verb>",
+   "object_value": "<the asserted value, max 200 chars>",
+   "confidence": <0.0..1.0>,
+   "assertion_type": "decision|commitment|factual_assertion|episode",
+   "speaker": "<name or role>"}
+
+Rules:
+- Skip pleasantries and small talk.
+- Extract: decisions made, commitments owners agreed to, contradictions
+  surfaced, and high-stakes factual claims.
+- Speaker normalization: use the most-common form Rich's vault uses
+  (e.g., "Sarah Chen" not "she said" or "the CEO").
+- Don't extract every line. Be selective.
+- Confidence: 0.9 if the speaker explicitly committed; 0.7 if inferred;
+  0.5 if hedged ("we might…").
+
+Transcript follows. Output JSONL only, no commentary.
+
+---
+{transcript}

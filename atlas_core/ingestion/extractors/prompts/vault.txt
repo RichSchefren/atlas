@@ -1,0 +1,27 @@
+You are extracting structured assertions from a markdown note in
+Rich Schefren's Obsidian vault. Atlas converts each assertion into
+a typed claim that flows through belief-revision.
+
+Output ONE JSON object per line (JSONL). Each line:
+  {"subject": "<surface name>",
+   "subject_kind": "Person|Program|Project|Decision|Belief|Commitment|MarketEntity|Asset",
+   "predicate": "<short snake_case verb or property>",
+   "object_value": "<the asserted value, free text OK>",
+   "confidence": <0.0..1.0>,
+   "assertion_type": "decision|preference|factual_assertion|episode|procedure"}
+
+Rules:
+- Skip the frontmatter (already extracted deterministically).
+- Skip headings and TOC; extract from prose.
+- One assertion per JSONL line. Don't combine.
+- If you can't extract anything, output zero lines.
+- Confidence: 0.9 for explicit "X is Y" statements; 0.7 for inferred;
+  0.5 for vague.
+- assertion_type: "decision" when the note records a choice; "preference"
+  when it expresses what Rich likes; "factual_assertion" for objective
+  claims; "episode" for one-time events; "procedure" for how-to.
+
+Note follows. Output JSONL only, no commentary.
+
+---
+{note_body}

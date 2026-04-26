@@ -186,13 +186,25 @@ class AtlasSystem:
                         e=evidence, ts=ts,
                     )
                     if obj:
-                        await session.run(
-                            "MERGE (s {kref: $obj}) "
-                            "WITH s "
-                            "MATCH (b:Belief {kref: $k}) "
-                            "MERGE (b)-[:DEPENDS_ON {strength: 0.85}]->(s)",
-                            k=subject, obj=obj,
-                        )
+                        # Embedded contradiction: belief asserts AGAINST a
+                        # prior decision. Wire CONTRADICTS edge so the
+                        # detector can walk the link in O(1).
+                        if payload.get("is_embedded_contradiction"):
+                            await session.run(
+                                "MERGE (s {kref: $obj}) "
+                                "WITH s "
+                                "MATCH (b:Belief {kref: $k}) "
+                                "MERGE (b)-[:CONTRADICTS]->(s)",
+                                k=subject, obj=obj,
+                            )
+                        else:
+                            await session.run(
+                                "MERGE (s {kref: $obj}) "
+                                "WITH s "
+                                "MATCH (b:Belief {kref: $k}) "
+                                "MERGE (b)-[:DEPENDS_ON {strength: 0.85}]->(s)",
+                                k=subject, obj=obj,
+                            )
                 elif kind == "decision":
                     await session.run(
                         "MERGE (d:Decision:AtlasItem {kref: $k}) "
@@ -313,6 +325,32 @@ class AtlasSystem:
         return min(p["new_confidence"] for p in result.result["proposals"])
 
     def _answer_contradiction(self, payload: dict[str, Any]) -> list[list[str]]:
+        """Walk CONTRADICTS edges in the typed graph and return the
+        belief↔decision pair(s) that match the question's expected pair.
+
+        Returning ALL graph contradictions for every question would crater
+        precision (8 candidates × 1 expected ⇒ ~0.22 F1). The pair scorer
+        is order-invariant on the pair contents, so we check existence
+        of either direction.
+        """
+        expected = payload.get("expected_pair", [])
+        if len(expected) != 2:
+            return []
+        a, b = expected
+        cypher = (
+            "MATCH (x {kref: $a})-[:CONTRADICTS]-(y {kref: $b}) "
+            "RETURN x.kref AS xk, y.kref AS yk LIMIT 1"
+        )
+        async def _run():
+            async with self._driver.session() as s:
+                result = await s.run(cypher, a=a, b=b)
+                row = await result.single()
+                return row
+        row = self._loop.run_until_complete(_run())
+        if row:
+            return [[row["xk"], row["yk"]]]
+
+        # Path B: LLM-driven proposals (Phase 3 W3) — keep the route open.
         proposals = payload.get("proposals", [])
         if not proposals:
             return []

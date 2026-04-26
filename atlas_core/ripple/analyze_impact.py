@@ -134,11 +134,12 @@ async def analyze_impact(
 
     queue: deque[tuple[str, int]] = deque([(origin_kref, 0)])
 
+    # DEPENDS_ON semantic (Kumiho § 6.5): edge points FROM dependent TO support.
+    # `(dependent)-[:DEPENDS_ON]->(support)` reads "dependent depends on support".
+    # When a support node is revised, we traverse INCOMING DEPENDS_ON edges to
+    # find every dependent that may need reassessment.
     cypher = """
-    // Find direct DEPENDS_ON children. Match on kref of either AtlasRevision
-    // or AtlasItem (root) so the traversal works for both revision-level
-    // and item-level Depends_On edges.
-    MATCH (current {kref: $current_kref})-[:DEPENDS_ON]->(child)
+    MATCH (current {kref: $current_kref})<-[:DEPENDS_ON]-(child)
     WHERE coalesce(child.deprecated, false) = false
     RETURN child.kref AS child_kref,
            labels(child) AS child_labels,

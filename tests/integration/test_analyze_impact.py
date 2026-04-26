@@ -81,16 +81,17 @@ async def make_node(driver, ns: str, item: str, confidence: float | None = None)
 
 
 async def make_depends_on(driver, source_kref: str, target_kref: str) -> None:
-    """Create a DEPENDS_ON edge from source to target.
+    """Create a DEPENDS_ON edge from source to target — Kumiho § 6.5 convention.
 
-    Semantic: source DEPENDS_ON target means changes to target propagate to
-    source. AnalyzeImpact starts at the changed node and traverses OUTGOING
-    DEPENDS_ON edges to find dependents.
+    Semantic: `(source)-[:DEPENDS_ON]->(target)` reads "source depends on
+    target". When target is revised, source may need reassessment.
+    AnalyzeImpact traverses INCOMING DEPENDS_ON from the revised origin to
+    find dependents.
     """
     cypher = """
     MATCH (s {kref: $source_kref})
     MATCH (t {kref: $target_kref})
-    MERGE (t)-[:DEPENDS_ON]->(s)
+    MERGE (s)-[:DEPENDS_ON]->(t)
     """
     async with driver.session() as session:
         await session.run(cypher, source_kref=source_kref, target_kref=target_kref)

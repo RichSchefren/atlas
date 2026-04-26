@@ -16,6 +16,15 @@ from atlas_core.ripple.analyze_impact import (
     ImpactNode,
     analyze_impact,
 )
+from atlas_core.ripple.contradiction import (
+    DECISION_SUPPORT_FLOOR,
+    STRATEGIC_BELIEF_CONFIDENCE_FLOOR,
+    STRATEGIC_BELIEF_HIGH_SEVERITY_FLOOR,
+    ContradictionCategory,
+    ContradictionPair,
+    Severity,
+    detect_contradictions,
+)
 from atlas_core.ripple.engine import RippleEngine
 from atlas_core.ripple.reassess import (
     DEFAULT_WEIGHTS,
@@ -50,4 +59,12 @@ __all__ = [
     "HALF_LIFE_DAYS",
     "reassess_dependent",
     "reassess_cascade",
+    # Contradiction detection
+    "ContradictionPair",
+    "ContradictionCategory",
+    "Severity",
+    "detect_contradictions",
+    "STRATEGIC_BELIEF_CONFIDENCE_FLOOR",
+    "STRATEGIC_BELIEF_HIGH_SEVERITY_FLOOR",
+    "DECISION_SUPPORT_FLOOR",
 ]

@@ -9,6 +9,17 @@ Phase 2 W3 modules:
 Spec: 06 - Ripple Algorithm Spec.md
 """
 
+from atlas_core.ripple.adjudication import (
+    CONFIDENCE_DELTA_STRATEGIC_FLOOR,
+    DEFAULT_ADJUDICATION_DIR,
+    HIGH_STAKES_LEVELS,
+    AdjudicationRoute,
+    RoutingDecision,
+    route_all,
+    route_proposal,
+    write_adjudication_entry,
+    write_strategic_entries,
+)
 from atlas_core.ripple.analyze_impact import (
     MAX_DEPTH_DEFAULT,
     MAX_NODES_DEFAULT,
@@ -67,4 +78,14 @@ __all__ = [
     "STRATEGIC_BELIEF_CONFIDENCE_FLOOR",
     "STRATEGIC_BELIEF_HIGH_SEVERITY_FLOOR",
     "DECISION_SUPPORT_FLOOR",
+    # Adjudication routing
+    "AdjudicationRoute",
+    "RoutingDecision",
+    "route_proposal",
+    "route_all",
+    "write_adjudication_entry",
+    "write_strategic_entries",
+    "CONFIDENCE_DELTA_STRATEGIC_FLOOR",
+    "HIGH_STAKES_LEVELS",
+    "DEFAULT_ADJUDICATION_DIR",
 ]

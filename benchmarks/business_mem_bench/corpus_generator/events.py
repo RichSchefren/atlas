@@ -30,6 +30,7 @@ from benchmarks.business_mem_bench.corpus_generator.business import (
     CORPUS_END_DATE,
     CORPUS_START_DATE,
     AtlasCoffeeWorld,
+    ProductLine,
 )
 
 
@@ -134,12 +135,30 @@ def generate_events(world: AtlasCoffeeWorld, seed: int = 42) -> EventLog:
         return dt.isoformat()
 
     # ── Pricing changes ─────────────────────────────────────────────────
-    for _ in range(N_PRICING_CHANGES):
+    # Generate the change list first (with day + product), sort by day,
+    # then walk in chronological order so each event's `old_price` is the
+    # genuinely-prior price, not the initial constant.
+    pending_changes: list[tuple[int, ProductLine, float]] = []
+    used_product_days: set[tuple[str, int]] = set()
+    attempts = 0
+    while len(pending_changes) < N_PRICING_CHANGES and attempts < N_PRICING_CHANGES * 10:
+        attempts += 1
         product = rng.choice(world.product_lines)
         day = rng.randint(7, CORPUS_DAYS - 7)
+        if (product.product_id, day) in used_product_days:
+            continue
+        used_product_days.add((product.product_id, day))
         delta_pct = rng.choice([-0.20, -0.10, 0.10, 0.15, 0.25, 0.45])
-        old = product.initial_price
+        pending_changes.append((day, product, delta_pct))
+    pending_changes.sort(key=lambda t: t[0])
+
+    running_prices: dict[str, float] = {
+        p.product_id: p.initial_price for p in world.product_lines
+    }
+    for day, product, delta_pct in pending_changes:
+        old = running_prices[product.product_id]
         new = round(old * (1 + delta_pct), 2)
+        running_prices[product.product_id] = new
         log.events.append(Event(
             event_id=next_id("evt_price"),
             kind=EventKind.PRICING_CHANGE,

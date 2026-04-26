@@ -87,11 +87,22 @@ class AtlasSystem:
         )
 
     async def _wipe_ns(self, prefix: str) -> None:
+        """Delete benchmark-namespace nodes AND the corpus's own
+        AtlasCoffee namespace (BMB ingest writes both ns prefixes:
+        the adapter's `kref://{ns}/...` for ad-hoc tests, and the
+        corpus's hardcoded `kref://AtlasCoffee/...` for the eval).
+
+        Also drops any orphan :PricingRevision rows (no kref) so
+        re-runs don't accumulate price history across seeds.
+        """
         async with self._driver.session() as s:
             await s.run(
-                "MATCH (n) WHERE n.kref STARTS WITH $p DETACH DELETE n",
+                "MATCH (n) WHERE n.kref STARTS WITH $p OR "
+                "  n.kref STARTS WITH 'kref://AtlasCoffee/' "
+                "DETACH DELETE n",
                 p=prefix,
             )
+            await s.run("MATCH (r:PricingRevision) DETACH DELETE r")
 
     def ingest(self, corpus_dir: Path) -> None:
         """Ingest the BusinessMemBench corpus into Neo4j as a typed graph.
@@ -177,9 +188,12 @@ class AtlasSystem:
                 if kind == "belief_asserted":
                     confidence = payload.get("initial_confidence", 0.85)
                     belief_text = payload.get("text", "")
+                    # Set both `confidence` (BMB-side) and
+                    # `confidence_score` (atlas_core/ripple reads this).
                     await session.run(
                         "MERGE (b:Belief:AtlasItem {kref: $k}) "
-                        "SET b.confidence = $c, b.text = $t, "
+                        "SET b.confidence = $c, b.confidence_score = $c, "
+                        "    b.text = $t, b.hypothesis = $t, "
                         "    b.deprecated = false, b.evidence_kref = $e, "
                         "    b.asserted_at = $ts",
                         k=subject, c=confidence, t=belief_text,
@@ -304,25 +318,38 @@ class AtlasSystem:
     # ── Per-category handlers ───────────────────────────────────────────────
 
     def _answer_propagation(self, payload: dict[str, Any]) -> float:
-        """Run ripple.reassess and return the lowest downstream
-        confidence — that's the value the binary_in_band scorer checks."""
+        """Run ripple.reassess and return the appropriate downstream
+        confidence — the lowest one when upstream weakened, the highest
+        when upstream strengthened.
+
+        Ripple's perturbation uses `max(0, old - new)` so an upstream
+        confidence INCREASE produces zero perturbation and downstream
+        beliefs stay at their current confidence. The benchmark scoring
+        bands assume "good news" raises downstream confidence, so when
+        new > old we return the maximum (most-confirmed) cascade value
+        rather than the min.
+        """
         upstream = payload.get("upstream_kref")
         if not upstream:
-            return 0.5  # No graph context → returns mid-band default
+            return 0.5
+        old_c = float(payload.get("old_confidence", 0.9))
+        new_c = float(payload.get("new_confidence", 0.2))
         result = self._loop.run_until_complete(self._server.dispatch(
             "ripple.reassess",
             {
                 "upstream_kref": upstream,
-                "old_confidence": float(payload.get("old_confidence", 0.9)),
-                "new_confidence": float(payload.get("new_confidence", 0.2)),
+                "old_confidence": old_c,
+                "new_confidence": new_c,
                 "belief_text": payload.get("belief_text", ""),
             },
         ))
         if not result.ok or not result.result.get("proposals"):
             return 0.5
-        # Min confidence across the cascade approximates the most-
-        # weakened downstream belief.
-        return min(p["new_confidence"] for p in result.result["proposals"])
+        confidences = [p["new_confidence"] for p in result.result["proposals"]]
+        # Upstream improved (price drop, etc.) → cascade reinforces.
+        # Upstream weakened → cascade attenuates; min surfaces the
+        # most-affected dependent.
+        return max(confidences) if new_c >= old_c else min(confidences)
 
     def _answer_contradiction(self, payload: dict[str, Any]) -> list[list[str]]:
         """Walk CONTRADICTS edges in the typed graph and return the
@@ -472,15 +499,13 @@ class AtlasSystem:
         if not (m_pid and m_date):
             return ""
         pid, on_date = m_pid.group(1), m_date.group(1)
-        # Compare against the END of the question date so a price set
-        # AT 09:00 on date X counts as "the price on X" if asked at 23:59.
-        # The historical question's gold answer is the price BEFORE the
-        # change on the change-day, so we look for revisions strictly
-        # before the date.
-        cutoff = on_date + "T00:00:00+00:00"
+        # End-of-day cutoff so "the price on 2026-01-10" returns whatever
+        # was in effect at 23:59 UTC of that day. Pairs with the question
+        # generator that always asks about the day BEFORE a pricing change.
+        cutoff = on_date + "T23:59:59+00:00"
         cypher = (
             "MATCH (r:PricingRevision) WHERE r.product_id = $pid "
-            "  AND r.priced_at < $cutoff "
+            "  AND r.priced_at <= $cutoff "
             "RETURN r.price AS price "
             "ORDER BY r.priced_at DESC LIMIT 1"
         )

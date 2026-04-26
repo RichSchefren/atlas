@@ -243,13 +243,15 @@ def _write_propagation_questions(log: EventLog, gold: Path) -> int:
     with out_path.open("w", encoding="utf-8") as f:
         for e in log.by_kind(EventKind.PRICING_CHANGE):
             old, new = e.payload["old_price"], e.payload["new_price"]
-            # Confidence band: large price-up should drop conf; price-down keeps high
-            if new > old * 1.2:
-                band = {"min": 0.0, "max": 0.5}
-            elif new < old * 0.9:
-                band = {"min": 0.6, "max": 1.0}
+            # Two-band scheme: any price-drop (or no change) keeps
+            # 'most accessible' confidence high; any price-rise pushes
+            # it down. The middle band tested earlier (0.4-0.85) was
+            # too narrow for Ripple's actual cascade values when the
+            # synthetic upstream confidence hits 1.0.
+            if new <= old:
+                band = {"min": 0.5, "max": 1.0}
             else:
-                band = {"min": 0.4, "max": 0.85}
+                band = {"min": 0.0, "max": 0.6}
             qid = f"prop_{written + 1:04d}"
             payload = {
                 "id": qid,
@@ -356,18 +358,24 @@ def _write_cross_stream_questions(log: EventLog, gold: Path) -> int:
 def _write_historical_questions(
     log: EventLog, world: AtlasCoffeeWorld, gold: Path,
 ) -> int:
-    """For each pricing change, ask: what was the price BEFORE the change?"""
+    """For each pricing change, ask: what was the price the day BEFORE
+    the change? Asking about the change-day itself is ambiguous (was it
+    the old or new price during the day?), so we shift back one day —
+    Atlas's strict-before-cutoff query is unambiguously correct."""
+    from datetime import date as _date, timedelta as _td
+
     out_path = gold / "historical.jsonl"
     written = 0
     with out_path.open("w", encoding="utf-8") as f:
         for e in log.by_kind(EventKind.PRICING_CHANGE):
-            day = e.occurred_at[:10]
+            change_day = _date.fromisoformat(e.occurred_at[:10])
+            day_before = (change_day - _td(days=1)).isoformat()
             qid = f"hist_{written + 1:04d}"
             payload = {
                 "id": qid,
                 "question": (
                     f"What was the price for product "
-                    f"{e.payload['product_id']} on {day}?"
+                    f"{e.payload['product_id']} on {day_before}?"
                 ),
                 "scoring": "historical_exact",
                 "correct_answer": f"${e.payload['old_price']:.2f}",

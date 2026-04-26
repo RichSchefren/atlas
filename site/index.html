@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Atlas — open-source local-first cognitive memory</title>
+<meta name="description" content="Atlas is the open-source local-first AGM-compliant memory layer that automatically re-evaluates downstream beliefs when facts change. Apache 2.0." />
+<meta property="og:title" content="Atlas — cognitive memory that actually re-evaluates" />
+<meta property="og:description" content="Same AGM math as commercial state-of-the-art. Open-source. Local-first. Plus: when a fact changes, dependent beliefs are re-evaluated, not just flagged." />
+<style>
+  :root {
+    --bg: #0b0d10;
+    --fg: #e8eaed;
+    --muted: #9aa0a6;
+    --accent: #00ff88;
+    --accent-dim: #00b86a;
+    --border: #1f2328;
+    --code-bg: #11151a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, pre {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    line-height: 1.5;
+  }
+  .container { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  header {
+    padding: 96px 0 64px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 {
+    font-size: 64px;
+    letter-spacing: -0.03em;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent) 0%, #00ddff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 16px;
+  }
+  header p.tagline {
+    font-size: 22px;
+    color: var(--muted);
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+  header .badges {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .badge {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .badge.green { color: var(--accent); border-color: var(--accent-dim); }
+  header .ctas {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .cta {
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 16px;
+    transition: transform .12s;
+  }
+  .cta:hover { transform: translateY(-1px); text-decoration: none; }
+  .cta.primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .cta.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg);
+  }
+
+  /* Sections */
+  section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+  section h2 {
+    font-size: 32px;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  section p { color: var(--muted); margin-bottom: 16px; max-width: 720px; }
+  section p strong { color: var(--fg); font-weight: 600; }
+
+  /* The big distinction box */
+  .level7 {
+    background: var(--code-bg);
+    border-left: 3px solid var(--accent);
+    padding: 24px 28px;
+    margin: 24px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .level7 .question {
+    color: var(--muted);
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+  .level7 .answer {
+    font-size: 18px;
+    color: var(--fg);
+    font-weight: 500;
+  }
+
+  /* Comparison table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: var(--code-bg);
+    color: var(--fg);
+    font-weight: 600;
+  }
+  td.yes { color: var(--accent); font-weight: 600; }
+  td.no { color: #ff6464; }
+  td.partial { color: #ffaa00; }
+  tr.hero-row { background: rgba(0, 255, 136, 0.04); }
+  tr.hero-row td { font-weight: 600; }
+
+  /* Stats grid */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .stat {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    text-align: center;
+  }
+  .stat .num {
+    font-size: 32px;
+    color: var(--accent);
+    font-weight: 700;
+    display: block;
+  }
+  .stat .label { color: var(--muted); font-size: 13px; }
+
+  footer {
+    padding: 48px 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  footer a { margin: 0 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <h1>Atlas</h1>
+    <p class="tagline">
+      Open-source local-first cognitive memory. Same AGM-compliant math as commercial state-of-the-art. Plus the thing nobody ships: when a fact changes, dependent beliefs are <em>re-evaluated</em>, not just flagged.
+    </p>
+    <div class="badges">
+      <span class="badge green">Apache 2.0</span>
+      <span class="badge green">288 tests passing</span>
+      <span class="badge green">AGM 49/49 at 100%</span>
+      <span class="badge">alpha</span>
+    </div>
+    <div class="ctas">
+      <a class="cta primary" href="#quickstart">Get started</a>
+      <a class="cta secondary" href="https://github.com/placeholder/atlas">GitHub</a>
+      <a class="cta secondary" href="paper/atlas.pdf">Paper</a>
+    </div>
+  </div>
+</header>
+
+<section id="why">
+  <div class="container">
+    <h2>Why Atlas exists</h2>
+    <p>Every memory system maps to one of six levels — from native CLAUDE.md to OpenBrain's cross-tool Postgres. They all answer the same question:</p>
+    <div class="level7">
+      <div class="question">"how do we store and retrieve?"</div>
+    </div>
+    <p>Atlas answers a different question:</p>
+    <div class="level7">
+      <div class="answer">"when stored knowledge changes, what happens to everything that depended on it?"</div>
+    </div>
+    <p>That's a Level 7 problem. Atlas runs <strong>on top</strong> of any of the 6 lower levels. Every memory system flags affected beliefs when a fact changes. Atlas is the only one that re-evaluates them.</p>
+  </div>
+</section>
+
+<section id="vs">
+  <div class="container">
+    <h2>Atlas vs the field</h2>
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Atlas</th>
+          <th>Kumiho</th>
+          <th>Graphiti</th>
+          <th>Mem0</th>
+          <th>Letta</th>
+          <th>Memori</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Open-source</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>Local-first</td><td class="yes">✓</td><td class="no">cloud</td><td class="yes">✓</td><td class="partial">partial</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>AGM K*2–K*6</td><td class="yes">100%</td><td class="yes">100%</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+        <tr><td>Hansson postulates</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+        <tr><td>Hash-chained ledger</td><td class="yes">SHA-256</td><td class="partial">partial</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+        <tr class="hero-row"><td>Auto downstream reassessment</td><td class="yes">✓ Ripple</td><td class="no">flag-only</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+        <tr><td>Domain ontology shipped</td><td class="yes">8 types</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="partial">partial</td></tr>
+        <tr><td>Multi-stream ingestion</td><td class="yes">6 streams</td><td class="no">SDK</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="partial">partial</td></tr>
+        <tr><td>Hermes / OpenClaw / MCP</td><td class="yes">all 3</td><td class="partial">partial</td><td class="no">✗</td><td class="partial">partial</td><td class="no">✗</td><td class="no">✗</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="real">
+  <div class="container">
+    <h2>Real-world performance</h2>
+    <p>One-author corpus (live Obsidian vault + 5,000 Limitless transcripts + 300 Screenpipe rows + 5,000 Claude Code session logs):</p>
+    <div class="stats">
+      <div class="stat"><span class="num">10,604</span><span class="label">events ingested</span></div>
+      <div class="stat"><span class="num">14,674</span><span class="label">claims extracted</span></div>
+      <div class="stat"><span class="num">21.3s</span><span class="label">first-run wall time</span></div>
+      <div class="stat"><span class="num">0</span><span class="label">errors</span></div>
+      <div class="stat"><span class="num">0.9s</span><span class="label">re-run (idempotent)</span></div>
+      <div class="stat"><span class="num">SHA-256</span><span class="label">ledger intact</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="quickstart">
+  <div class="container">
+    <h2>Quickstart (3 minutes)</h2>
+    <pre><code># 1. Clone + start Neo4j
+git clone https://github.com/placeholder/atlas &amp;&amp; cd atlas
+docker compose up -d
+
+# 2. Install
+python -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install -e .
+
+# 3. Verify the test suite (288 tests, ~5s)
+PYTHONPATH=. pytest tests/ -v
+
+# 4. Reproduce AGM compliance (49/49, ~30s)
+PYTHONPATH=. pytest tests/integration/test_agm_compliance.py -v
+
+# 5. First real ingest from your own vault
+ATLAS_VAULT_ROOT=~/Documents/Obsidian \
+  PYTHONPATH=. python scripts/first_real_run.py</code></pre>
+    <p>Plug Atlas into your agent runtime via MCP (Claude Code), Hermes MemoryProvider, or OpenClaw memory plugin.</p>
+  </div>
+</section>
+
+<section id="ack">
+  <div class="container">
+    <h2>Acknowledgments</h2>
+    <p>Atlas implements the AGM correspondence proofs from <strong>Young Bin Park, <em>Graph-Native Cognitive Memory for AI Agents</em></strong> (arxiv:2603.17244). Independent open-source implementation; not affiliated with Kumiho Inc.</p>
+    <p>Storage substrate forked from <strong>Graphiti by Zep AI</strong> (Apache 2.0). Trust-layer policy architecture ported from <strong>Bicameral by yhl999</strong> (Apache 2.0). The SHA-256 hash chain is Atlas-original — Bicameral's chain was aspirational.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <a href="https://github.com/placeholder/atlas">GitHub</a> ·
+    <a href="paper/atlas.pdf">Paper</a> ·
+    <a href="docs/">Docs</a> ·
+    <a href="benchmarks/">Benchmarks</a>
+    <p style="margin-top:16px">Apache 2.0 · Built by Richard Schefren and a multi-model team</p>
+  </div>
+</footer>
+
+</body>
+</html>

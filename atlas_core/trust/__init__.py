@@ -6,6 +6,15 @@ World Model Research/05 - Atlas Architecture & Schema.md § 6
 """
 
 from atlas_core.trust.ledger import HashChainedLedger
+from atlas_core.trust.promotion_policy import (
+    VERIFICATION_FLOOR_CONFIDENCE,
+    GateOutcome,
+    GateResult,
+    PromotionPolicy,
+    PromotionResult,
+    clear_hard_blocks,
+    register_hard_block,
+)
 from atlas_core.trust.quarantine import (
     AUTO_PROMOTE_THRESHOLD,
     CORROBORATION_BOOST_PER_SOURCE_FAMILY,
@@ -27,6 +36,13 @@ from atlas_core.trust.quarantine import (
 
 __all__ = [
     "HashChainedLedger",
+    "PromotionPolicy",
+    "PromotionResult",
+    "GateOutcome",
+    "GateResult",
+    "register_hard_block",
+    "clear_hard_blocks",
+    "VERIFICATION_FLOOR_CONFIDENCE",
     "QuarantineStore",
     "CandidateClaim",
     "CandidateStatus",

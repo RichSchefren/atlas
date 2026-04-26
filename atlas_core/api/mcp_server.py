@@ -452,25 +452,53 @@ class AtlasMCPServer:
         decision: str,
         adjusted_confidence: Optional[float] = None,
         actor: str = "rich",
+        adjudication_dir: Optional[str] = None,
     ) -> dict[str, Any]:
-        """Phase 2 W6 stub — full resolver wiring (read markdown frontmatter,
-        invoke AGM revise, archive file) lands in Phase 2 W7.
+        """Apply Rich's decision on a queued adjudication entry.
 
-        For now: validates the inputs and returns a recorded-decision shape
-        so MCP clients have a stable interface.
+        Loads the markdown queue file by proposal_id, invokes AGM revise()
+        for accept / adjust / demote_core, writes a SUPERSEDE (or REFINE
+        for reject) ledger event, and archives the file. Returns the full
+        ResolveOutcome so callers can audit + chain to the next step.
+
+        Spec: 06 - Ripple Algorithm Spec § 6.4 (resolution roundtrip)
         """
-        valid_decisions = {"accept", "reject", "adjust", "demote_core"}
-        if decision not in valid_decisions:
-            raise ValueError(f"decision must be one of {valid_decisions}")
+        from pathlib import Path
+
+        from atlas_core.ripple.resolver import (
+            VALID_DECISIONS,
+            resolve_adjudication,
+        )
+
+        if decision not in VALID_DECISIONS:
+            raise ValueError(
+                f"decision must be one of {sorted(VALID_DECISIONS)}"
+            )
         if decision == "adjust" and adjusted_confidence is None:
-            raise ValueError("adjusted_confidence required when decision='adjust'")
+            raise ValueError(
+                "adjusted_confidence required when decision='adjust'"
+            )
+
+        outcome = await resolve_adjudication(
+            proposal_id=proposal_id,
+            decision=decision,
+            driver=self.driver,
+            ledger=self.ledger,
+            adjusted_confidence=adjusted_confidence,
+            actor=actor,
+            directory=Path(adjudication_dir) if adjudication_dir else None,
+        )
         return {
-            "proposal_id": proposal_id,
-            "decision": decision,
-            "actor": actor,
-            "adjusted_confidence": adjusted_confidence,
-            "applied": False,  # W7 wires the actual AGM operator call
-            "note": "Phase 2 W6 stub; AGM operator wiring lands W7",
+            "proposal_id": outcome.proposal_id,
+            "decision": outcome.decision,
+            "target_kref": outcome.target_kref,
+            "applied": outcome.applied,
+            "new_revision_kref": outcome.new_revision_kref,
+            "superseded_kref": outcome.superseded_kref,
+            "confidence_set": outcome.confidence_set,
+            "ledger_event_id": outcome.ledger_event_id,
+            "archived_to": outcome.archived_to,
+            "notes": outcome.notes,
         }
 
     async def _tool_quarantine_upsert(

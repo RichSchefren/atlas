@@ -257,13 +257,14 @@ class TestAdjudicationTools:
         assert result.ok is False
         assert "adjusted_confidence required" in result.error
 
-    async def test_resolve_accept_returns_recorded(self, mcp_server):
+    async def test_resolve_unknown_proposal_id_fails(self, mcp_server, tmp_dir):
         result = await mcp_server.dispatch(
             "adjudication.resolve",
-            {"proposal_id": "adj_test_001", "decision": "accept"},
+            {
+                "proposal_id": "adj_does_not_exist",
+                "decision": "accept",
+                "adjudication_dir": str(tmp_dir),
+            },
         )
-        assert result.ok is True
-        assert result.result["proposal_id"] == "adj_test_001"
-        assert result.result["decision"] == "accept"
-        # Phase 2 W6 stub — applied=False until W7 wires AGM operator
-        assert result.result["applied"] is False
+        assert result.ok is False
+        assert "not found" in result.error

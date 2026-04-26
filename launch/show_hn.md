@@ -3,7 +3,7 @@
 **Title (≤80 chars):**
 Show HN: Atlas – open-source memory that re-evaluates, not just retrieves
 
-**URL:** github.com/<placeholder>/atlas
+**URL:** github.com/RichSchefren/atlas
 
 ---
 
@@ -42,8 +42,8 @@ Atlas builds directly on Young Bin Park's formal contribution (arxiv:2603.17244)
 
 Releasing Atlas under Apache 2.0. Releasing BusinessMemBench (1,000-question benchmark across 7 categories) under MIT for max adoption.
 
-The code: github.com/<placeholder>/atlas
-The paper draft: github.com/<placeholder>/atlas/blob/main/paper/atlas.md
+The code: github.com/RichSchefren/atlas
+The paper draft: github.com/RichSchefren/atlas/blob/main/paper/atlas.md
 Live interactive demo (Ripple cascade animated on a sample graph): atlas-project.org/live-demo
 
 Happy to answer questions about the architecture, the AGM postulate verification approach, the trust gating, the propagation algorithm, or why I chose to fork Graphiti rather than build from scratch.

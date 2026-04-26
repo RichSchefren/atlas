@@ -24,7 +24,7 @@ tar -czf paper/arxiv/atlas-arxiv.tar.gz -C paper/arxiv atlas.tex appendix-a.tex
 2. Upload `atlas-arxiv.tar.gz` at https://arxiv.org/submit
 3. Choose categories: `cs.AI` (primary), `cs.CL` (cross-list)
 4. arxiv compiles server-side; if it fails, the build log is in your dashboard
-5. Once accepted, replace `<placeholder>` URLs in the paper with the assigned arxiv ID
+5. Once accepted, replace `RichSchefren/atlas` URLs in the paper with the assigned arxiv ID
 
 ## Local PDF preview (optional)
 

@@ -7,7 +7,7 @@ Thanks for considering a contribution. Atlas is intentionally a small, opinionat
 ## Quick start (5 minutes)
 
 ```bash
-git clone https://github.com/<placeholder>/atlas && cd atlas
+git clone https://github.com/RichSchefren/atlas && cd atlas
 docker compose up -d                         # Neo4j 5.26 with APOC
 python -m venv .venv && source .venv/bin/activate
 pip install -e .[dev]

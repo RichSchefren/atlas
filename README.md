@@ -3,7 +3,7 @@
 > **Open-source local-first cognitive memory.** Same AGM-compliant belief revision math as commercial state-of-the-art (Kumiho), running entirely on your laptop. Plus the thing nobody ships: when a fact changes, dependent beliefs are *automatically re-evaluated* — not just flagged.
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Tests](https://img.shields.io/badge/tests-288%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-318%20passing-brightgreen.svg)]()
 [![AGM Compliance](https://img.shields.io/badge/AGM-49%2F49%20at%20100%25-brightgreen.svg)]()
 [![Status: alpha](https://img.shields.io/badge/Status-alpha-orange.svg)]()
 
@@ -77,7 +77,7 @@ Re-runs are idempotent: 0.9s for the next cycle, with all duplicate claims finge
 
 ```bash
 # 1. Clone
-git clone https://github.com/<placeholder>/atlas && cd atlas
+git clone https://github.com/RichSchefren/atlas && cd atlas
 
 # 2. Run Neo4j locally
 docker compose up -d                               # bolt://localhost:7687
@@ -86,7 +86,7 @@ docker compose up -d                               # bolt://localhost:7687
 python -m venv .venv && source .venv/bin/activate
 pip install -e .
 
-# 4. Verify with the test suite (288 tests, ~5s)
+# 4. Verify with the test suite (318 tests, ~5s)
 PYTHONPATH=. pytest tests/ -v
 
 # 5. Reproduce AGM compliance (49/49 scenarios, ~30s)

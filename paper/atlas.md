@@ -14,7 +14,7 @@ We present **Atlas**, an open-source local-first cognitive memory system that (1
 
 We introduce **BusinessMemBench**, a 1,000-question benchmark across seven categories: implication propagation, contradiction resolution, decision lineage, cross-stream consistency, historical query fidelity, provenance accuracy, and forgetfulness. The benchmark fills the evaluation gap left by LoCoMo, LongMemEval, and other conversational-recall benchmarks that do not test downstream reassessment.
 
-We release Atlas under Apache 2.0 at `github.com/<placeholder>/atlas` and BusinessMemBench under MIT for maximum adoption.
+We release Atlas under Apache 2.0 at `github.com/RichSchefren/atlas` and BusinessMemBench under MIT for maximum adoption.
 
 ---
 
@@ -291,7 +291,7 @@ Full reproducibility artifact at `paper/appendix-a-agm-compliance.md` (in this r
 ## Appendix B — Reproducibility
 
 ```
-git clone https://github.com/<placeholder>/atlas
+git clone https://github.com/RichSchefren/atlas
 cd atlas && docker compose up -d
 python -m venv .venv && source .venv/bin/activate
 pip install -e .

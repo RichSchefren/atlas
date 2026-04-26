@@ -249,7 +249,7 @@ async def main() -> None:
 
     banner("LOOP CLOSED")
     info("Atlas: ingest → quarantine → ledger → Ripple → adjudication → AGM revise → tamper-detect")
-    info("All open-source. All local-first. github.com/<placeholder>/atlas")
+    info("All open-source. All local-first. github.com/RichSchefren/atlas")
 
     await driver.close()
 

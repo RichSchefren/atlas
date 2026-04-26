@@ -12,7 +12,7 @@ labels: bug
 
 ```bash
 # Exact commands that trigger the failure on a clean checkout.
-git clone https://github.com/<placeholder>/atlas && cd atlas
+git clone https://github.com/RichSchefren/atlas && cd atlas
 docker compose up -d
 python -m venv .venv && source .venv/bin/activate
 pip install -e .[dev]

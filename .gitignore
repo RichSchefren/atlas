@@ -1,32 +1,18 @@
-# Python
 __pycache__/
-*.py[cod]
-*.so
+*.pyc
+*.pyo
 *.egg-info/
-.eggs/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg
 build/
 dist/
-.venv/
-venv/
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-
-# Atlas-specific
-~/.atlas/
-.atlas-ingest-cache/
-
-# Atlas SP private data — NEVER commits
-atlas_sp/data/
-atlas_sp/private/
-
-# IDE
-.vscode/
-.idea/
-*.swp
 .DS_Store
-
-# Secrets
-.env
-.env.local
-*.key
+.idea/
+.vscode/
+*.swp
+.atlas/
+*.cast.tmp

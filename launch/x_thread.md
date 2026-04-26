@@ -143,8 +143,8 @@ Forks Graphiti for storage (huge thanks to @danielchalef + the Zep team).
 
 ## Tweet 12 (call to action)
 
-Repo: github.com/<placeholder>/atlas
-Paper: arxiv.org/abs/<placeholder>
+Repo: github.com/RichSchefren/atlas
+Paper: arxiv.org/abs/<TBD-after-arxiv-acceptance>
 Live demo: atlas-project.org/live-demo
 
 Apache 2.0 substrate. MIT benchmark. No telemetry, no signup, no account.

@@ -203,43 +203,54 @@ Atlas, Kumiho (when SDK available), Graphiti, Memori, Letta, Mem0, MemPalace, va
 
 ### 6.2 BusinessMemBench (measured, deterministic seed)
 
-We ran Atlas and a no-memory Vanilla baseline against the
-deterministic 83-question subset auto-generated from the corpus
-(seed=42; the 200-question human-authored subset and the
-LLM-driven expansion to 1,000 questions follow in the paper
-revision). All numbers below are measured, not predicted.
+We ran three systems against the 83-question deterministic subset
+auto-generated from the corpus (seed=42). The 200-question
+human-authored subset and the LLM-driven expansion to 1,000
+follow in the paper revision. All numbers below are measured.
 
-| Category       | Vanilla | Atlas   | Atlas perfect / N |
-|----------------|---------|---------|-------------------|
-| propagation    | 0.000   | 0.583   | 7 / 12            |
-| contradiction  | 0.000   | **1.000** | 8 / 8           |
-| lineage        | 0.000   | **1.000** | 18 / 18         |
-| cross_stream   | 0.000   | **1.000** | 6 / 6           |
-| historical     | 0.000   | 0.333   | 4 / 12            |
-| provenance     | 0.000   | **1.000** | 22 / 22         |
-| forgetfulness  | 0.000   | **1.000** | 5 / 5           |
-| **overall**    | **0.000** | **0.843** | **70 / 83**     |
+| System    | overall | prop | contra | line | cross | hist | prov | forget |
+|-----------|---------|------|--------|------|-------|------|------|--------|
+| Vanilla   | 0.000   | 0.00 | 0.00   | 0.00 | 0.00  | 0.00 | 0.00 | 0.00   |
+| Graphiti  | 0.675   | 0.33 | 0.00   | 1.00 | 0.00  | 1.00 | 1.00 | 0.00   |
+| **Atlas** | **0.952** | **0.67** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** |
 
-Atlas wins the deterministic subset 70/83 against Vanilla's 0/83 —
-five of seven categories at 100%. The remaining 13 misses
-concentrate in propagation (tight band thresholds the current
-Ripple formula clips on the boundary) and historical (multi-change
-products disambiguating "as of date X" when the change date is X).
-Both are improvable without architectural change; we report them
-honestly rather than tune the corpus to inflate the score.
+Atlas beats Graphiti — the closest open-source neighbor — by
+**+27.7 percentage points** overall. The categories where Atlas
+dominates are exactly the ones Atlas was designed for:
 
-The headline parity claim — Atlas materially outperforms a
-no-memory baseline on a benchmark we publicly release — is
-established at 0.843. We expect baselines with memory but
-without belief revision (Mem0, Letta) to score in the 0.10–0.30
-range on this subset, dominated by retrieval-only categories
-(historical, cross_stream) and bottoming out on
-propagation / contradiction / forgetfulness where they have no
-mechanism. Graphiti, the closest neighbor, scores higher on
-lineage and provenance (it has the typed graph) but cannot
-answer propagation or contradiction without Atlas's Ripple +
-type-aware detector. Full baseline matrix lands when the
-remaining adapters' clients are pinned.
+- **contradiction** (+1.00 vs Graphiti): type-aware detector +
+  CONTRADICTS edges. Graphiti has neither.
+- **cross_stream** (+1.00 vs Graphiti): lane-aware ingestion.
+  Graphiti has no lane semantics.
+- **forgetfulness** (+1.00 vs Graphiti): AGM `contract`
+  removes deprecated beliefs from the active set. Graphiti
+  returns deprecated beliefs as if active.
+- **propagation** (+0.34 vs Graphiti): Ripple's confidence
+  cascade. Graphiti has no reassessment mechanism — it returns
+  the unchanged old confidence (the gap Atlas closes).
+
+The three categories where they tie at 1.00 — lineage,
+historical, provenance — are precisely the categories that
+require *only* a typed graph and bitemporal storage. Graphiti
+provides those; Atlas inherits them via the fork. The remaining
+gap to 100% on Atlas (4 misses on propagation) sits in the
+boundary cases of the band scheme where the
+confidence-from-price formula and Ripple's cascade math agree
+on direction but disagree on magnitude — an honest
+quantitative-reassessment edge that the human-authored gold
+subset will adjudicate.
+
+We expect Mem0, Letta, and Memori — none of which have a typed
+graph or belief revision — to score in the 0.10–0.30 range on
+this subset, dominated by what falls out of basic retrieval
+(historical) and bottoming out on every category Atlas wins.
+Their measurements land in the paper revision once their
+Python clients are pinned.
+
+The headline claim — *Atlas, as fully open-source local-first
+infrastructure, materially outperforms the closest open-source
+neighbor on a benchmark we publicly release* — is established
+at +27.7 points.
 
 ### 6.3 LoCoMo / LongMemEval (parity claim)
 

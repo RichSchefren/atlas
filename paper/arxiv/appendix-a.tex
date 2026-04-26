@@ -1,0 +1,329 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\newenvironment{Shaded}{}{}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\BuiltInTok}[1]{\textcolor[rgb]{0.00,0.50,0.00}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
+\newcommand{\ImportTok}[1]{\textcolor[rgb]{0.00,0.50,0.00}{\textbf{#1}}}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\author{}
+\date{}
+
+\begin{document}
+
+\section{11 --- AGM Compliance Results}\label{agm-compliance-results}
+
+\emph{Reproducibility artifact: Atlas's AGM compliance suite, run
+against live Neo4j 5.26 with the same seven postulates Kumiho's paper
+specifies in § 7. Goes into the arxiv paper as Appendix A.}
+
+\textbf{Date locked:} 2026-04-25 \textbf{Implements:}
+\texttt{06\ -\ Ripple\ Algorithm\ Spec.md} § 4 (AGM correctness claim)
+\textbf{Source code:}
+\texttt{benchmarks/agm\_compliance/\{runner.py,\ scenarios.py\}}
+\textbf{Test:} \texttt{tests/integration/test\_agm\_compliance.py}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{1. Headline Result}\label{headline-result}
+
+\textbf{49 / 49 scenarios pass at 100\%.}
+
+Atlas's AGM operators (\texttt{revise()}, \texttt{contract()},
+\texttt{expand()}) satisfy every postulate Kumiho proved (K*2-K*6) plus
+the two Hansson belief-base postulates (Relevance, Core-Retainment) on
+every test in the suite. This matches Kumiho's published verification
+one-for-one, but on a fully open-source local-first implementation
+rather than a commercial cloud service.
+
+Operational, not symbolic: every assertion runs against a live Neo4j
+5.26 instance through Atlas's Cypher-backed AGM operators. No symbolic
+engine, no proof assistant --- these are end-to-end checks that the
+actual revision implementation produces the right graph state.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{2. Scenario Distribution}\label{scenario-distribution}
+
+\subsubsection{By category (Kumiho Table 18
+mirror)}\label{by-category-kumiho-table-18-mirror}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1685}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1236}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.7079}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Category
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Scenarios
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+What it tests
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+simple & 10 & Single-item revisions on a small graph \\
+multi\_item & 8 & Revisions involving 2-5 dependent beliefs \\
+chain & 8 & Cascades along Depends\_On chains of depth 3-7 \\
+temporal & 8 & Revisions that interact with bitemporal
+\texttt{valid\_at} windows \\
+adversarial & 15 & Edge cases --- cycles, contradictions in setup,
+conflicting tags \\
+\end{longtable}
+}
+
+\subsubsection{By postulate}\label{by-postulate}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1828}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1183}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.6989}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Postulate
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Scenarios
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+What it guarantees
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+K*2 (Success) & 12 & The revising belief is in the result \\
+K*3 (Inclusion) & 8 & Result is a subset of expansion-then-pruning \\
+K*4 (Vacuity) & 1 & If new belief is consistent with prior, no
+contraction needed \\
+K*5 (Consistency) & 9 & Result is consistent unless input is
+contradictory \\
+K*6 (Extensionality) & 3 & Logically equivalent inputs produce
+equivalent results \\
+Relevance & 7 & Removed beliefs were relevant to the contradiction
+(Hansson) \\
+Core-Retainment & 9 & Anything that could be retained, was retained
+(Hansson) \\
+\textbf{Total} & \textbf{49} & \\
+\end{longtable}
+}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{3. Per-Postulate Pass Table}\label{per-postulate-pass-table}
+
+Every row passes at 100\%. Atlas runs this suite as part of CI; any
+regression flips a row to 0/N and blocks merge.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}llll@{}}
+\toprule\noalign{}
+Postulate & Scenarios & Passed & Pass Rate \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+K*2 Success & 12 & 12 & 100.0\% \\
+K*3 Inclusion & 8 & 8 & 100.0\% \\
+K*4 Vacuity & 1 & 1 & 100.0\% \\
+K*5 Consistency & 9 & 9 & 100.0\% \\
+K*6 Extensionality & 3 & 3 & 100.0\% \\
+Relevance (Hansson) & 7 & 7 & 100.0\% \\
+Core-Retainment (Hansson) & 9 & 9 & 100.0\% \\
+\textbf{Total} & \textbf{49} & \textbf{49} & \textbf{100.0\%} \\
+\end{longtable}
+}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{4. Per-Category Pass Table}\label{per-category-pass-table}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}llll@{}}
+\toprule\noalign{}
+Category & Scenarios & Passed & Pass Rate \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+simple & 10 & 10 & 100.0\% \\
+multi\_item & 8 & 8 & 100.0\% \\
+chain & 8 & 8 & 100.0\% \\
+temporal & 8 & 8 & 100.0\% \\
+adversarial & 15 & 15 & 100.0\% \\
+\textbf{Total} & \textbf{49} & \textbf{49} & \textbf{100.0\%} \\
+\end{longtable}
+}
+
+The adversarial bucket --- 15 scenarios deliberately constructed to
+break a less-disciplined implementation --- passes at 100\%. Cycle
+detection (Spec 06 § 3.3), max-depth guards, and the ``ledger-only
+Ripple firing'' gate (Spec 06 § 5) collectively ensure no scenario
+produces nondeterministic or partial graph state.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{5. Reproduce In One Command}\label{reproduce-in-one-command}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{git}\NormalTok{ clone https://github.com/}\OperatorTok{\textless{}}\NormalTok{username}\OperatorTok{\textgreater{}}\NormalTok{/atlas.git }\KeywordTok{\&\&} \BuiltInTok{cd}\NormalTok{ atlas}
+\ExtensionTok{docker}\NormalTok{ compose up }\AttributeTok{{-}d}                                \CommentTok{\# Neo4j 5.26 on bolt://localhost:7687}
+\ExtensionTok{python} \AttributeTok{{-}m}\NormalTok{ venv .venv }\KeywordTok{\&\&} \BuiltInTok{source}\NormalTok{ .venv/bin/activate}
+\ExtensionTok{pip}\NormalTok{ install }\AttributeTok{{-}e}\NormalTok{ .}
+\VariableTok{PYTHONPATH}\OperatorTok{=}\NormalTok{. }\ExtensionTok{pytest}\NormalTok{ tests/integration/test\_agm\_compliance.py }\AttributeTok{{-}v}
+\end{Highlighting}
+\end{Shaded}
+
+Expected output: \textbf{3 tests, 49 scenarios, 0 failures.}
+
+The full suite finishes in ≤30 seconds on an M3 Ultra. CI runs on GitHub
+Actions against the same Neo4j image.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{6. What This Establishes}\label{what-this-establishes}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Parity claim}: Atlas matches Kumiho's published 100\% AGM
+  compliance on the same postulate set, on the same scenario count.
+\item
+  \textbf{Reproducibility claim}: Anyone with Docker + Python can re-run
+  this in under 60 seconds. Kumiho's verification is closed-source;
+  Atlas's is one \texttt{pytest} invocation.
+\item
+  \textbf{Operational claim}: These aren't proofs. They're tests against
+  the real Cypher-backed operators that production Atlas runs. Pass =
+  production behavior is correct, not just theoretically correct.
+\end{enumerate}
+
+This is the foundation Atlas's headline novel claim --- Ripple's
+automatic downstream reassessment --- sits on. Reassessment only matters
+if revision is correct; with K*2-K*6 + Hansson verified, the cascade
+builds on solid ground.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{7. What's Next (Phase 3 W2 →
+arxiv)}\label{whats-next-phase-3-w2-arxiv}
+
+This document goes into the paper as \textbf{Appendix A: Reproducibility
+Artifact for AGM Compliance}. The numbers above are quoted in § 6
+(Evaluation) of the main text. The full scenario-level table (49 rows)
+lands in supplementary material.
+
+Future work documented here for honesty:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Larger scenario libraries}: Kumiho ships 49 because that's the
+  published count. Atlas will grow this set as new edge cases surface in
+  production. Each addition follows the same
+  \texttt{Scenario(id,\ category,\ postulate,\ setup\_fn,\ assertion\_fn)}
+  shape.
+\item
+  \textbf{Property-based testing}: A \texttt{hypothesis}-driven random
+  scenario generator that fuzzes around the postulate boundary. Phase 4
+  work.
+\item
+  \textbf{Formal verification path}: Some teams will demand a Coq/Lean
+  proof of the operators. Atlas's source is small enough (the AGM module
+  is \textless{} 600 LOC) that this is plausibly tractable in 2026 H2.
+\end{itemize}
+
+\end{document}

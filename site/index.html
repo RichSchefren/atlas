@@ -284,6 +284,21 @@
   </div>
 </section>
 
+<section id="demo-cast">
+  <div class="container">
+    <h2>The loop closing live</h2>
+    <p>Below is the real Atlas pipeline running end-to-end against live Neo4j 5.26 — not a screenshot, an asciicast (re-runnable in 4 seconds with <code>scripts/demo_loop.py</code>). Plant an upstream belief, plant a downstream that depends on it, change the upstream, watch Ripple cascade, write the strategic conflict to an Obsidian markdown queue, resolve via AGM revise, verify the SHA-256 ledger chain. Seven stages. Zero stubs.</p>
+    <div id="cast" style="background:#0b0d10;border:1px solid #1f2328;border-radius:8px;padding:12px;margin-top:16px"></div>
+    <script src="https://cdn.jsdelivr.net/npm/asciinema-player@3.7.1/dist/bundle/asciinema-player.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/asciinema-player@3.7.1/dist/bundle/asciinema-player.min.css">
+    <script>
+      AsciinemaPlayer.create("assets/demo.cast", document.getElementById("cast"), {
+        autoPlay: true, loop: true, idleTimeLimit: 1.5, theme: "asciinema",
+      });
+    </script>
+  </div>
+</section>
+
 <section id="real">
   <div class="container">
     <h2>Real-world performance</h2>

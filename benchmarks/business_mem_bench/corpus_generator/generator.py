@@ -262,12 +262,22 @@ def _write_propagation_questions(log: EventLog, gold: Path) -> int:
     """Each pricing change creates a propagation question — does the
     'most accessible' belief get its confidence reassessed?"""
     out_path = gold / "propagation.jsonl"
+    # POLICY DECISION (2026-04-26): bands are FROZEN to Ripple's
+    # current output range — additive-with-damping at α=0.5 + the
+    # default β/γ/δ weights from atlas_core/ripple/reassess.py.
+    #
+    # Why frozen and not adaptive: the benchmark's purpose is to
+    # publish Atlas's expected behavior. If a future PR changes
+    # Ripple's weights, the resulting BMB score drop surfaces the
+    # behavior change EXPLICITLY rather than letting bands
+    # auto-recalibrate around silent drift. CI gates regressions
+    # at >= 0.90 (.github/workflows/test.yml). When Ripple weights
+    # change intentionally, update both the spec doc AND these
+    # bands in the same commit.
     written = 0
     with out_path.open("w", encoding="utf-8") as f:
         for e in log.by_kind(EventKind.PRICING_CHANGE):
             old, new = e.payload["old_price"], e.payload["new_price"]
-            # Bands calibrated against Ripple's actual cascade output
-            # (additive-with-damping at α=0.5).
             band = (
                 {"min": 0.7, "max": 1.0}
                 if new <= old

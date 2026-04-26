@@ -96,4 +96,10 @@ def load_questions(
                 line = line.strip()
                 if not line:
                     continue
-                yield Question.from_dict(json.loads(line), cat)
+                data = json.loads(line)
+                # Skip placeholder rows in human-authored gold files
+                # (the headers carry _template_only=true so authors see
+                # the schema without those rows scoring as actual q's)
+                if data.get("_template_only"):
+                    continue
+                yield Question.from_dict(data, cat)

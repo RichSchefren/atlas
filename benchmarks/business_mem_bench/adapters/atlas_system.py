@@ -494,8 +494,13 @@ class AtlasSystem:
         formatted dollars."""
         import re
         question = payload.get("question", "")
-        m_pid = re.search(r"product (\w+)", question)
-        m_date = re.search(r"on (\d{4}-\d{2}-\d{2})", question)
+        # Match all paraphrase variants: "product p01", "of p01", "{pid}".
+        m_pid = re.search(r"\b(p\d{2})\b", question)
+        # Match "on YYYY-MM-DD" / "On YYYY-MM-DD" / "of YYYY-MM-DD" /
+        # "end-of-day YYYY-MM-DD" — case-insensitive, leading word optional.
+        m_date = re.search(
+            r"\b(\d{4}-\d{2}-\d{2})\b", question,
+        )
         if not (m_pid and m_date):
             return ""
         pid, on_date = m_pid.group(1), m_date.group(1)

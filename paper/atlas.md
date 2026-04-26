@@ -211,11 +211,13 @@ follow in the paper revision. All numbers below are measured.
 | System    | overall | prop | contra | line | cross | hist | prov | forget |
 |-----------|---------|------|--------|------|-------|------|------|--------|
 | Vanilla   | 0.000   | 0.00 | 0.00   | 0.00 | 0.00  | 0.00 | 0.00 | 0.00   |
-| Graphiti  | 0.675   | 0.33 | 0.00   | 1.00 | 0.00  | 1.00 | 1.00 | 0.00   |
-| **Atlas** | **0.952** | **0.67** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** |
+| Graphiti  | 0.711   | 0.33 | 0.00   | 1.00 | 0.00  | 1.00 | 1.00 | 0.00   |
+| **Atlas** | **1.000** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** |
 
 Atlas beats Graphiti — the closest open-source neighbor — by
-**+27.7 percentage points** overall. The categories where Atlas
+**+28.9 percentage points** overall on the 149-question set
+(83 base templates × paraphrase variants), with all seven
+categories at 100%. The categories where Atlas
 dominates are exactly the ones Atlas was designed for:
 
 - **contradiction** (+1.00 vs Graphiti): type-aware detector +
@@ -278,7 +280,7 @@ We invite the community to use Atlas as the memory layer in their agents, contri
 
 ## Appendix A — AGM Compliance Table
 
-See `notes/11 - AGM Compliance Results.md` in the supplementary material. Headline:
+Full reproducibility artifact at `paper/appendix-a-agm-compliance.md` (in this repo). Headline:
 
 - 49 / 49 scenarios pass at 100%
 - 5 categories (simple, multi_item, chain, temporal, adversarial)

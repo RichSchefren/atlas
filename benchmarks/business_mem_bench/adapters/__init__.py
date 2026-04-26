@@ -15,10 +15,10 @@ Wired in W1 follow-ups (need their respective Python clients):
 from benchmarks.business_mem_bench.adapters.atlas_system import AtlasSystem
 from benchmarks.business_mem_bench.adapters.external_stubs import (
     KumihoSystem,
-    MemoriSystem,
     MemPalaceSystem,
     MissingClientError,
 )
+from benchmarks.business_mem_bench.adapters.memori_system import MemoriSystem
 from benchmarks.business_mem_bench.adapters.graphiti_system import (
     GraphitiSystem,
 )

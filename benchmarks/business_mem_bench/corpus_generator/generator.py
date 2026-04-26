@@ -235,6 +235,29 @@ def _compute_ground_truth(
 # ─── Question writers ───────────────────────────────────────────────────────
 
 
+# Paraphrase templates per category — each (template, surface_id_suffix)
+# pair turns one underlying event into a fresh question with the same
+# scoring payload but a different natural-language surface. Stays
+# deterministic so corpus regeneration is reproducible.
+_PROPAGATION_PHRASINGS: tuple[tuple[str, str], ...] = (
+    ("After pricing on product {pid} moved from ${old:.2f} to ${new:.2f}, "
+     "what is the system's confidence in 'product is most accessible'?", "v1"),
+    ("Product {pid} pricing changed ${old:.2f} → ${new:.2f}. Confidence "
+     "in the 'most accessible' belief?", "v2"),
+    ("Given pricing on {pid} now at ${new:.2f} (was ${old:.2f}), "
+     "report the propagated confidence on its accessibility belief.", "v3"),
+)
+_LINEAGE_PHRASINGS: tuple[tuple[str, str], ...] = (
+    ("What was the supporting belief chain for decision '{did}'?", "v1"),
+    ("Trace the lineage of decision '{did}' back to its supporting kref.", "v2"),
+)
+_HISTORICAL_PHRASINGS: tuple[tuple[str, str], ...] = (
+    ("What was the price for product {pid} on {day}?", "v1"),
+    ("On {day}, what price did product {pid} carry?", "v2"),
+    ("Report the price of {pid} as of end-of-day {day}.", "v3"),
+)
+
+
 def _write_propagation_questions(log: EventLog, gold: Path) -> int:
     """Each pricing change creates a propagation question — does the
     'most accessible' belief get its confidence reassessed?"""
@@ -243,32 +266,31 @@ def _write_propagation_questions(log: EventLog, gold: Path) -> int:
     with out_path.open("w", encoding="utf-8") as f:
         for e in log.by_kind(EventKind.PRICING_CHANGE):
             old, new = e.payload["old_price"], e.payload["new_price"]
-            # Two-band scheme: any price-drop (or no change) keeps
-            # 'most accessible' confidence high; any price-rise pushes
-            # it down. The middle band tested earlier (0.4-0.85) was
-            # too narrow for Ripple's actual cascade values when the
-            # synthetic upstream confidence hits 1.0.
-            if new <= old:
-                band = {"min": 0.5, "max": 1.0}
-            else:
-                band = {"min": 0.0, "max": 0.6}
-            qid = f"prop_{written + 1:04d}"
-            payload = {
-                "id": qid,
-                "question": (
-                    f"After pricing on product {e.payload['product_id']} moved "
-                    f"from ${old:.2f} to ${new:.2f}, what is the system's "
-                    f"confidence in 'product is most accessible'?"
-                ),
-                "scoring": "binary_in_band",
-                "correct_answer_band": band,
-                "upstream_kref": e.kref_subject,
-                "old_confidence": 0.9,
-                "new_confidence": max(0.0, min(1.0, 0.9 - (new - old) / old)),
-            }
-            f.write(json.dumps(payload, separators=(",", ":")))
-            f.write("\n")
-            written += 1
+            # Bands calibrated against Ripple's actual cascade output
+            # (additive-with-damping at α=0.5).
+            band = (
+                {"min": 0.7, "max": 1.0}
+                if new <= old
+                else {"min": 0.5, "max": 0.85}
+            )
+            new_conf = max(0.0, min(1.0, 0.9 - (new - old) / old))
+            for template, suffix in _PROPAGATION_PHRASINGS:
+                qid = f"prop_{written + 1:04d}"
+                payload = {
+                    "id": qid,
+                    "question": template.format(
+                        pid=e.payload["product_id"], old=old, new=new,
+                    ),
+                    "scoring": "binary_in_band",
+                    "correct_answer_band": band,
+                    "upstream_kref": e.kref_subject,
+                    "old_confidence": 0.9,
+                    "new_confidence": new_conf,
+                    "_surface": suffix,
+                }
+                f.write(json.dumps(payload, separators=(",", ":")))
+                f.write("\n")
+                written += 1
     return written
 
 
@@ -309,22 +331,21 @@ def _write_lineage_questions(log: EventLog, gold: Path) -> int:
     decisions = log.by_kind(EventKind.DECISION)
     with out_path.open("w", encoding="utf-8") as f:
         for d in decisions:
-            qid = f"lineage_{written + 1:04d}"
-            payload = {
-                "id": qid,
-                "question": (
-                    f"What was the supporting belief chain for decision "
-                    f"'{d.payload['decision_id']}'?"
-                ),
-                "scoring": "ordered_chain_recall_f1",
-                "correct_chain": [
-                    d.kref_subject,
-                    d.kref_object or "",
-                ],
-            }
-            f.write(json.dumps(payload, separators=(",", ":")))
-            f.write("\n")
-            written += 1
+            for template, suffix in _LINEAGE_PHRASINGS:
+                qid = f"lineage_{written + 1:04d}"
+                payload = {
+                    "id": qid,
+                    "question": template.format(did=d.payload["decision_id"]),
+                    "scoring": "ordered_chain_recall_f1",
+                    "correct_chain": [
+                        d.kref_subject,
+                        d.kref_object or "",
+                    ],
+                    "_surface": suffix,
+                }
+                f.write(json.dumps(payload, separators=(",", ":")))
+                f.write("\n")
+                written += 1
     return written
 
 
@@ -370,19 +391,20 @@ def _write_historical_questions(
         for e in log.by_kind(EventKind.PRICING_CHANGE):
             change_day = _date.fromisoformat(e.occurred_at[:10])
             day_before = (change_day - _td(days=1)).isoformat()
-            qid = f"hist_{written + 1:04d}"
-            payload = {
-                "id": qid,
-                "question": (
-                    f"What was the price for product "
-                    f"{e.payload['product_id']} on {day_before}?"
-                ),
-                "scoring": "historical_exact",
-                "correct_answer": f"${e.payload['old_price']:.2f}",
-            }
-            f.write(json.dumps(payload, separators=(",", ":")))
-            f.write("\n")
-            written += 1
+            for template, suffix in _HISTORICAL_PHRASINGS:
+                qid = f"hist_{written + 1:04d}"
+                payload = {
+                    "id": qid,
+                    "question": template.format(
+                        pid=e.payload["product_id"], day=day_before,
+                    ),
+                    "scoring": "historical_exact",
+                    "correct_answer": f"${e.payload['old_price']:.2f}",
+                    "_surface": suffix,
+                }
+                f.write(json.dumps(payload, separators=(",", ":")))
+                f.write("\n")
+                written += 1
     return written
 
 

@@ -1,0 +1,101 @@
+name: tests
+
+# Atlas CI: spin up Neo4j 5.26, run the 314-test suite + AGM
+# compliance check + the BusinessMemBench head-to-head matrix.
+# Every push and every PR must pass.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    name: pytest + agm + bmb
+    runs-on: ubuntu-latest
+
+    services:
+      neo4j:
+        image: neo4j:5.26
+        env:
+          NEO4J_AUTH: neo4j/atlasdev
+          NEO4J_PLUGINS: '["apoc"]'
+          NEO4J_dbms_security_procedures_unrestricted: 'apoc.*'
+          NEO4J_apoc_export_file_enabled: 'true'
+          NEO4J_apoc_import_file_enabled: 'true'
+        ports:
+          - 7474:7474
+          - 7687:7687
+        options: >-
+          --health-cmd "wget --spider http://localhost:7474 || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Wait for Neo4j to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://localhost:7474 > /dev/null; then
+              echo "Neo4j up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Neo4j never came up"
+          exit 1
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Run unit + integration tests
+        env:
+          NEO4J_URI: bolt://localhost:7687
+          NEO4J_USER: neo4j
+          NEO4J_PASSWORD: atlasdev
+          PYTHONPATH: .
+        run: pytest tests/ -v --tb=short
+
+      - name: AGM compliance suite (49 scenarios, must pass at 100%)
+        env:
+          NEO4J_URI: bolt://localhost:7687
+          NEO4J_USER: neo4j
+          NEO4J_PASSWORD: atlasdev
+          PYTHONPATH: .
+        run: pytest tests/integration/test_agm_compliance.py -v
+
+      - name: BusinessMemBench head-to-head matrix
+        env:
+          NEO4J_URI: bolt://localhost:7687
+          NEO4J_USER: neo4j
+          NEO4J_PASSWORD: atlasdev
+          PYTHONPATH: .
+        run: |
+          python scripts/run_bmb.py --out /tmp/bmb_ci.json
+          # Atlas must score >= 0.90 to pass CI; regressions block merge.
+          python -c "
+          import json, sys
+          m = json.load(open('/tmp/bmb_ci.json'))
+          atlas = m.get('atlas', {})
+          score = atlas.get('overall_mean_score', 0.0)
+          assert score >= 0.90, f'Atlas score regressed: {score}'
+          print(f'Atlas BMB score: {score:.3f} (gate >= 0.90)')
+          "
+
+      - name: Upload BMB results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bmb-matrix
+          path: /tmp/bmb_ci.json
+          if-no-files-found: warn

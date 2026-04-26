@@ -272,8 +272,8 @@ class GraphitiSystem:
     def _historical(self, payload: dict[str, Any]) -> str:
         import re
         question = payload.get("question", "")
-        m_pid = re.search(r"product (\w+)", question)
-        m_date = re.search(r"on (\d{4}-\d{2}-\d{2})", question)
+        m_pid = re.search(r"\b(p\d{2})\b", question)
+        m_date = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", question)
         if not (m_pid and m_date):
             return ""
         pid, on_date = m_pid.group(1), m_date.group(1)

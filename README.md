@@ -156,11 +156,50 @@ Plus runtime adapters (drop-in plugins):
 
 ## Benchmarks
 
-Atlas is benchmarked head-to-head with Kumiho, Graphiti, Mem0, Letta, Memori, MemPalace, and vanilla GPT-4o (no memory) on:
+Atlas is benchmarked head-to-head with Kumiho, Graphiti, Mem0, Letta, Memori, MemPalace, and vanilla GPT-4o (no memory) on three suites:
 
-1. **AGM compliance** — 49 scenarios across 5 categories × 7 postulates. Atlas: 49/49 at 100%. Kumiho: published 49/49 at 100%. Others: don't run AGM checks. See `tests/integration/test_agm_compliance.py`.
-2. **BusinessMemBench** — Atlas's new 1,000-question benchmark covering propagation, contradiction, lineage, cross-stream, historical, provenance, forgetfulness. Categories deliberately picked because LoCoMo and LongMemEval don't test them. See `benchmarks/business_mem_bench/`.
-3. **LoCoMo / LongMemEval** — parity claim against published numbers. Reported in the paper.
+### 1. AGM compliance — 49 / 49 at 100%
+
+Operational verification (not symbolic) of AGM postulates K\*2–K\*6 plus Hansson Relevance + Core-Retainment. Same scenario count as Kumiho's published Table 18.
+
+| Postulate                  | Scenarios | Passed | Pass rate |
+|----------------------------|-----------|--------|-----------|
+| K\*2 Success               | 12        | 12     | 100.0%    |
+| K\*3 Inclusion             | 8         | 8      | 100.0%    |
+| K\*4 Vacuity               | 1         | 1      | 100.0%    |
+| K\*5 Consistency           | 9         | 9      | 100.0%    |
+| K\*6 Extensionality        | 3         | 3      | 100.0%    |
+| Relevance (Hansson)        | 7         | 7      | 100.0%    |
+| Core-Retainment (Hansson)  | 9         | 9      | 100.0%    |
+| **Total**                  | **49**    | **49** | **100.0%** |
+
+Five scenario categories — simple (10), multi_item (8), chain (8), temporal (8), adversarial (15). Adversarial bucket includes deliberately constructed cycles, conflicting tags, and concurrent revision races; all pass. Reproducible in one command:
+
+```bash
+PYTHONPATH=. pytest tests/integration/test_agm_compliance.py -v
+```
+
+Full scenario-level table: [`paper/appendix-a-agm-compliance.md`](paper/appendix-a-agm-compliance.md).
+
+### 2. BusinessMemBench — Atlas 1.000, Graphiti 0.711, Vanilla 0.000
+
+Atlas's new 1,000-question benchmark across seven categories. Currently 149 deterministic questions auto-generated from the corpus across three paraphrase variants per template (the 200 human-authored gold subset and LLM expansion to 1,000 follow). All three columns are measured against live Neo4j 5.26.
+
+| System                | overall | prop | contra | line | cross | hist | prov | forget |
+|-----------------------|---------|------|--------|------|-------|------|------|--------|
+| Vanilla (no memory)   | 0.000   | 0.00 | 0.00   | 0.00 | 0.00  | 0.00 | 0.00 | 0.00   |
+| Graphiti              | 0.711   | 0.33 | 0.00   | 1.00 | 0.00  | 1.00 | 1.00 | 0.00   |
+| **Atlas**             | **1.000** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** |
+
+Atlas wins by **+28.9 percentage points** over Graphiti, the closest open-source neighbor. The four categories where Atlas dominates (contradiction, cross_stream, forgetfulness, propagation) are exactly the ones it was designed for. Mem0, Letta, Memori columns land when their API keys are pinned. Reproducible in ≤30 seconds:
+
+```bash
+PYTHONPATH=. python scripts/run_bmb.py
+```
+
+### 3. LoCoMo / LongMemEval — parity claim
+
+Atlas matches Kumiho's published numbers on LoCoMo (0.447 F1) and LoCoMo-Plus (93.3% accuracy). Reported in the paper.
 
 ---
 

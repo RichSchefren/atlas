@@ -147,7 +147,7 @@ class TestQuestionWriter:
         total = sum(counts.values())
         # The synthetic generator targets ~150-300 deterministic questions
         # in addition to the eventual 200 human-authored ones.
-        assert total >= 70, f"only generated {total} questions"
+        assert total >= 140, f"only generated {total} questions"
 
     def test_questions_validate_via_harness_loader(self, tmp_path):
         from benchmarks.business_mem_bench import load_questions
@@ -157,7 +157,7 @@ class TestQuestionWriter:
 
         generate_questions(tmp_path, seed=42)
         questions = list(load_questions(tmp_path / "gold"))
-        assert len(questions) >= 70
+        assert len(questions) >= 140
         # Every question has a non-empty id, scoring method, and category
         for q in questions:
             assert q.id
@@ -227,6 +227,6 @@ class TestEndToEndStubRun:
         ).run()
 
         assert report.system_name == "vanilla_no_memory"
-        assert len(report.raw_results) >= 70
+        assert len(report.raw_results) >= 140
         # Vanilla returns None → every scorer returns 0.0
         assert report.overall_mean_score == 0.0

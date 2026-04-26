@@ -45,9 +45,11 @@ TRUST_LEDGER: float = 1.00
 LANE_RETRIEVAL_ELIGIBLE_GLOBAL: frozenset[str] = frozenset({
     "atlas_sessions",          # Claude Code session captures
     "atlas_observational",     # Limitless / Screenpipe / iMessage ambient
+    "atlas_vault",             # Obsidian markdown vault edits (Rich-authored)
+    "atlas_meeting",           # Fireflies scheduled meetings
     "atlas_chat_history",      # ChatGPT / external assistant exports
-    "atlas_curated",           # Hand-curated reference material
-    "atlas_self_audit",        # Atlas's own learning logs
+    "atlas_curated",           # Hand-curated reference material (retrieval-only)
+    "atlas_self_audit",        # Atlas's own learning logs (retrieval-only)
 })
 
 LANE_CORROBORATION_ONLY: frozenset[str] = frozenset({

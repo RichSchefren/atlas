@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Atlas Live Demo — Ripple in motion</title>
+<meta name="description" content="Watch Atlas's Ripple algorithm reassess a downstream belief cascade after a single fact change. Interactive demo." />
+<script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --fg: #e8eaed;
+    --muted: #9aa0a6;
+    --accent: #00ff88;
+    --accent-dim: #00b86a;
+    --border: #1f2328;
+    --code-bg: #11151a;
+    --warn: #ffaa00;
+    --bad: #ff6464;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    line-height: 1.6;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+  }
+  header {
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 {
+    font-size: 22px;
+    background: linear-gradient(135deg, var(--accent) 0%, #00ddff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header a { color: var(--accent); text-decoration: none; font-size: 14px; }
+  main {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    overflow: hidden;
+  }
+  #cy {
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+  }
+  aside {
+    background: var(--code-bg);
+    overflow-y: auto;
+    padding: 24px;
+  }
+  aside h2 {
+    font-size: 14px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+    margin-top: 24px;
+  }
+  aside h2:first-child { margin-top: 0; }
+  .scenario-pick {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .scenario-btn {
+    padding: 10px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color .12s, background .12s;
+  }
+  .scenario-btn:hover {
+    border-color: var(--accent-dim);
+    background: rgba(0, 255, 136, 0.04);
+  }
+  .scenario-btn.active {
+    border-color: var(--accent);
+    background: rgba(0, 255, 136, 0.08);
+  }
+  .scenario-btn small { display: block; color: var(--muted); margin-top: 4px; }
+  .run-btn {
+    margin-top: 16px;
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: #000;
+    font-weight: 700;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  .run-btn:hover { transform: translateY(-1px); }
+  .run-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .reset-btn {
+    margin-top: 8px;
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  #log {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    max-height: 240px;
+    overflow-y: auto;
+    color: var(--muted);
+  }
+  #log .line { padding: 2px 0; }
+  #log .line.event { color: var(--accent); }
+  #log .line.warn { color: var(--warn); }
+  #log .line.bad { color: var(--bad); }
+  #adj {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  #adj .empty { font-style: italic; }
+  #adj .item {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  #adj .item:last-child { border-bottom: none; }
+  #adj .item .kref { color: var(--fg); font-family: monospace; font-size: 11px; }
+  #adj .item .reason { color: var(--warn); margin-top: 4px; }
+  footer {
+    padding: 12px 32px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .legend .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Atlas — Ripple Live Demo</h1>
+  <a href="index.html">← back</a>
+</header>
+
+<main>
+  <div id="cy"></div>
+  <aside>
+    <h2>1. Pick a scenario</h2>
+    <div class="scenario-pick" id="scenarios"></div>
+
+    <button class="run-btn" id="run">▶ Trigger Ripple cascade</button>
+    <button class="reset-btn" id="reset">Reset graph</button>
+
+    <h2>2. Event log</h2>
+    <div id="log"></div>
+
+    <h2>3. Adjudication queue</h2>
+    <div id="adj"><div class="empty">empty</div></div>
+
+    <h2>Legend</h2>
+    <div class="legend">
+      <div><span class="swatch" style="background:var(--accent)"></span>high confidence</div>
+      <div><span class="swatch" style="background:var(--warn)"></span>uncertain</div>
+      <div><span class="swatch" style="background:var(--bad)"></span>contradicted</div>
+      <div><span class="swatch" style="background:var(--muted)"></span>downstream</div>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  Simulated client-side. Real Atlas behavior — same algorithm shape, real backend at
+  <a style="color:var(--accent)" href="https://github.com/placeholder/atlas">github.com/placeholder/atlas</a>
+</footer>
+
+<script>
+// ─── Scenarios ─────────────────────────────────────────────────────────────
+
+const SCENARIOS = {
+  pricing: {
+    label: "Pricing change cascade",
+    blurb: "Origins coffee price doubles → 'most accessible' belief reassessed",
+    nodes: [
+      { id: "origins", label: "Origins\n$89/mo", conf: 0.95, type: "fact" },
+      { id: "accessible", label: "Origins is\nmost accessible", conf: 0.92, type: "belief" },
+      { id: "newcomer", label: "Newcomer-friendly\nlineup", conf: 0.85, type: "belief" },
+      { id: "growth_proj", label: "Growth from\nnewcomers Q2", conf: 0.78, type: "decision" },
+      { id: "marketing", label: "Marketing for\nnewcomers", conf: 0.80, type: "decision" }
+    ],
+    edges: [
+      { source: "accessible", target: "origins", strength: 0.95 },
+      { source: "newcomer", target: "accessible", strength: 0.85 },
+      { source: "growth_proj", target: "newcomer", strength: 0.7 },
+      { source: "marketing", target: "newcomer", strength: 0.6 }
+    ],
+    trigger: { kref: "origins", new_conf: 0.10, label_after: "Origins\n$129/mo" },
+    contradiction: ["accessible", "growth_proj"]
+  },
+  hire: {
+    label: "Hiring conflict cascade",
+    blurb: "Hiring-freeze belief revised → Q1 roaster commitments now contradicted",
+    nodes: [
+      { id: "freeze", label: "Hiring freeze\nin effect", conf: 0.90, type: "fact" },
+      { id: "roster_plan", label: "Roster plan\nthrough Q1", conf: 0.85, type: "belief" },
+      { id: "hire_2", label: "Hire 2 roasters\nby Q1 end", conf: 0.92, type: "decision" },
+      { id: "capacity_proj", label: "20% capacity\ngrowth Q1", conf: 0.80, type: "decision" }
+    ],
+    edges: [
+      { source: "roster_plan", target: "freeze", strength: 0.90 },
+      { source: "capacity_proj", target: "hire_2", strength: 0.85 }
+    ],
+    trigger: { kref: "freeze", new_conf: 0.05, label_after: "Hiring freeze\nLIFTED" },
+    contradiction: ["hire_2", "freeze"]
+  },
+  product: {
+    label: "Product line discontinuation",
+    blurb: "Festive Blend margin drops below threshold → discontinuation cascade",
+    nodes: [
+      { id: "festive_margin", label: "Festive margin\n34%", conf: 0.95, type: "fact" },
+      { id: "festive_viable", label: "Festive is\nviable", conf: 0.88, type: "belief" },
+      { id: "winter_lineup", label: "Winter lineup\nincludes Festive", conf: 0.92, type: "decision" },
+      { id: "wholesale_promo", label: "Wholesale promo\nfor Festive", conf: 0.85, type: "decision" }
+    ],
+    edges: [
+      { source: "festive_viable", target: "festive_margin", strength: 0.92 },
+      { source: "winter_lineup", target: "festive_viable", strength: 0.88 },
+      { source: "wholesale_promo", target: "winter_lineup", strength: 0.75 }
+    ],
+    trigger: { kref: "festive_margin", new_conf: 0.15, label_after: "Festive margin\n8%" },
+    contradiction: ["winter_lineup", "festive_viable"]
+  }
+};
+
+// ─── State ─────────────────────────────────────────────────────────────────
+
+let activeScenario = "pricing";
+let cy = null;
+let isRunning = false;
+
+// ─── Cytoscape setup ───────────────────────────────────────────────────────
+
+function colorForConf(conf) {
+  if (conf >= 0.7) return "#00ff88";
+  if (conf >= 0.4) return "#ffaa00";
+  return "#ff6464";
+}
+
+function buildElements(scenario) {
+  const elements = [];
+  for (const n of scenario.nodes) {
+    elements.push({
+      data: {
+        id: n.id,
+        label: `${n.label}\n[${(n.conf * 100).toFixed(0)}%]`,
+        conf: n.conf,
+        type: n.type
+      }
+    });
+  }
+  for (const e of scenario.edges) {
+    elements.push({
+      data: {
+        id: `${e.source}->${e.target}`,
+        source: e.source,
+        target: e.target,
+        label: `dep: ${e.strength.toFixed(2)}`,
+        strength: e.strength
+      }
+    });
+  }
+  return elements;
+}
+
+function renderGraph() {
+  const scenario = SCENARIOS[activeScenario];
+  cy = cytoscape({
+    container: document.getElementById("cy"),
+    elements: buildElements(scenario),
+    style: [
+      {
+        selector: "node",
+        style: {
+          "background-color": "#1f2328",
+          "border-color": ele => colorForConf(ele.data("conf")),
+          "border-width": 2,
+          "label": "data(label)",
+          "color": "#e8eaed",
+          "text-valign": "center",
+          "text-halign": "center",
+          "text-wrap": "wrap",
+          "text-max-width": 110,
+          "font-size": 11,
+          "font-family": "SF Mono, Menlo, monospace",
+          "width": 130,
+          "height": 70,
+          "shape": "round-rectangle",
+          "transition-property": "border-color, background-color",
+          "transition-duration": 600
+        }
+      },
+      {
+        selector: "node[type='fact']",
+        style: {
+          "shape": "diamond",
+          "width": 100,
+          "height": 100,
+          "background-color": "#11151a"
+        }
+      },
+      {
+        selector: "edge",
+        style: {
+          "width": 2,
+          "line-color": "#2f343b",
+          "target-arrow-color": "#2f343b",
+          "target-arrow-shape": "triangle",
+          "curve-style": "bezier",
+          "label": "data(label)",
+          "font-size": 9,
+          "color": "#9aa0a6",
+          "text-rotation": "autorotate",
+          "text-margin-y": -8,
+          "transition-property": "line-color, target-arrow-color",
+          "transition-duration": 400
+        }
+      },
+      {
+        selector: ".pulsing",
+        style: {
+          "border-color": "#00ddff",
+          "border-width": 4
+        }
+      },
+      {
+        selector: ".reassessed",
+        style: {
+          "border-color": "#ffaa00",
+          "background-color": "#2a1f00"
+        }
+      },
+      {
+        selector: ".contradiction",
+        style: {
+          "border-color": "#ff6464",
+          "background-color": "#2a0000"
+        }
+      },
+      {
+        selector: "edge.cascading",
+        style: {
+          "line-color": "#00ddff",
+          "target-arrow-color": "#00ddff",
+          "width": 3
+        }
+      }
+    ],
+    layout: {
+      name: "breadthfirst",
+      directed: true,
+      roots: [scenario.trigger.kref],
+      padding: 30,
+      spacingFactor: 1.4
+    }
+  });
+}
+
+// ─── Scenario picker ────────────────────────────────────────────────────────
+
+function renderScenarioPicker() {
+  const container = document.getElementById("scenarios");
+  container.innerHTML = "";
+  for (const [key, sc] of Object.entries(SCENARIOS)) {
+    const btn = document.createElement("button");
+    btn.className = "scenario-btn" + (key === activeScenario ? " active" : "");
+    btn.innerHTML = `<strong>${sc.label}</strong><small>${sc.blurb}</small>`;
+    btn.onclick = () => {
+      if (isRunning) return;
+      activeScenario = key;
+      renderScenarioPicker();
+      renderGraph();
+      clearLog();
+      clearAdj();
+    };
+    container.appendChild(btn);
+  }
+}
+
+// ─── Logging ───────────────────────────────────────────────────────────────
+
+function log(msg, cls = "") {
+  const el = document.getElementById("log");
+  const line = document.createElement("div");
+  line.className = "line " + cls;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog() { document.getElementById("log").innerHTML = ""; }
+
+function pushAdj(item) {
+  const adj = document.getElementById("adj");
+  const empty = adj.querySelector(".empty");
+  if (empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = "item";
+  div.innerHTML = `<div class="kref">${item.kref}</div><div class="reason">${item.reason}</div>`;
+  adj.appendChild(div);
+}
+function clearAdj() {
+  document.getElementById("adj").innerHTML = '<div class="empty">empty</div>';
+}
+
+// ─── Ripple cascade animation ──────────────────────────────────────────────
+
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+async function runCascade() {
+  if (isRunning) return;
+  isRunning = true;
+  document.getElementById("run").disabled = true;
+
+  const scenario = SCENARIOS[activeScenario];
+  const trigger = scenario.trigger;
+
+  log(`event: revise(${trigger.kref}) new_conf=${trigger.new_conf}`, "event");
+  await wait(400);
+
+  // Pulse the trigger node
+  const triggerNode = cy.getElementById(trigger.kref);
+  triggerNode.addClass("pulsing");
+  triggerNode.data("label",
+    `${trigger.label_after}\n[${(trigger.new_conf * 100).toFixed(0)}%]`
+  );
+  triggerNode.data("conf", trigger.new_conf);
+  triggerNode.style("border-color", colorForConf(trigger.new_conf));
+  await wait(800);
+
+  log(`AnalyzeImpact(${trigger.kref}) → traversing Depends_On…`);
+  await wait(500);
+
+  // BFS through incoming Depends_On edges (reverse direction in cy data)
+  const visited = new Set([trigger.kref]);
+  let frontier = [{ kref: trigger.kref, depth: 0, perturbation: 0.95 - trigger.new_conf }];
+
+  while (frontier.length) {
+    const next = [];
+    for (const item of frontier) {
+      const node = cy.getElementById(item.kref);
+      // Find dependents: edges where target == this node
+      const dependents = cy.edges(`[target = "${item.kref}"]`);
+      for (const e of dependents) {
+        const sourceId = e.source().id();
+        if (visited.has(sourceId)) continue;
+        visited.add(sourceId);
+
+        const strength = e.data("strength");
+        const sourceNode = cy.getElementById(sourceId);
+        const oldConf = sourceNode.data("conf");
+        // Ripple formula: additive-with-damping
+        const damping = 0.7;
+        const perturbation = -(1 - strength) * item.perturbation;
+        const newConf = Math.max(0, Math.min(1,
+          oldConf + (1 - damping) * perturbation
+        ));
+
+        log(`  Reassess ${sourceId}: ${(oldConf*100).toFixed(0)}% → ${(newConf*100).toFixed(0)}%`);
+
+        e.addClass("cascading");
+        await wait(300);
+        sourceNode.addClass("reassessed");
+        sourceNode.data("conf", newConf);
+        sourceNode.data("label",
+          sourceNode.data("label").replace(/\[\d+%\]$/, `[${(newConf*100).toFixed(0)}%]`)
+        );
+        sourceNode.style("border-color", colorForConf(newConf));
+
+        next.push({
+          kref: sourceId,
+          depth: item.depth + 1,
+          perturbation: oldConf - newConf
+        });
+        await wait(200);
+      }
+    }
+    frontier = next;
+  }
+
+  await wait(400);
+  log(`detect_contradictions over ${visited.size} reassessed nodes…`);
+  await wait(500);
+
+  // Mark contradictions
+  for (const cKref of scenario.contradiction) {
+    cy.getElementById(cKref).removeClass("reassessed").addClass("contradiction");
+  }
+  log(`! contradiction detected: [${scenario.contradiction.join(" × ")}]`, "bad");
+  await wait(400);
+
+  log(`adjudication.queue ← strategic conflict`);
+  pushAdj({
+    kref: scenario.contradiction.join(" × "),
+    reason: "Type-aware contradiction (Belief × Decision); routed strategic"
+  });
+
+  await wait(300);
+  log(`done — Ripple cascade complete.`, "event");
+
+  document.getElementById("run").disabled = false;
+  isRunning = false;
+}
+
+// ─── Wire it up ────────────────────────────────────────────────────────────
+
+document.getElementById("run").onclick = runCascade;
+document.getElementById("reset").onclick = () => {
+  if (isRunning) return;
+  renderGraph();
+  clearLog();
+  clearAdj();
+};
+
+renderScenarioPicker();
+renderGraph();
+</script>
+
+</body>
+</html>

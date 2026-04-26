@@ -15,8 +15,6 @@ Wired in W1 follow-ups (need their respective Python clients):
 from benchmarks.business_mem_bench.adapters.atlas_system import AtlasSystem
 from benchmarks.business_mem_bench.adapters.external_stubs import (
     KumihoSystem,
-    LettaSystem,
-    Mem0System,
     MemoriSystem,
     MemPalaceSystem,
     MissingClientError,
@@ -24,6 +22,8 @@ from benchmarks.business_mem_bench.adapters.external_stubs import (
 from benchmarks.business_mem_bench.adapters.graphiti_system import (
     GraphitiSystem,
 )
+from benchmarks.business_mem_bench.adapters.letta_system import LettaSystem
+from benchmarks.business_mem_bench.adapters.mem0_system import Mem0System
 from benchmarks.business_mem_bench.adapters.vanilla import VanillaSystem
 
 __all__ = [

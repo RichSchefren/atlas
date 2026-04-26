@@ -61,14 +61,25 @@ class TestAtlasAdapter:
 
 
 class TestExternalStubs:
-    def test_mem0_stub_raises_on_reset(self):
+    def test_mem0_real_adapter_fails_without_key(self, monkeypatch):
+        """Mem0 is now a REAL adapter; without OPENAI_API_KEY it
+        raises MissingClientError fast."""
         from benchmarks.business_mem_bench.adapters import (
             Mem0System,
             MissingClientError,
         )
-        sys = Mem0System()
-        with pytest.raises(MissingClientError, match="mem0ai"):
-            sys.reset()
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        with pytest.raises(MissingClientError, match="OPENAI_API_KEY"):
+            Mem0System().reset()
+
+    def test_letta_real_adapter_fails_without_key(self, monkeypatch):
+        from benchmarks.business_mem_bench.adapters import (
+            LettaSystem,
+            MissingClientError,
+        )
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        with pytest.raises(MissingClientError, match="OPENAI_API_KEY"):
+            LettaSystem().reset()
 
     def test_kumiho_stub_raises(self):
         from benchmarks.business_mem_bench.adapters import (

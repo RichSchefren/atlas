@@ -38,12 +38,22 @@ from atlas_core.ingestion.base import (
     StreamConfig,
     StreamType,
 )
+from atlas_core.ingestion.claude_sessions import ClaudeSessionExtractor
 from atlas_core.ingestion.confidence import STREAM_CONFIDENCE_FLOORS
+from atlas_core.ingestion.fireflies import (
+    FirefliesExtractor,
+    FirefliesNotConfiguredError,
+)
+from atlas_core.ingestion.imessage import (
+    ImessageExtractor,
+    ImessageNotConfiguredError,
+)
 from atlas_core.ingestion.limitless import LimitlessExtractor
 from atlas_core.ingestion.orchestrator import (
     IngestionOrchestrator,
     OrchestrationReport,
 )
+from atlas_core.ingestion.screenpipe import ScreenpipeExtractor
 from atlas_core.ingestion.vault import VaultExtractor
 
 __all__ = [
@@ -56,6 +66,12 @@ __all__ = [
     "STREAM_CONFIDENCE_FLOORS",
     "VaultExtractor",
     "LimitlessExtractor",
+    "ScreenpipeExtractor",
+    "ClaudeSessionExtractor",
+    "FirefliesExtractor",
+    "FirefliesNotConfiguredError",
+    "ImessageExtractor",
+    "ImessageNotConfiguredError",
     "IngestionOrchestrator",
     "OrchestrationReport",
 ]

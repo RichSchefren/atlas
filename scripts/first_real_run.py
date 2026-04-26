@@ -46,8 +46,10 @@ LIMITLESS_LIMIT = int(os.environ.get("ATLAS_LIMITLESS_LIMIT", "100"))
 
 def main() -> int:
     from atlas_core.ingestion import (
+        ClaudeSessionExtractor,
         IngestionOrchestrator,
         LimitlessExtractor,
+        ScreenpipeExtractor,
         VaultExtractor,
     )
     from atlas_core.trust import HashChainedLedger, QuarantineStore
@@ -87,6 +89,39 @@ def main() -> int:
         ))
     else:
         print(f"  ! limitless root missing — skipping", file=sys.stderr)
+
+    # Screenpipe (read-only against ~/.screenpipe/db.sqlite)
+    screenpipe_db = Path(
+        os.environ.get(
+            "ATLAS_SCREENPIPE_DB",
+            str(Path.home() / ".screenpipe" / "db.sqlite"),
+        )
+    )
+    if screenpipe_db.exists():
+        from atlas_core.ingestion import ScreenpipeExtractor
+        orch.register(ScreenpipeExtractor(
+            quarantine=quarantine,
+            db_path=screenpipe_db,
+            batch_limit=int(os.environ.get("ATLAS_SCREENPIPE_LIMIT", "300")),
+        ))
+    else:
+        print(f"  ! screenpipe db missing — skipping", file=sys.stderr)
+
+    # Claude session logs
+    claude_root = Path(
+        os.environ.get(
+            "ATLAS_CLAUDE_PROJECTS",
+            str(Path.home() / ".claude" / "projects" / "-Users-richardschefren"),
+        )
+    )
+    if claude_root.exists():
+        from atlas_core.ingestion import ClaudeSessionExtractor
+        orch.register(ClaudeSessionExtractor(
+            quarantine=quarantine,
+            projects_root=claude_root,
+        ))
+    else:
+        print(f"  ! claude projects root missing — skipping", file=sys.stderr)
 
     if not orch.registered_streams():
         print("No streams to run. Exiting.")

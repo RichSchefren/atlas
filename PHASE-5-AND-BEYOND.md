@@ -30,7 +30,32 @@ These are the gaps between "I cloned Atlas and ran the tests" and "Atlas is the 
 
 ---
 
-### 1.2 fswatch-driven adjudication resolver — 2 days
+### 1.2 ALTERNATIVE — Obsidian plugin (Donnie's recommendation, supersedes fswatch) — 5 days
+
+**Donnie's read (2026-04-26):** *"Ship an Obsidian plugin before deepening the Python CLI. The adjudication-as-markdown-checklist UX is your killer move; right now it's behind launchd + fswatch + a service that hasn't shipped."*
+
+He's right. The fswatch-daemon path (1.2 below) works but requires a launchd plist + a Python service running 24/7 — friction at every install. An Obsidian plugin runs *inside the editor Rich already has open*, talks to Atlas's HTTP API on port 9879, and detects checkbox state changes natively via Obsidian's own file events.
+
+**What ships:**
+- `atlas-obsidian-plugin/` — TypeScript Obsidian plugin (separate repo: `RichSchefren/atlas-obsidian`)
+- On install: connects to `http://localhost:9879`, lists pending adjudications in a sidebar pane
+- On `.md` save under `00 Atlas/adjudication/`: parses the checkboxes, calls `POST /tools/adjudication.resolve` with the right payload, archives the file via Obsidian's Vault API
+- Sidebar shows real-time Ripple cascade activity (subscribes to a `/events` SSE stream we add to the API)
+- Distributed via Obsidian Community Plugins registry (Rich is already an Obsidian power user; he can submit it himself in 30 minutes)
+
+**Why this beats fswatch:**
+| | fswatch path | Obsidian plugin path |
+|---|---|---|
+| Install steps | launchd plist + fswatch + Python service | One click in Obsidian Community Plugins |
+| Visibility | Background daemon | Sidebar pane in the editor |
+| Cross-platform | macOS only | Mac + Windows + Linux |
+| Discoverability | None | Obsidian plugin store front page |
+| User context switch | terminal ↔ editor | editor only |
+| First-time-user delight | Low | High |
+
+**Decision needed:** drop the fswatch path entirely (1.2 below), do the plugin instead. Total time about the same. UX gap is night-and-day.
+
+### 1.2 [DEPRECATED IF 1.2-ALT LANDS] fswatch-driven adjudication resolver — 2 days
 
 **Spec:** 06 § 6.4 calls for an fswatch hook that reads Rich's checkbox edits in the Obsidian markdown queue and triggers `resolve_adjudication()` automatically.
 

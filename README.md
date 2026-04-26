@@ -17,7 +17,30 @@ The video [*Every Claude Code Memory System Compared*](https://youtu.be/UHVFcUzA
 
 That's a Level 7 problem. Atlas runs ON TOP of any of the 6 lower levels. Every memory system flags affected beliefs when a fact changes. Atlas is the only one that re-evaluates them.
 
-## Atlas vs the field
+## What Atlas does that nothing else does
+
+You have a vault. Maybe Obsidian, maybe Notion, maybe just markdown in a folder. Plus your meetings get transcribed (Limitless, Fireflies, Otter), plus your screen gets captured (Screenpipe, Rewind), plus you talk to Claude or ChatGPT all day. Together that's hundreds of files and tens of thousands of facts about your work.
+
+**The problem nobody else solves:** when one of those facts changes — a price changes, a partner exits, a deadline slips — *every belief that depended on the old fact is now suspect*. Today, you have to chase the cascade in your head. Atlas does it for you.
+
+| When a fact changes... | Most memory systems | Atlas |
+|---|---|---|
+| Detect what's affected | Sort of (vector similarity) | Yes (Depends_On graph walk) |
+| Re-evaluate downstream beliefs | **No** | **Yes (Ripple algorithm)** |
+| Surface emergent contradictions | No | Yes (type-aware detector) |
+| Route strategic conflicts to human | No | Yes (Obsidian markdown queue) |
+| Audit what was decided and why | Partial | Yes (immutable hash-chained ledger) |
+| Forget deprecated beliefs cleanly | No | Yes (AGM contract preserves history) |
+
+That last column is what Atlas exists to deliver.
+
+### The technical claim, for people who care about the math
+
+Atlas implements AGM belief revision (Alchourrón-Gärdenfors-Makinson 1985) on a property graph. The seven postulates K\*2-K\*6 plus Hansson's Relevance and Core-Retainment all hold — verified by 49 scenarios against live Neo4j 5.26. Same compliance Kumiho's commercial paper claims, but as fully open-source local-first code anyone can audit.
+
+### Detailed comparison vs other memory systems
+
+If you're shopping memory backends for an agent system, here's how Atlas stacks up against the named alternatives:
 
 | | Atlas | Kumiho | Graphiti | Mem0 | Letta | Memori |
 |---|---|---|---|---|---|---|
@@ -43,6 +66,33 @@ Atlas is a Python service that maintains a continuously-updated typed knowledge 
 4. **Routes resolution** — routine reassessments auto-apply via AGM operators; strategic contradictions go to a markdown adjudication queue you resolve in Obsidian
 
 All revisions are AGM-compliant (K\*2–K\*6 + Hansson Relevance + Core-Retainment), formally verified against Kumiho's correspondence theorem (arxiv:2603.17244).
+
+---
+
+## Cost ($/month at steady state)
+
+Honest accounting. Atlas's cost story shifts dramatically between v0.1.0a1 (today) and the post-Tier-1 system:
+
+**v0.1.0a1 (today): ≈ $0/month.**
+- Extractors are 100% deterministic — frontmatter parsing, YAML readers, regex pattern matching. No LLM calls.
+- Ripple's `HeuristicReassessor` (default) does no LLM call; it's a closed-form damped formula. The `LLMReassessor` exists but is opt-in and not the default.
+- Neo4j 5.26 runs locally in Docker. SQLite ledger is local. No telemetry, no cloud, no API keys.
+- The only ongoing cost is the electricity to keep your machine on.
+
+**Post-Tier-1.4 (LLM-driven extraction lands): bounded by your token budget.**
+- LLM extraction will fire on free-text vault content, transcript bodies, Claude session decisions. The default prompt is sized for Claude Haiku 4.5: ≈ 800 input + 200 output tokens per claim.
+- For Rich's actual data (one-author, ~10K events/week): ≈ $0.02-0.05 per claim × ~2K novel claims/week = **$40-100/month** at default settings.
+- A token budget knob (`ATLAS_DAILY_LLM_BUDGET_USD`, defaults to $5/day) hard-stops extraction when the daily budget is exceeded. Worst case is $150/month even if the corpus explodes.
+- A Ripple cascade triggered by an adjudication.resolve fires *one* LLM call per downstream node when the LLMReassessor is enabled — not per cascade. Rich-scale: <50 cascades/week × ≤10 downstream nodes × ≤$0.05 = **<$25/month** added.
+- Total Rich-scale steady state when Tier 1.4 lands: **≈ $50-125/month**, hard-capped by the budget knob.
+
+**Post-Tier-1.3 (entity resolution lands): same dollars, clearer outcomes.**
+- The fuzzy + LLM-fallback resolution layer adds roughly $0.001 per ambiguous entity reference. On Rich-scale data, this is bounded by the alias dictionary cache — first-hit each unique alias is ~$0.001, subsequent hits are free.
+- Net: rounding error against the extraction cost above.
+
+For multi-tenant deployments (one Neo4j, many trust ledgers — not yet implemented but plausible by 2027), the math scales linearly per active user. A 100-user deployment at Rich-scale per user is ≈ $5K-12K/month in inference, dominantly Haiku.
+
+**The substrate strategy bet:** $50-125/month is below the line where most knowledge workers think twice. It's an order of magnitude cheaper than running Cursor or hosting Mem0's commercial cloud. Atlas's local-first design is the architectural reason this number stays small.
 
 ---
 
@@ -211,9 +261,23 @@ If you want to break Atlas, [TESTING.md](TESTING.md) has five concrete paths fro
 
 ## Status
 
-Alpha — under active development. First public release: targeted ~Q3 2026. The codebase is operational and ingests live data; the public benchmarks (BusinessMemBench corpus + paper) are the remaining work before tagged 0.1.0.
+**Alpha — v0.1.0a1.** The substrate is real and tested: AGM compliance verified, Ripple algorithm shipped, BusinessMemBench at 1.000 on 149 deterministic questions, 318 tests passing in CI. The hard half — the AGM math, Ripple, the trust ledger, the typed ontology, the adapters, the paper — is shipped.
 
-Test count this snapshot: **288 passing** (210 integration + 78 unit, all green against live Neo4j 5.26).
+What's NOT yet shipped (see [PHASE-5-AND-BEYOND.md](PHASE-5-AND-BEYOND.md) for the full breakdown):
+
+- **Continuous-ingestion daemon** — the orchestrator exists; the launchd plist that runs it 24/7 doesn't. Atlas ingests when you run `scripts/first_real_run.py`, not on a schedule.
+- **Entity resolution** — *not built at all yet*. "Sarah" and "Sarah Chen" are two separate Person nodes today. This is the single biggest gap before Atlas understands real-world data at scale.
+- **LLM-driven extraction** — currently deterministic only. Atlas captures structured frontmatter and YAML, not the actual content of free-text writing.
+- **Obsidian-checkbox adjudication** — the markdown queue is written; the fswatch hook that reads your saved checkboxes and triggers AGM revise on save is the next major UX milestone.
+- **Mem0 / Letta / Memori benchmark numbers** — adapters fail-loud without API keys; Atlas's lead over them is asserted in the paper, not yet measured.
+- **LoCoMo / LongMemEval runs** — claimed parity in the paper draft; the harnesses haven't actually been run against Atlas yet.
+- **Live Ripple visualization on real data** — the demo at `site/live-demo.html` runs synthetic JavaScript; the WebSocket-streaming version against your real graph doesn't exist.
+
+Atlas as v0.1.0a1 is roughly **50-60% of the full system** described in the project's Phase 0 design docs. The remaining work (~12 weeks across three tiers) is what makes Atlas the daily memory of a working business and the substrate the agent-runtime world plugs into. See `PHASE-5-AND-BEYOND.md` for the tiered roadmap.
+
+If you want to test what IS shipped, see `TESTING.md`. If you want to use Atlas as your daily memory, wait for the v0.2 milestone (~5 weeks post-launch) which lands Tier 1.
+
+Test count this snapshot: **318 passing** (240 integration + 78 unit, all green against live Neo4j 5.26).
 
 ---
 

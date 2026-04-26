@@ -203,6 +203,12 @@ Atlas matches Kumiho's published numbers on LoCoMo (0.447 F1) and LoCoMo-Plus (9
 
 ---
 
+## Testers
+
+If you want to break Atlas, [TESTING.md](TESTING.md) has five concrete paths from a 5-minute smoke test to a 30-minute wire-level deep dive. Findings get filed via structured GitHub issue templates that auto-route by area (`smoke-test`, `loop-demo`, `bench`, `claude-code`, `ingest`). CI watches every push at <https://github.com/RichSchefren/atlas/actions>.
+
+---
+
 ## Status
 
 Alpha — under active development. First public release: targeted ~Q3 2026. The codebase is operational and ingests live data; the public benchmarks (BusinessMemBench corpus + paper) are the remaining work before tagged 0.1.0.

@@ -58,16 +58,20 @@ class Question:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], category: Category) -> Question:
+        # `question` text is also kept inside payload so handlers that need
+        # to regex out parameters (e.g., historical date extraction) can
+        # without the harness having to pass the Question object separately.
+        payload = {
+            k: v for k, v in data.items()
+            if k not in {"id", "scoring", "setup_events"}
+        }
         return cls(
             id=data["id"],
             category=category,
             question=data["question"],
             scoring_method=data.get("scoring", "exact_match"),
             setup_events=data.get("setup_events", []),
-            payload={
-                k: v for k, v in data.items()
-                if k not in {"id", "question", "scoring", "setup_events"}
-            },
+            payload=payload,
             is_human_authored=data.get("is_human_authored", False),
         )
 

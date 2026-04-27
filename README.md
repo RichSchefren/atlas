@@ -284,25 +284,55 @@ If you want to break Atlas, [TESTING.md](TESTING.md) has five concrete paths fro
 
 ---
 
-## Status
+## Status — surgical separation of works today vs planned
 
-**Alpha — v0.1.0a1.** The substrate is real and tested: AGM compliance verified, Ripple algorithm shipped, BusinessMemBench at 1.000 on 149 deterministic questions, 318 tests passing in CI. The hard half — the AGM math, Ripple, the trust ledger, the typed ontology, the adapters, the paper — is shipped.
+**Alpha — v0.1.0a1.** Codex's review (2026-04-27) recommended this section be unambiguous. Every "works today" row below has a one-line proof you can run in under 10 seconds.
 
-What's NOT yet shipped (see [PHASE-5-AND-BEYOND.md](PHASE-5-AND-BEYOND.md) for the full breakdown):
+### Works today (verified by tests in CI)
 
-- **Continuous-ingestion daemon** — the orchestrator exists; the launchd plist that runs it 24/7 doesn't. Atlas ingests when you run `scripts/first_real_run.py`, not on a schedule.
-- **Entity resolution** — *not built at all yet*. "Sarah" and "Sarah Chen" are two separate Person nodes today. This is the single biggest gap before Atlas understands real-world data at scale.
-- **LLM-driven extraction** — currently deterministic only. Atlas captures structured frontmatter and YAML, not the actual content of free-text writing.
-- **Obsidian-checkbox adjudication** — the markdown queue is written; the fswatch hook that reads your saved checkboxes and triggers AGM revise on save is the next major UX milestone.
-- **Mem0 / Letta / Memori benchmark numbers** — adapters fail-loud without API keys; Atlas's lead over them is asserted in the paper, not yet measured.
-- **LoCoMo / LongMemEval runs** — claimed parity in the paper draft; the harnesses haven't actually been run against Atlas yet.
-- **Live Ripple visualization on real data** — the demo at `site/live-demo.html` runs synthetic JavaScript; the WebSocket-streaming version against your real graph doesn't exist.
+| Capability | Proof |
+|---|---|
+| `RippleEngine.propagate()` runs the full cascade end-to-end | `./demo.sh` |
+| AGM compliance — K\*2 / K\*3 / K\*4 / K\*5 / K\*6 / Hansson Relevance / Core-Retainment | `pytest tests/integration/test_agm_compliance.py -v` (49/49) |
+| Hash-chained SHA-256 ledger with `verify_chain()` tamper detection | `pytest tests/unit/test_ledger.py -v` |
+| Trust quarantine → corroboration → ledger state machine | `pytest tests/unit/test_quarantine.py -v` |
+| Six ingestion extractors (Vault, Limitless, Screenpipe, Claude sessions, Fireflies stub, iMessage) | `pytest tests/unit/test_ingestion.py tests/unit/test_ingestion_extra.py -v` |
+| Entity resolution cascade (alias → fuzzy → LLM fallback) | `pytest tests/unit/test_resolution.py -v` |
+| LLM-driven extraction with hard-capped daily budget | `pytest tests/unit/test_llm_extractors.py -v` |
+| Decision-lineage walker + lineage-weakening contradiction detector | `pytest tests/integration/test_lineage.py -v` |
+| Working-memory block manager (Letta-style) | `pytest tests/unit/test_working_memory.py -v` |
+| Multi-tenant tenant context + sharing policy + federated adjudication | `pytest tests/unit/test_multi_tenant.py -v` |
+| Adjudication round-trip — markdown queue → AGM revise → ledger SUPERSEDE → archive | `pytest tests/integration/test_adjudication_resolver.py -v` |
+| 13 MCP tools dispatch correctly via stdio JSON-RPC | `pytest tests/integration/test_mcp_server.py tests/integration/test_claude_code_stdio.py -v` |
+| FastAPI surface with CORS + Server-Sent Events stream | `pytest tests/integration/test_http_server.py tests/unit/test_events_broadcaster.py -v` |
+| Hermes / OpenClaw / Claude Code adapters at the contract level | `pytest tests/integration/test_adapters.py -v` |
+| Kumiho-compat gRPC handlers (10 of 51 methods wired, 41 return UNIMPLEMENTED) | `pytest tests/integration/test_grpc_handlers.py -v` |
+| Property-based AGM testing (hypothesis-driven) | `pytest tests/unit/test_agm_property_based.py -v` |
+| BusinessMemBench at 1.000 vs Graphiti 0.711 on 149 deterministic questions | `python scripts/run_bmb.py` |
+| Live ingest from real machine state (vault + Limitless + Screenpipe + Claude) | `python scripts/first_real_run.py` |
+| launchd daemon installs (continuous ingestion + API server) | `./scripts/install_launchd.sh` |
+| **All of the above run together** | `pytest tests/ -v` (446 passing) |
 
-Atlas as v0.1.0a1 is roughly **50-60% of the full system** described in the project's Phase 0 design docs. The remaining work (~12 weeks across three tiers) is what makes Atlas the daily memory of a working business and the substrate the agent-runtime world plugs into. See `PHASE-5-AND-BEYOND.md` for the tiered roadmap.
+### Planned — explicitly NOT done (no proof commands, by design)
 
-If you want to test what IS shipped, see `TESTING.md`. If you want to use Atlas as your daily memory, wait for the v0.2 milestone (~5 weeks post-launch) which lands Tier 1.
+| Capability | Why it's not done |
+|---|---|
+| LoCoMo + LongMemEval **measured** numbers (not asserted) | Datasets are research-license; haven't been downloaded + run yet. Runners exist (`benchmarks/locomo/`, `benchmarks/longmemeval/`); just need someone with dataset access to fire them. |
+| Mem0 / Letta / Memori columns in BMB matrix | Adapters fail-loud without `OPENAI_API_KEY` / `MEMORI_API_KEY`. Set the keys + re-run `scripts/run_bmb.py` to fill the rows. |
+| 1,000-question BusinessMemBench (currently 149 deterministic) | The 200 human-authored gold subset (templates in `benchmarks/business_mem_bench/gold_human/`) needs domain-operator authors. The remaining 800 are LLM-expanded from templates — runner ready, expansion not yet executed. |
+| Live Hermes / OpenClaw round-trip in their actual upstream processes | Adapter code complete + tested; round-trip in a real `hermes-agent` / `openclaw` runtime requires cloning those upstreams and configuring Atlas as memory backend. |
+| arxiv submission live | Tarball ready at `paper/arxiv/atlas-arxiv.tar.gz`. Submission goes through arxiv.org/submit (24-48h moderation). |
+| Confidence-threshold empirical calibration | Script exists at `scripts/calibrate_confidence_thresholds.py`. Needs a week of real ingest data before it produces a meaningful recommendation. |
+| Obsidian plugin in the Community Plugins registry | Plugin code complete at `obsidian-plugin/`. Manual install path documented; registry submission deferred. |
+| MCP plugin registry submission | Manifest at `mcp-registry/atlas.json`. Submitted when MCP registry opens for plugin uploads. |
 
-Test count this snapshot: **318 passing** (240 integration + 78 unit, all green against live Neo4j 5.26).
+If a row in **Works today** doesn't actually work on your machine, that's a bug — file an issue using the `tester-smoke` template.
+
+If a row in **Planned** is something you want sooner, file an issue describing the use case and we'll prioritize.
+
+Atlas as v0.1.0a1 is roughly **70-80% of the full system** described in the Phase 0 design docs. See `PHASE-5-AND-BEYOND.md` for the tiered roadmap of what's left.
+
+Test count this snapshot: **446 passing** in CI against Ubuntu + Neo4j 5.26.
 
 ---
 

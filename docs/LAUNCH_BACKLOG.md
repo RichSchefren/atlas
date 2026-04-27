@@ -86,9 +86,13 @@ The propagation-aware belief-revision loop is the jewel.
 - [x] **Heavy LLM/embedding deps moved to optional extras.**
       (`b9bf770`)
 - [x] **Python 3.13 / 3.14 in classifiers.** (`<this commit>`)
-- [ ] **GitHub Actions matrix on Python 3.10–3.14.** Currently CI
-      runs only on 3.12. Add `strategy.matrix.python-version` so
-      every supported interpreter is exercised on every PR.
+- [x] **GitHub Actions matrix on Python 3.10–3.14.** `test.yml` now
+      runs the full pytest + AGM compliance + BMB matrix on every
+      supported interpreter (3.10, 3.11, 3.12, 3.13, 3.14) with
+      `fail-fast: false` so one bad version doesn't mask others.
+      Each Python's BMB artifact is uploaded under a version-suffixed
+      name. `allow-prereleases: true` so 3.14 builds don't block on
+      release-candidate naming. (`<this commit>`)
 
 ## P1 — Architecture Questions
 

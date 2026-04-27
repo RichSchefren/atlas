@@ -12,8 +12,13 @@ on:
 
 jobs:
   test:
-    name: pytest + agm + bmb
+    name: py${{ matrix.python-version }} + neo4j
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     services:
       neo4j:
@@ -36,11 +41,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           cache: pip
+          allow-prereleases: true
 
       - name: Wait for Neo4j to be ready
         run: |
@@ -100,6 +106,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bmb-matrix
+          name: bmb-matrix-py${{ matrix.python-version }}
           path: /tmp/bmb_ci.json
           if-no-files-found: warn

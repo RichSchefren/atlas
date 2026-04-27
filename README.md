@@ -1,11 +1,34 @@
 # Atlas
 
-> **Open-source local-first cognitive memory.** Same AGM-compliant belief revision math as commercial state-of-the-art (Kumiho), running entirely on your laptop. Plus the thing nobody ships: when a fact changes, dependent beliefs are *automatically re-evaluated* — not just flagged.
+> **Open-source local-first cognitive memory — alpha.** Implements AGM-compliant belief revision on a property graph. Adds a propagation engine — Ripple — that recomputes downstream beliefs when an upstream fact changes. Runs entirely on your laptop.
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Tests](https://img.shields.io/badge/tests-318%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-446%20passing-brightgreen.svg)]()
 [![AGM Compliance](https://img.shields.io/badge/AGM-49%2F49%20at%20100%25-brightgreen.svg)]()
 [![Status: alpha](https://img.shields.io/badge/Status-alpha-orange.svg)]()
+
+---
+
+## See it work in 12 seconds
+
+```bash
+git clone https://github.com/RichSchefren/atlas && cd atlas
+docker compose up -d
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e .[dev]
+./demo.sh
+```
+
+The `./demo.sh` command runs the entire loop end-to-end, visibly:
+
+1. Plants a tiny graph (3 nodes, 2 `Depends_On` edges)
+2. Changes a fact (Origins coffee price: $89 → $129)
+3. Calls `RippleEngine.propagate()` — the real orchestrator
+4. Shows reassessment proposals, contradictions, and routing decisions
+5. Resolves one through `adjudication.resolve()` (real AGM revise)
+6. Verifies the SHA-256 hash chain
+
+Every line is real Neo4j + real ledger. No mocks. ~6s on subsequent runs. **This is the front door — if it doesn't impress, nothing else will.**
 
 ---
 
@@ -21,18 +44,20 @@ That's a Level 7 problem. Atlas runs ON TOP of any of the 6 lower levels. Every 
 
 You have a vault. Maybe Obsidian, maybe Notion, maybe just markdown in a folder. Plus your meetings get transcribed (Limitless, Fireflies, Otter), plus your screen gets captured (Screenpipe, Rewind), plus you talk to Claude or ChatGPT all day. Together that's hundreds of files and tens of thousands of facts about your work.
 
-**The problem nobody else solves:** when one of those facts changes — a price changes, a partner exits, a deadline slips — *every belief that depended on the old fact is now suspect*. Today, you have to chase the cascade in your head. Atlas does it for you.
+**The problem we focus on:** when one of those facts changes — a price changes, a partner exits, a deadline slips — *every belief that depended on the old fact is now suspect*. Today, you have to chase the cascade in your head. Atlas tries to do it for you.
 
-| When a fact changes... | Most memory systems | Atlas |
+We're not aware of another open-source system that ships propagation as a first-class primitive; if you know of one, please file an issue — we want to compare honestly.
+
+| When a fact changes... | Typical memory systems | Atlas (alpha) |
 |---|---|---|
-| Detect what's affected | Sort of (vector similarity) | Yes (Depends_On graph walk) |
-| Re-evaluate downstream beliefs | **No** | **Yes (Ripple algorithm)** |
-| Surface emergent contradictions | No | Yes (type-aware detector) |
-| Route strategic conflicts to human | No | Yes (Obsidian markdown queue) |
-| Audit what was decided and why | Partial | Yes (immutable hash-chained ledger) |
-| Forget deprecated beliefs cleanly | No | Yes (AGM contract preserves history) |
+| Detect what's affected | Vector-similarity heuristic | `Depends_On` graph walk via `RippleEngine.analyze_impact()` |
+| Re-evaluate downstream beliefs | Not exposed as a primitive | `RippleEngine.propagate()` — additive-with-damping confidence updates |
+| Surface emergent contradictions | Not exposed | Type-aware detector (`atlas_core/ripple/contradiction.py`) |
+| Route strategic conflicts to human | Not exposed | Obsidian markdown queue + `adjudication.resolve()` |
+| Audit what was decided and why | Limited | Hash-chained SHA-256 ledger with `verify_chain()` |
+| Forget deprecated beliefs cleanly | Not exposed | AGM `contract()` removes from closure, preserves history |
 
-That last column is what Atlas exists to deliver.
+Verify any row above by reading the cited module or running `./demo.sh`.
 
 ### The technical claim, for people who care about the math
 

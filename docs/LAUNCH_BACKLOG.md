@@ -141,7 +141,7 @@ The propagation-aware belief-revision loop is the jewel.
       concurrency, NL extraction quality. Closes with explicit
       "if your criteria match these rows, use the alternative" —
       better to lose the wrong-fit user than to over-claim and lose
-      their trust later. (`<this commit>`)
+      their trust later. (`625165e`)
 - [ ] **Install modes** (researcher / Obsidian power-user / agent-
       runtime integration). Document each in
       `docs/INSTALL_MODES.md` so the right user lands on the right

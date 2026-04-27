@@ -153,6 +153,21 @@ If you're shopping memory backends for an agent system, here's how Atlas stacks 
 | Continuous multi-stream ingestion | ✅ 6 streams | ❌ SDK only | ❌ | ❌ | ❌ | partial |
 | Hermes / OpenClaw / Claude Code adapters | ✅ all 3 | partial | ❌ | partial | ❌ | ❌ |
 
+#### What Atlas does *worse* (today)
+
+The table above lists what Atlas does that the alternatives don't. The other half of an honest comparison: here's what they currently do *better*, and where you should reach for them instead of Atlas.
+
+| Concern | What we'd reach for instead | Why |
+|---|---|---|
+| Pure-retrieval throughput on large corpora | Mem0, a hosted vector DB | Atlas reads embeddings, but the typed graph + Ripple bookkeeping adds latency a vector-only path doesn't pay. If retrieval-quality alone is your bottleneck, a flat vector index will be faster. |
+| Conversational chat memory ("remember what I said in this thread") | Letta, Memori | Atlas is built around long-lived business beliefs and dependencies. For "the user mentioned a cat in turn 3, surface that in turn 47" you want a system designed for conversation state. |
+| Managed hosted service, support contract, SOC 2 | Kumiho's commercial cloud | Atlas is open-source local-first. There is no "Atlas Inc." with a sales team. If your buying process needs a vendor on the other end, Atlas isn't that yet. |
+| Plug-and-play with zero-config setup | Mem0, Letta | Atlas wants you to think about your domain — it ships the AGM operators, not a "just call `add_memory()`" facade. The opinionated typed ontology is power for some users and friction for others. |
+| Real-time multi-user concurrency at scale | A managed graph platform (Neo4j Aura, AuraDB) | Atlas's local-first stance means a single Neo4j instance per user. Multi-tenant Tier 5 work is in progress; production-grade concurrency tuning is not the alpha's focus. |
+| Natural-language extraction quality on truly unstructured text | LLM-tuned extractors maintained by a larger team | The extractors in `atlas_core/ingestion/extractors/` work on real Limitless / Fireflies / Claude transcripts but quality is uneven — see the alpha framing in the hero. Improving extraction is on the roadmap; if you need state-of-the-art entity extraction *today*, build a richer extraction layer above Atlas's quarantine API. |
+
+If your shopping criteria match any row in the *worse* table, use the alternative. Atlas exists for the case where dependency-driven belief revision is load-bearing — and it's better to admit the tradeoffs than to over-claim and lose your trust the moment you hit one.
+
 ---
 
 ## What Atlas does

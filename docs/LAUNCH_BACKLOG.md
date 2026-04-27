@@ -133,10 +133,15 @@ The propagation-aware belief-revision loop is the jewel.
       so other memory systems can adopt it without forking Atlas.
       Atlas's `benchmarks/business_mem_bench/` becomes a thin
       adapter that pip-installs the public package.
-- [ ] **Comparison humility.** Add a "what Atlas does *worse*" sub-
-      section under the comparison table — concrete deficits we
-      know about today (no real-time chat memory, no managed cloud,
-      slower for pure-retrieval queries than a vector DB, etc.).
+- [x] **Comparison humility.** README now has a "What Atlas does
+      *worse* (today)" subsection directly under the head-to-head
+      comparison table. Six concrete rows, each naming the alternative
+      to reach for and the reason: pure-retrieval throughput, chat
+      memory, managed cloud / support, zero-config setup, multi-user
+      concurrency, NL extraction quality. Closes with explicit
+      "if your criteria match these rows, use the alternative" —
+      better to lose the wrong-fit user than to over-claim and lose
+      their trust later. (`<this commit>`)
 - [ ] **Install modes** (researcher / Obsidian power-user / agent-
       runtime integration). Document each in
       `docs/INSTALL_MODES.md` so the right user lands on the right

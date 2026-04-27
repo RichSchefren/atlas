@@ -239,6 +239,8 @@ Re-runs are idempotent: 0.9s for the next cycle, with all duplicate claims finge
 
 ## Quickstart (3 minutes)
 
+> Three good install paths depending on why you want Atlas — researcher / dev, Obsidian power-user, or agent-runtime integration. Each one is self-contained and documented in [`docs/INSTALL_MODES.md`](docs/INSTALL_MODES.md). The block below is the universal version that works for all three.
+
 ```bash
 # 1. Clone
 git clone https://github.com/RichSchefren/atlas && cd atlas

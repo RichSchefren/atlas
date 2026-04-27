@@ -142,10 +142,17 @@ The propagation-aware belief-revision loop is the jewel.
       "if your criteria match these rows, use the alternative" —
       better to lose the wrong-fit user than to over-claim and lose
       their trust later. (`625165e`)
-- [ ] **Install modes** (researcher / Obsidian power-user / agent-
-      runtime integration). Document each in
-      `docs/INSTALL_MODES.md` so the right user lands on the right
-      install path on first read.
+- [x] **Install modes** — `docs/INSTALL_MODES.md` covers all three
+      (researcher / dev, Obsidian power-user, agent-runtime
+      integration) with self-contained command blocks, time + cost
+      estimates, and per-mode "what you get / what you skip"
+      sections. Adapter samples cite the actual class names
+      (`AtlasHermesProvider`, `AtlasOpenClawPlugin`, `claude_code.main`).
+      8 smoke tests in `tests/unit/test_docs_install_modes.py` pin
+      the doc to source — every adapter symbol the doc names must
+      exist, every Make target it cites must be in the Makefile,
+      `scripts/doctor.py` must run cleanly, and the README must
+      link to the doc. Linked from README Quickstart. (`<this commit>`)
 - [ ] **Promote backlog entries to GitHub issues** with labels
       `credibility`, `onboarding`, `benchmark`, `docs`,
       `architecture`, `polish`. Lets external contributors see

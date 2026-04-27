@@ -48,6 +48,7 @@ def create_http_app(*, mcp_server: AtlasMCPServer) -> FastAPI:
       GET  /verify-chain    — shortcut for ledger.verify_chain
     """
     from fastapi import FastAPI, HTTPException
+    from fastapi.middleware.cors import CORSMiddleware
 
     app = FastAPI(
         title="Atlas API",
@@ -56,6 +57,21 @@ def create_http_app(*, mcp_server: AtlasMCPServer) -> FastAPI:
             "Open-source local-first cognitive memory with AGM-compliant "
             "belief revision and automatic downstream reassessment."
         ),
+    )
+
+    # Permissive CORS — Atlas runs local-first on the user's own
+    # machine, so the threat model is empty here. The Obsidian plugin
+    # and the local viewer pages (served from :8765 or any other port)
+    # need to subscribe to /events from a different origin; without
+    # CORS, browsers block the EventSource handshake and the page
+    # shows "error — is the API server running?" even when the API
+    # is healthy. See site/live-real.html for the consumer.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     @app.get("/health")

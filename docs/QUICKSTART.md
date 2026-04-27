@@ -11,7 +11,7 @@ Three minutes from clone to working Atlas instance.
 ## 1. Clone and start Neo4j
 
 ```bash
-git clone https://github.com/<your-fork>/atlas.git
+git clone https://github.com/RichSchefren/atlas.git
 cd atlas
 docker compose up -d
 ```
@@ -51,10 +51,26 @@ pytest tests/unit -v
 pytest tests/integration -v
 ```
 
-## 5. First ingestion (Phase 2 Week 1+ — once available)
+## 5. See it work
 
 ```bash
-python -m atlas_core.examples.business_ontology_demo
+# The undeniable demo path: real Neo4j, real ledger, real Ripple cascade.
+# 7 stages, ~12s wall time on first run.
+./demo.sh
+```
+
+The output walks you through: planting a graph → changing a fact →
+running `RippleEngine.propagate()` → showing reassessment proposals →
+resolving one through adjudication → verifying the SHA-256 ledger chain.
+
+Once you've seen the demo, point Atlas at your own data:
+
+```bash
+# Live ingest from Vault / Limitless / Screenpipe / Claude session logs
+python scripts/first_real_run.py
+
+# Or run the head-to-head benchmark matrix:
+python scripts/run_bmb.py
 ```
 
 ## Stopping

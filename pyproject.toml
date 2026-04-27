@@ -111,9 +111,9 @@ adapters = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/richonly/atlas"
-Documentation = "https://github.com/richonly/atlas/tree/main/docs"
-Repository = "https://github.com/richonly/atlas"
+Homepage = "https://github.com/RichSchefren/atlas"
+Documentation = "https://github.com/RichSchefren/atlas/tree/main/docs"
+Repository = "https://github.com/RichSchefren/atlas"
 
 [tool.hatch.build.targets.wheel]
 packages = ["atlas_core"]

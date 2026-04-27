@@ -14,7 +14,7 @@ What you get on the laptop after the script finishes:
 | Docker Desktop + Neo4j 5.26 + APOC | ✓ (Atlas backing store) |
 | **Atlas** (this repo, full clone, tests passing) | ✓ |
 | Obsidian + Obsidian plugin for Atlas | ✓ |
-| **Vault sync** — Syncthing OR Obsidian Sync (you pick at the prompt) | ✓ |
+| **Obsidian Sync** (default; Syncthing available as opt-in) | ✓ |
 | **Screenpipe** (full ingest + permissions guidance) | ✓ |
 | Claude Code CLI + every skill + every agent | ✓ |
 | Codex 5.5, Gemini, Kimi CLIs (Ralph rotation) | ✓ |
@@ -25,7 +25,7 @@ What you get on the laptop after the script finishes:
 
 What you do NOT get on the laptop (intentional):
 
-- Intelligence Engine 24-step pipeline — pinned to M3 Ultra; data merges via Syncthing
+- Intelligence Engine 24-step pipeline — pinned to M3 Ultra; data merges via Obsidian Sync
 - vault-search daemon — heavy GPU, lives on M3 Ultra; laptop hits it over LAN/Tailscale
 - Karpathy wiki Gemma 4 daemons — same reason
 - Atlas's launchd ingestion plist — installs but you choose whether to enable it (off by default on laptop to save battery)
@@ -42,7 +42,7 @@ cd atlas/laptop-setup
 Total time: ~90-180 min mostly idle. The script pauses 6 times for
 biometric / interactive auth (Homebrew sudo, Docker Desktop launch,
 1Password Touch ID, Obsidian first-run, Screenpipe permission grants,
-Syncthing device pairing).
+Obsidian Sync sign-in (or Syncthing pairing if you switched)).
 
 ## Stages
 
@@ -56,7 +56,7 @@ or skip a section that's already done:
 ./install.sh docker         # Docker Desktop + Neo4j
 ./install.sh atlas          # Atlas tests + first-run + Obsidian plugin build
 ./install.sh claude         # Claude Code + skills + agents + 1Password
-./install.sh syncthing      # Syncthing install + vault folder pairing
+./install.sh syncthing      # Vault sync setup (Obsidian Sync default, Syncthing optional)
 ./install.sh screenpipe     # Screenpipe install + permission walkthrough
 ./install.sh mcp            # Slack + Stripe + 12 other MCP servers
 ./install.sh verify         # final smoke test of every component
@@ -73,7 +73,7 @@ The script tells you exactly when to act. Six prompts:
 2. **Docker Desktop first launch** — click "Start" when the app opens
 3. **1Password CLI sign-in** — Touch ID
 4. **Obsidian first run** — the script opens Obsidian; click through the welcome
-5. **Syncthing pairing** — the script prints your laptop device ID; on the M3 Ultra Syncthing UI, click "Add Device" with that ID, then accept the share for each vault folder
+5. **Obsidian Sync sign-in** — script opens Obsidian; sign in to your Obsidian Sync account and add the four vault remotes
 6. **Screenpipe permissions** — System Settings → Privacy & Security → grant: Screen Recording, Microphone, Accessibility (3 toggles)
 
 Everything else is automatic.
@@ -84,7 +84,7 @@ Everything else is automatic.
 # On the laptop:
 launchctl load ~/Library/LaunchAgents/com.atlas.api-server.plist
 open http://localhost:9879/health   # should return {"status":"ok"}
-open obsidian://                     # vaults synced via Syncthing should appear
+open obsidian://                     # vaults synced via Obsidian Sync should appear
 open ~/Projects/atlas
 ```
 
@@ -97,7 +97,7 @@ op read "op://Developer/OpenAI API Key/credential" | head -c 10  # key reads
 claude --version                     # Claude Code CLI
 gemini --version                     # Gemini CLI (for Ralph)
 docker ps | grep neo4j               # Neo4j healthy
-syncthing --version                  # Syncthing
+syncthing --version 2>/dev/null || true   # only if you chose path 1
 screenpipe --version                 # Screenpipe
 ```
 

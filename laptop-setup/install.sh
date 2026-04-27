@@ -250,13 +250,14 @@ stage_syncthing() {
     log "Stage: syncthing OR Obsidian Sync (vault sync — your choice)"
 
     hr
-    echo -e "\033[33mYou have two options for syncing your Obsidian vaults to this laptop:\033[0m"
+    echo -e "\033[33mVault sync — current choice: Obsidian Sync (Rich's standing decision).\033[0m"
     echo
     echo "  1. Syncthing — peer-to-peer, no cloud, free forever."
-    echo "     Tradeoff: requires both Macs to be online to sync."
+    echo "     Tradeoff: requires both Macs online to sync."
     echo
-    echo "  2. Obsidian Sync — paid Obsidian Inc service, cloud-mediated."
-    echo "     Tradeoff: \$8/mo, but works even when one Mac is off."
+    echo "  2. Obsidian Sync — paid Obsidian Inc service (\$8/mo), cloud-mediated."
+    echo "     Tradeoff: dollars, but works when one Mac is off."
+    echo "     ← DEFAULT (just press Enter)"
     echo
     echo "  3. Skip — handle vault sync manually later."
     echo
@@ -264,17 +265,21 @@ stage_syncthing() {
     # Allow non-interactive runs to skip via env var
     if [[ "${ATLAS_SYNC_CHOICE:-}" == "skip" ]]; then
         warn "ATLAS_SYNC_CHOICE=skip set; skipping vault-sync setup."
-        log "When you decide, run: ./install.sh syncthing  (or set up Obsidian Sync via the Obsidian app directly)."
-        # Still install Obsidian itself — every path needs it
+        log "When you decide, run: ./install.sh syncthing  (or sign in to Obsidian Sync via the Obsidian app directly)."
         if [[ ! -d "/Applications/Obsidian.app" ]]; then
             brew install --quiet --cask obsidian 2>&1 | tee -a "$LOG_FILE" || true
         fi
         mark_done syncthing
         return
     fi
-
-    read -rp "Pick [1=Syncthing / 2=Obsidian Sync / 3=skip] (default: 1): " sync_choice
-    sync_choice="${sync_choice:-1}"
+    if [[ "${ATLAS_SYNC_CHOICE:-}" == "syncthing" ]]; then
+        sync_choice=1
+    elif [[ "${ATLAS_SYNC_CHOICE:-}" == "obsidian" ]]; then
+        sync_choice=2
+    else
+        read -rp "Pick [1=Syncthing / 2=Obsidian Sync / 3=skip] (default: 2): " sync_choice
+        sync_choice="${sync_choice:-2}"
+    fi
 
     # Always install Obsidian.app — both Sync paths and the manual path need it
     if [[ ! -d "/Applications/Obsidian.app" ]]; then

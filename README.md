@@ -280,6 +280,8 @@ Atlas's structural lead over Graphiti — the contradiction / cross_stream / for
 PYTHONPATH=. python scripts/run_bmb.py
 ```
 
+The canonical run output (`seed=42`, full matrix) is checked in at [`benchmarks/business_mem_bench/runs/baseline_seed42.json`](benchmarks/business_mem_bench/runs/baseline_seed42.json) so visitors can read the scores without installing anything. The structural claims above are also enforced by `tests/integration/test_bmb_endtoend.py` — if Atlas regresses below 1.0 on any category, or Graphiti unexpectedly perfect-scores a Ripple category, CI fails loudly.
+
 ### 3. LoCoMo / LongMemEval — claimed parity, NOT YET MEASURED
 
 > ⚠ The runners exist (`benchmarks/locomo/runner.py`, `benchmarks/longmemeval/runner.py`) and pass their own structural tests. The actual datasets — research-license JSONL files from the LongMemEval and LoCoMo papers — have **not** been downloaded and run against Atlas yet. The "parity with Kumiho's published 0.447 F1" claim is therefore an architectural prediction, not a measurement. The paper marks every cell in this category as predicted-not-measured.

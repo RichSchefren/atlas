@@ -1,0 +1,235 @@
+{
+  "vanilla_no_memory": {
+    "system_name": "vanilla_no_memory",
+    "started_at": "2026-04-27T19:19:45.517325+00:00",
+    "finished_at": "2026-04-27T19:19:45.518618+00:00",
+    "overall_mean_score": 0.0,
+    "per_category": {
+      "propagation": {
+        "n_questions": 36,
+        "n_scored": 36,
+        "mean_score": 0.0,
+        "median_score": 0.0,
+        "n_perfect": 0,
+        "n_zero": 36,
+        "mean_elapsed_ms": 0.0010462746205222276
+      },
+      "contradiction": {
+        "n_questions": 8,
+        "n_scored": 8,
+        "mean_score": 0.0,
+        "median_score": 0.0,
+        "n_perfect": 0,
+        "n_zero": 8,
+        "mean_elapsed_ms": 0.0004479952622205019
+      },
+      "lineage": {
+        "n_questions": 36,
+        "n_scored": 36,
+        "mean_score": 0.0,
+        "median_score": 0.0,
+        "n_perfect": 0,
+        "n_zero": 36,
+        "mean_elapsed_ms": 0.0002916397837301095
+      },
+      "cross_stream": {
+        "n_questions": 6,
+        "n_scored": 6,
+        "mean_score": 0.0,
+        "median_score": 0.0,
+        "n_perfect": 0,
+        "n_zero": 6,
+        "mean_elapsed_ms": 0.0008399947546422482
+      },
+      "historical": {
+        "n_questions": 36,
+        "n_scored": 36,
+        "mean_score": 0.0,
+        "median_score": 0.0,
+        "n_perfect": 0,
+        "n_zero": 36,
+        "mean_elapsed_ms": 0.00043297121818694804
+      },
+      "provenance": {
+        "n_questions": 22,
+        "n_scored": 22,
+        "mean_score": 0.0,
+        "median_score": 0.0,
+        "n_perfect": 0,
+        "n_zero": 22,
+        "mean_elapsed_ms": 0.00023676759817383507
+      },
+      "forgetfulness": {
+        "n_questions": 5,
+        "n_scored": 5,
+        "mean_score": 0.0,
+        "median_score": 0.0,
+        "n_perfect": 0,
+        "n_zero": 5,
+        "mean_elapsed_ms": 0.000608398113399744
+      }
+    }
+  },
+  "graphiti": {
+    "system_name": "graphiti",
+    "started_at": "2026-04-27T19:19:45.518753+00:00",
+    "finished_at": "2026-04-27T19:19:46.336985+00:00",
+    "overall_mean_score": 0.7114093959731543,
+    "per_category": {
+      "propagation": {
+        "n_questions": 36,
+        "n_scored": 36,
+        "mean_score": 0.3333333333333333,
+        "median_score": 0.0,
+        "n_perfect": 12,
+        "n_zero": 24,
+        "mean_elapsed_ms": 0.0005253564773334397
+      },
+      "contradiction": {
+        "n_questions": 8,
+        "n_scored": 8,
+        "mean_score": 0.0,
+        "median_score": 0.0,
+        "n_perfect": 0,
+        "n_zero": 8,
+        "mean_elapsed_ms": 0.0007917624316178262
+      },
+      "lineage": {
+        "n_questions": 36,
+        "n_scored": 36,
+        "mean_score": 1.0,
+        "median_score": 1.0,
+        "n_perfect": 36,
+        "n_zero": 0,
+        "mean_elapsed_ms": 2.785238445438962
+      },
+      "cross_stream": {
+        "n_questions": 6,
+        "n_scored": 6,
+        "mean_score": 0.0,
+        "median_score": 0.0,
+        "n_perfect": 0,
+        "n_zero": 6,
+        "mean_elapsed_ms": 0.0012988457456231117
+      },
+      "historical": {
+        "n_questions": 36,
+        "n_scored": 36,
+        "mean_score": 1.0,
+        "median_score": 1.0,
+        "n_perfect": 36,
+        "n_zero": 0,
+        "mean_elapsed_ms": 2.266510329920695
+      },
+      "provenance": {
+        "n_questions": 22,
+        "n_scored": 22,
+        "mean_score": 1.0,
+        "median_score": 1.0,
+        "n_perfect": 22,
+        "n_zero": 0,
+        "mean_elapsed_ms": 5.326479091309011
+      },
+      "forgetfulness": {
+        "n_questions": 5,
+        "n_scored": 5,
+        "mean_score": 0.0,
+        "median_score": 0.0,
+        "n_perfect": 0,
+        "n_zero": 5,
+        "mean_elapsed_ms": 0.0038084108382463455
+      }
+    }
+  },
+  "atlas": {
+    "system_name": "atlas",
+    "started_at": "2026-04-27T19:19:46.338314+00:00",
+    "finished_at": "2026-04-27T19:19:47.582807+00:00",
+    "overall_mean_score": 1.0,
+    "per_category": {
+      "propagation": {
+        "n_questions": 36,
+        "n_scored": 36,
+        "mean_score": 1.0,
+        "median_score": 1.0,
+        "n_perfect": 36,
+        "n_zero": 0,
+        "mean_elapsed_ms": 6.122587940707389
+      },
+      "contradiction": {
+        "n_questions": 8,
+        "n_scored": 8,
+        "mean_score": 1.0,
+        "median_score": 1.0,
+        "n_perfect": 8,
+        "n_zero": 0,
+        "mean_elapsed_ms": 3.985703115176875
+      },
+      "lineage": {
+        "n_questions": 36,
+        "n_scored": 36,
+        "mean_score": 1.0,
+        "median_score": 1.0,
+        "n_perfect": 36,
+        "n_zero": 0,
+        "mean_elapsed_ms": 2.564424750744365
+      },
+      "cross_stream": {
+        "n_questions": 6,
+        "n_scored": 6,
+        "mean_score": 1.0,
+        "median_score": 1.0,
+        "n_perfect": 6,
+        "n_zero": 0,
+        "mean_elapsed_ms": 2.2540901748773954
+      },
+      "historical": {
+        "n_questions": 36,
+        "n_scored": 36,
+        "mean_score": 1.0,
+        "median_score": 1.0,
+        "n_perfect": 36,
+        "n_zero": 0,
+        "mean_elapsed_ms": 2.0830774932013205
+      },
+      "provenance": {
+        "n_questions": 22,
+        "n_scored": 22,
+        "mean_score": 1.0,
+        "median_score": 1.0,
+        "n_perfect": 22,
+        "n_zero": 0,
+        "mean_elapsed_ms": 4.548969723559408
+      },
+      "forgetfulness": {
+        "n_questions": 5,
+        "n_scored": 5,
+        "mean_score": 1.0,
+        "median_score": 1.0,
+        "n_perfect": 5,
+        "n_zero": 0,
+        "mean_elapsed_ms": 2.850383205804974
+      }
+    }
+  },
+  "mem0": {
+    "skipped": true,
+    "reason": "Mem0 requires OPENAI_API_KEY for its default LLM + embedder backend. Set the env var or configure a local model under mem0_config.yaml."
+  },
+  "letta": {
+    "skipped": true,
+    "reason": "Letta requires OPENAI_API_KEY for the default chat model. Set the env var or configure a local model in letta config."
+  },
+  "memori": {
+    "skipped": true,
+    "reason": "Memori requires MEMORI_API_KEY (hosted backend). Sign up at https://app.memorilabs.ai/signup or set the env var."
+  },
+  "kumiho": {
+    "skipped": true,
+    "reason": "kumiho client not installed. pip install kumiho-sdk"
+  },
+  "mempalace": {
+    "skipped": true,
+    "reason": "mempalace client not installed. pip install mempalace"
+  }
+}

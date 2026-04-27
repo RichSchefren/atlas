@@ -105,13 +105,16 @@ The propagation-aware belief-revision loop is the jewel.
 - [x] **Ledger semantics in demo.** Demo now prints what
       `last_verified_sequence` means and why a small number is
       expected on the first run. (`<this commit>`)
-- [ ] **Proposal-vs-mutation explicit in API surface.** Audit the
-      `atlas_core/ripple/` and `atlas_core/api/` surface to ensure
-      every method that *proposes* a change is named with the verb
-      `propose_*` and every method that *mutates* the graph goes
-      through `adjudication.resolve()` or the AGM revise/contract
-      operators. Add a docs page `docs/PROPOSAL_VS_MUTATION.md`
-      that lists every method in each category.
+- [x] **Proposal-vs-mutation explicit in API surface.**
+      `docs/PROPOSAL_VS_MUTATION.md` classifies every public method in
+      `atlas_core/ripple/`, `atlas_core/revision/`, `atlas_core/trust/`,
+      and the 13 MCP tools in `atlas_core/api/mcp_server.py` into
+      READ-ONLY / PROPOSAL / MUTATION buckets. The invariant — *no
+      typed-graph mutation happens automatically as part of Ripple
+      propagation* — is enforced by an AST-based regression test
+      (`tests/unit/test_proposal_vs_mutation.py`) that parses every
+      `session.run(...)` call in the cascade modules and fails CI if a
+      Cypher write keyword leaks into one. (`<this commit>`)
 
 ## P2 — Viral / Adoption (post-launch nice-to-haves)
 

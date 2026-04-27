@@ -92,7 +92,7 @@ class TestServerRegistration:
         listed = mcp_server.list_tools()
         names = {t["name"] for t in listed}
         assert names == set(ATLAS_MCP_TOOLS)
-        assert len(listed) == 10
+        assert len(listed) == 13
 
     def test_tool_definitions_have_input_schema(self, mcp_server):
         for tool in mcp_server.list_tools():

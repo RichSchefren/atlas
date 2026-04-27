@@ -1,0 +1,95 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/registry.json",
+  "name": "atlas",
+  "displayName": "Atlas Memory",
+  "description": "Open-source local-first cognitive memory with AGM-compliant belief revision and automatic downstream reassessment (Ripple). 13 MCP tools for adjudication, lineage, working memory, and tenant sharing.",
+  "version": "0.1.0a1",
+  "author": "Richard Schefren",
+  "homepage": "https://github.com/RichSchefren/atlas",
+  "repository": "https://github.com/RichSchefren/atlas",
+  "license": "Apache-2.0",
+  "categories": [
+    "memory",
+    "knowledge-graph",
+    "belief-revision",
+    "local-first"
+  ],
+  "transports": ["stdio"],
+  "install": {
+    "stdio": {
+      "command": "python",
+      "args": ["-m", "atlas_core.adapters.claude_code"],
+      "env": {
+        "ATLAS_NEO4J_URI": "bolt://localhost:7687",
+        "ATLAS_NEO4J_USER": "neo4j",
+        "ATLAS_NEO4J_PASSWORD": "atlasdev",
+        "ATLAS_QUARANTINE_DB": "${HOME}/.atlas/candidates.db",
+        "ATLAS_LEDGER_DB": "${HOME}/.atlas/ledger.db"
+      }
+    }
+  },
+  "prerequisites": [
+    {
+      "name": "Neo4j 5.26+",
+      "instructions": "docker compose up -d (uses the docker-compose.yml in the Atlas repo)"
+    },
+    {
+      "name": "Python 3.10+",
+      "instructions": "pip install -e . (in the Atlas repo)"
+    }
+  ],
+  "tools": [
+    {
+      "name": "ripple.analyze_impact",
+      "description": "Preview the downstream Depends_On cascade for a revised kref."
+    },
+    {
+      "name": "ripple.reassess",
+      "description": "Compute reassessment proposals after a confidence shift."
+    },
+    {
+      "name": "ripple.detect_contradictions",
+      "description": "Type-aware contradiction detection over reassessment proposals."
+    },
+    {
+      "name": "adjudication.queue",
+      "description": "List pending adjudication entries from the Obsidian markdown queue."
+    },
+    {
+      "name": "adjudication.resolve",
+      "description": "Apply Rich's decision via AGM operator. Closes the loop."
+    },
+    {
+      "name": "quarantine.upsert",
+      "description": "Push a CandidateClaim into the trust quarantine."
+    },
+    {
+      "name": "quarantine.list_pending",
+      "description": "List pending candidates by lane."
+    },
+    {
+      "name": "ledger.verify_chain",
+      "description": "Walk the SHA-256 hash chain from genesis and verify integrity."
+    },
+    {
+      "name": "working_memory.assemble",
+      "description": "Letta-style working memory: assemble Atlas's pinned blocks (Human, Persona, CurrentPriorities) into a context string for an agent."
+    },
+    {
+      "name": "lineage.walk",
+      "description": "Walk SUPPORTS edges backward from a Decision to surface the belief chain."
+    },
+    {
+      "name": "sharing.grant",
+      "description": "Multi-tenant: grant tenant B read access to tenant A's kref."
+    },
+    {
+      "name": "sharing.revoke",
+      "description": "Revoke a previously granted share."
+    },
+    {
+      "name": "sharing.list_grants",
+      "description": "List sharing grants per granter or grantee tenant."
+    }
+  ]
+}

@@ -84,4 +84,36 @@ def create_http_app(*, mcp_server: AtlasMCPServer) -> FastAPI:
             raise HTTPException(status_code=500, detail=result.error)
         return result.result
 
+    @app.get("/events")
+    async def events_stream():
+        """Server-Sent Events stream for live Atlas activity. The
+        Obsidian plugin and live-Ripple visualization both subscribe.
+        Format: text/event-stream with one `data: {json}` per event."""
+        from fastapi.responses import StreamingResponse
+
+        from atlas_core.api.events import GLOBAL_BROADCASTER
+
+        async def event_generator():
+            queue = GLOBAL_BROADCASTER.subscribe()
+            try:
+                while True:
+                    event = await queue.get()
+                    yield event.to_sse_line()
+            finally:
+                GLOBAL_BROADCASTER.unsubscribe(queue)
+
+        return StreamingResponse(
+            event_generator(), media_type="text/event-stream",
+        )
+
+    @app.get("/events/stats")
+    async def events_stats() -> dict[str, Any]:
+        """Liveness check for the event broadcaster — useful for
+        debugging when the Obsidian plugin shows no events."""
+        from atlas_core.api.events import GLOBAL_BROADCASTER
+        return {
+            "subscribers": GLOBAL_BROADCASTER.n_subscribers,
+            "buffered_events": GLOBAL_BROADCASTER.n_buffered,
+        }
+
     return app

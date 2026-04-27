@@ -76,6 +76,9 @@ ATLAS_MCP_TOOLS: tuple[str, ...] = (
     "ledger.verify_chain",
     "working_memory.assemble",
     "lineage.walk",
+    "sharing.grant",
+    "sharing.revoke",
+    "sharing.list_grants",
 )
 
 
@@ -325,6 +328,58 @@ class AtlasMCPServer:
                 "required": ["decision_kref"],
             },
             handler=self._tool_lineage_walk,
+        ))
+
+        self.register(MCPTool(
+            name="sharing.grant",
+            description=(
+                "Multi-tenant: grant tenant B read access to tenant A's "
+                "kref or kref pattern. Optional expiry. Required for "
+                "team-mode Atlas (Tier 5)."
+            ),
+            parameters_schema={
+                "type": "object",
+                "properties": {
+                    "granter_tenant": {"type": "string"},
+                    "grantee_tenant": {"type": "string"},
+                    "kref_pattern": {"type": "string"},
+                    "expires_at": {"type": "string"},
+                },
+                "required": ["granter_tenant", "grantee_tenant", "kref_pattern"],
+            },
+            handler=self._tool_sharing_grant,
+        ))
+
+        self.register(MCPTool(
+            name="sharing.revoke",
+            description="Revoke a previously granted share.",
+            parameters_schema={
+                "type": "object",
+                "properties": {
+                    "granter_tenant": {"type": "string"},
+                    "grantee_tenant": {"type": "string"},
+                    "kref_pattern": {"type": "string"},
+                },
+                "required": ["granter_tenant", "grantee_tenant", "kref_pattern"],
+            },
+            handler=self._tool_sharing_revoke,
+        ))
+
+        self.register(MCPTool(
+            name="sharing.list_grants",
+            description=(
+                "List sharing grants. Pass `granter_tenant` to see who "
+                "you've shared with, or `grantee_tenant` to see what "
+                "you've been granted."
+            ),
+            parameters_schema={
+                "type": "object",
+                "properties": {
+                    "granter_tenant": {"type": "string"},
+                    "grantee_tenant": {"type": "string"},
+                },
+            },
+            handler=self._tool_sharing_list_grants,
         ))
 
     # ── Registration + dispatch ─────────────────────────────────────────────
@@ -691,4 +746,77 @@ class AtlasMCPServer:
             "weakest_link_confidence": walk.weakest_link_confidence,
             "is_load_bearing_weakened": walk.is_load_bearing_weakened,
             "truncated": walk.truncated,
+        }
+
+    # ── Tier 5 sharing tools ──────────────────────────────────────────────
+
+    _sharing_policy = None
+
+    def _ensure_sharing_policy(self):
+        if self._sharing_policy is None:
+            from atlas_core.multi_tenant import SharingPolicy
+            self._sharing_policy = SharingPolicy()
+        return self._sharing_policy
+
+    async def _tool_sharing_grant(
+        self,
+        granter_tenant: str,
+        grantee_tenant: str,
+        kref_pattern: str,
+        expires_at: Optional[str] = None,
+    ) -> dict[str, Any]:
+        from atlas_core.multi_tenant import grant_share
+        grant = grant_share(
+            self._ensure_sharing_policy(),
+            granter_tenant=granter_tenant,
+            grantee_tenant=grantee_tenant,
+            kref_pattern=kref_pattern,
+            expires_at=expires_at,
+        )
+        return {
+            "granter_tenant": grant.granter_tenant,
+            "grantee_tenant": grant.grantee_tenant,
+            "kref_pattern": grant.kref_pattern,
+            "expires_at": grant.expires_at,
+            "granted_at": grant.granted_at,
+        }
+
+    async def _tool_sharing_revoke(
+        self,
+        granter_tenant: str,
+        grantee_tenant: str,
+        kref_pattern: str,
+    ) -> dict[str, Any]:
+        from atlas_core.multi_tenant import revoke_share
+        revoked = revoke_share(
+            self._ensure_sharing_policy(),
+            granter_tenant=granter_tenant,
+            grantee_tenant=grantee_tenant,
+            kref_pattern=kref_pattern,
+        )
+        return {"revoked": revoked}
+
+    async def _tool_sharing_list_grants(
+        self,
+        granter_tenant: Optional[str] = None,
+        grantee_tenant: Optional[str] = None,
+    ) -> dict[str, Any]:
+        policy = self._ensure_sharing_policy()
+        if grantee_tenant:
+            grants = policy.grants_for_grantee(grantee_tenant)
+        elif granter_tenant:
+            grants = policy.grants_from_granter(granter_tenant)
+        else:
+            return {"grants": [], "note": "specify granter_tenant or grantee_tenant"}
+        return {
+            "grants": [
+                {
+                    "granter_tenant": g.granter_tenant,
+                    "grantee_tenant": g.grantee_tenant,
+                    "kref_pattern": g.kref_pattern,
+                    "expires_at": g.expires_at,
+                    "granted_at": g.granted_at,
+                }
+                for g in grants
+            ],
         }

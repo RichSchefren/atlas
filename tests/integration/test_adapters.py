@@ -82,7 +82,7 @@ class TestClaudeCodeAdapter:
         response = await _handle(mcp_server, {
             "jsonrpc": "2.0", "id": 2, "method": "tools/list",
         })
-        assert len(response["result"]["tools"]) == 10
+        assert len(response["result"]["tools"]) == 13
 
     async def test_tools_call_dispatches(self, mcp_server):
         from atlas_core.adapters.claude_code import _handle

@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Atlas Live (real data) — Ripple stream</title>
+<meta name="description" content="Real-time stream of Atlas's actual graph activity. Subscribes to localhost:9879/events." />
+<style>
+  :root {
+    --bg: #0b0d10;
+    --fg: #e8eaed;
+    --muted: #9aa0a6;
+    --accent: #00ff88;
+    --warn: #ffaa00;
+    --bad: #ff6464;
+    --border: #1f2328;
+    --code-bg: #11151a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    line-height: 1.55;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr;
+  }
+  header {
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 {
+    font-size: 20px;
+    background: linear-gradient(135deg, var(--accent), #00ddff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  #status {
+    font-size: 13px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  #status.live { color: var(--accent); border-color: var(--accent); }
+  #status.error { color: var(--bad); border-color: var(--bad); }
+
+  main {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    overflow: hidden;
+  }
+  #log {
+    overflow-y: auto;
+    padding: 16px 24px;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 12px;
+  }
+  .ev {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--border);
+    background: var(--code-bg);
+    border-radius: 0 4px 4px 0;
+  }
+  .ev.ripple_cascade { border-left-color: #00ddff; }
+  .ev.adjudication_resolved { border-left-color: var(--accent); }
+  .ev.ledger_supersede { border-left-color: var(--warn); }
+  .ev .kind {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .ev .ts {
+    color: var(--muted);
+    font-size: 10px;
+    float: right;
+  }
+  .ev pre {
+    color: var(--fg);
+    margin-top: 4px;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  aside {
+    background: var(--code-bg);
+    border-left: 1px solid var(--border);
+    padding: 16px 20px;
+    overflow-y: auto;
+    font-size: 13px;
+  }
+  aside h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    margin-top: 16px;
+  }
+  aside h3:first-child { margin-top: 0; }
+  .stat {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+  }
+  .stat .num {
+    font-size: 24px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .stat .label { color: var(--muted); font-size: 11px; }
+  input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 12px;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Atlas — live ripple stream (your real graph)</h1>
+  <span id="status">connecting…</span>
+</header>
+
+<main>
+  <div id="log">
+    <div class="ev"><span class="kind">connecting</span>
+      <pre>Subscribing to <span id="endpoint">http://localhost:9879/events</span>…
+If you see "error", the API server isn't running.
+Start it with: launchctl load ~/Library/LaunchAgents/com.atlas.api-server.plist
+or:           PYTHONPATH=. uvicorn atlas_core.api.api_app:app --port 9879
+</pre>
+    </div>
+  </div>
+
+  <aside>
+    <h3>Connection</h3>
+    <input id="endpoint-input" value="http://localhost:9879/events" />
+    <p style="margin-top:6px;font-size:11px;color:var(--muted)">
+      Press Enter to reconnect.
+    </p>
+
+    <h3>Counters</h3>
+    <div class="stat"><span class="num" id="ct-total">0</span><span class="label">total events</span></div>
+    <div class="stat"><span class="num" id="ct-ripple">0</span><span class="label">ripple cascades</span></div>
+    <div class="stat"><span class="num" id="ct-adj">0</span><span class="label">adjudications resolved</span></div>
+    <div class="stat"><span class="num" id="ct-ledger">0</span><span class="label">ledger SUPERSEDEs</span></div>
+
+    <h3>About</h3>
+    <p style="font-size:12px;color:var(--muted)">
+      This page subscribes to Atlas's <code>/events</code> SSE
+      stream and renders every emit live. Synthetic-data demo
+      is at <a href="live-demo.html" style="color:var(--accent)">live-demo.html</a>.
+    </p>
+  </aside>
+</main>
+
+<script>
+  const counters = { total: 0, ripple_cascade: 0, adjudication_resolved: 0, ledger_supersede: 0 };
+  const log = document.getElementById("log");
+  const status = document.getElementById("status");
+  const endpoint = document.getElementById("endpoint-input");
+
+  let source = null;
+
+  function setStatus(text, cls) {
+    status.textContent = text;
+    status.className = cls || "";
+  }
+
+  function addEvent(eventData) {
+    const div = document.createElement("div");
+    div.className = "ev " + eventData.kind;
+    const tsShort = (eventData.occurred_at || "").slice(11, 19);
+    div.innerHTML = `
+      <span class="ts">${tsShort}</span>
+      <span class="kind">${eventData.kind}</span>
+      <pre>${JSON.stringify(eventData.payload, null, 2)}</pre>
+    `;
+    log.insertBefore(div, log.firstChild);
+    counters.total += 1;
+    counters[eventData.kind] = (counters[eventData.kind] || 0) + 1;
+    document.getElementById("ct-total").textContent = counters.total;
+    document.getElementById("ct-ripple").textContent = counters.ripple_cascade || 0;
+    document.getElementById("ct-adj").textContent = counters.adjudication_resolved || 0;
+    document.getElementById("ct-ledger").textContent = counters.ledger_supersede || 0;
+  }
+
+  function connect(url) {
+    if (source) source.close();
+    setStatus("connecting", "");
+    document.getElementById("endpoint").textContent = url;
+    try {
+      source = new EventSource(url);
+      source.onopen = () => setStatus("live", "live");
+      source.onerror = () => setStatus("error — is the API server running?", "error");
+      source.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          addEvent(data);
+        } catch (err) {
+          console.error("malformed event", err);
+        }
+      };
+    } catch (err) {
+      setStatus("error: " + err, "error");
+    }
+  }
+
+  endpoint.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") connect(endpoint.value.trim());
+  });
+
+  connect(endpoint.value.trim());
+</script>
+
+</body>
+</html>

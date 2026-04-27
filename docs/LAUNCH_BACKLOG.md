@@ -127,7 +127,7 @@ The propagation-aware belief-revision loop is the jewel.
       section. Backed by 4 doc-smoke tests in
       `tests/unit/test_docs_why_vector.py` that guard the worked
       example's concrete numbers, the mermaid diagram balance, and the
-      README link. (`<this commit>`)
+      README link. (`1885208`)
 - [ ] **Publish BusinessMemBench as its own repo.** Currently lives
       inside Atlas. Split into `RichSchefren/businessmembench` (MIT)
       so other memory systems can adopt it without forking Atlas.

@@ -162,7 +162,7 @@ The propagation-aware belief-revision loop is the jewel.
       arxiv paper draft (#4), domain registration + Cloudflare
       Pages (#5). Idempotent — re-runs no-op via cached title +
       label lists. Caught and fixed a dedup bug on the first run
-      (issues #6–#10 closed as duplicates). (`<this commit>`)
+      (issues #6–#10 closed as duplicates). (`80e5805`)
 
 ---
 

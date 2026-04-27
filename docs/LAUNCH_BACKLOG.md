@@ -114,7 +114,7 @@ The propagation-aware belief-revision loop is the jewel.
       propagation* — is enforced by an AST-based regression test
       (`tests/unit/test_proposal_vs_mutation.py`) that parses every
       `session.run(...)` call in the cascade modules and fails CI if a
-      Cypher write keyword leaks into one. (`<this commit>`)
+      Cypher write keyword leaks into one. (`16e8fcd`)
 
 ## P2 — Viral / Adoption (post-launch nice-to-haves)
 

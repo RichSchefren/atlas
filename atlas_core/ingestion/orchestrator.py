@@ -21,7 +21,6 @@ from atlas_core.ingestion.base import (
     StreamType,
 )
 
-
 log = logging.getLogger(__name__)
 
 

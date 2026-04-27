@@ -12,7 +12,6 @@ import uuid
 
 import pytest
 
-
 pytestmark = pytest.mark.integration
 
 
@@ -308,7 +307,7 @@ class TestAnalyzeImpactPerformance:
             new_layer = []
             for parent in layer:
                 fanout = 3
-                for i in range(fanout):
+                for _ in range(fanout):
                     if node_count >= 100:
                         break
                     child = await make_node(driver, ns, f"d{d}_{node_count}")

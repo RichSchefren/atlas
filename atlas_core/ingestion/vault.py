@@ -11,7 +11,6 @@ Phase 2 W6 wires LLM-driven extraction for free-text vault changes.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import re
 from datetime import datetime, timezone
@@ -26,7 +25,6 @@ from atlas_core.ingestion.base import (
     StreamType,
 )
 from atlas_core.ingestion.confidence import STREAM_CONFIDENCE_FLOORS
-
 
 log = logging.getLogger(__name__)
 

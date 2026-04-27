@@ -23,7 +23,6 @@ from pathlib import Path
 
 import pytest
 
-
 pytestmark = pytest.mark.integration
 
 
@@ -56,7 +55,9 @@ def stdio_server():
     if proc.poll() is not None:
         out = proc.stdout.read() if proc.stdout else ""
         err = proc.stderr.read() if proc.stderr else ""
-        pytest.skip(f"adapter failed to launch: {err[:300]}")
+        pytest.skip(
+            f"adapter failed to launch: stderr={err[:300]} stdout={out[:200]}"
+        )
 
     yield proc
 

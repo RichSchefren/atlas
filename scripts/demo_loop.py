@@ -27,7 +27,6 @@ import tempfile
 import time
 from pathlib import Path
 
-
 # ANSI helpers — degrade gracefully on dumb terminals.
 GREEN = "\033[92m"
 CYAN = "\033[96m"
@@ -72,11 +71,39 @@ def pause(seconds: float) -> None:
 # ─── Demo ────────────────────────────────────────────────────────────────────
 
 
+async def _preflight_neo4j() -> bool:
+    """Confirm Neo4j is reachable before we try anything that depends on it.
+    Codex review (2026-04-27) flagged that a missing daemon dumped a raw
+    traceback at the user. This catches it cleanly and prints the fix."""
+    import socket
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(2.0)
+    try:
+        result = sock.connect_ex(("localhost", 7687))
+        return result == 0
+    finally:
+        sock.close()
+
+
 async def main() -> None:
+    if not await _preflight_neo4j():
+        print()
+        print(f"{RED}{BOLD}Neo4j is not reachable on localhost:7687.{RESET}")
+        print()
+        print("Atlas's demo needs a running Neo4j instance.")
+        print(f"From this repo's root, run:  {CYAN}docker compose up -d{RESET}")
+        print()
+        print("Verify it's healthy with:")
+        print(f"  {DIM}curl http://localhost:7474   # should return 200{RESET}")
+        print()
+        print("If you don't have Docker, install Colima or Docker Desktop")
+        print("first, then rerun this script.")
+        sys.exit(1)
+
     from neo4j import AsyncGraphDatabase
 
     from atlas_core.api import AtlasMCPServer
-    from atlas_core.revision.uri import Kref
     from atlas_core.ripple.adjudication import (
         AdjudicationRoute,
         RoutingDecision,

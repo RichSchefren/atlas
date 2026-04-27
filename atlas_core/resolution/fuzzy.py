@@ -13,12 +13,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 from rapidfuzz import fuzz, process
 
-from atlas_core.resolution.aliases import AliasDictionary, AliasMatch
-
+from atlas_core.resolution.aliases import AliasDictionary
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +52,7 @@ class FuzzyEntityMatcher:
     def __init__(self, aliases: AliasDictionary):
         self.aliases = aliases
 
-    def lookup(self, surface: str) -> Optional[FuzzyMatch]:
+    def lookup(self, surface: str) -> FuzzyMatch | None:
         """Return the best fuzzy hit if confidence ≥ FUZZY_ACCEPT_FLOOR.
 
         rapidfuzz.process.extractOne uses WRatio by default (combination

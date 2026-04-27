@@ -30,7 +30,6 @@ from typing import Any
 from atlas_core.api import AtlasMCPServer
 from atlas_core.trust import HashChainedLedger, QuarantineStore
 
-
 log = logging.getLogger(__name__)
 
 

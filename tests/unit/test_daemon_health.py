@@ -3,9 +3,7 @@
 Spec: PHASE-5-AND-BEYOND.md § 1.1
 """
 
-import json
 
-import pytest
 
 
 class TestHealthLogger:

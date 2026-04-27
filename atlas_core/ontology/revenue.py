@@ -3,7 +3,6 @@
 from datetime import date
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 
 from pydantic import Field
 
@@ -31,13 +30,13 @@ class Revenue(AtlasEntity):
     """A revenue line item — source, amount, period, association to Program/Person."""
 
     source: str = Field(..., description="Source label — program name, JV name, etc.")
-    associated_program_kref: Optional[str] = None
-    associated_person_kref: Optional[str] = Field(
+    associated_program_kref: str | None = None
+    associated_person_kref: str | None = Field(
         default=None,
         description="For affiliate/JV revenue — kref:// of generating Person",
     )
     amount_usd: Decimal
     period: Period
     period_start: date
-    period_end: Optional[date] = None
+    period_end: date | None = None
     revenue_type: RevenueType

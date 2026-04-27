@@ -23,10 +23,8 @@ import os
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from atlas_core.resolution.aliases import AliasDictionary
-
 
 log = logging.getLogger(__name__)
 
@@ -89,7 +87,7 @@ class ResolutionCache:
                 ")"
             )
 
-    def get(self, key: str) -> Optional[dict]:
+    def get(self, key: str) -> dict | None:
         with sqlite3.connect(self.path) as conn:
             row = conn.execute(
                 "SELECT result_json FROM resolution_cache WHERE cache_key = ?",

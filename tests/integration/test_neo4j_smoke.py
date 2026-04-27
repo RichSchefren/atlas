@@ -5,7 +5,6 @@ import os
 
 import pytest
 
-
 pytestmark = pytest.mark.integration
 
 
@@ -61,13 +60,14 @@ def test_atlas_graphiti_instantiates(neo4j_uri, neo4j_auth, monkeypatch):
     independent of any LLM provider keys.
     """
     pytest.importorskip("graphiti_core")
-    from atlas_core.graphiti import AtlasGraphiti
+    from graphiti_core.cross_encoder.client import CrossEncoderClient
+    from graphiti_core.embedder.client import EmbedderClient
 
     # Provide stub LLM + embedder + cross-encoder so the test doesn't require any API keys.
     # Inherit from the abstract base classes so Graphiti's set_tracer / etc. methods work.
     from graphiti_core.llm_client.client import LLMClient
-    from graphiti_core.embedder.client import EmbedderClient
-    from graphiti_core.cross_encoder.client import CrossEncoderClient
+
+    from atlas_core.graphiti import AtlasGraphiti
 
     class _StubLLMClient(LLMClient):
         def __init__(self):

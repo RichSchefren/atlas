@@ -8,13 +8,11 @@ Each test uses a unique root_kref namespace and cleans up after itself so
 tests can run in any order.
 """
 
-import asyncio
 import json
 import os
 import uuid
 
 import pytest
-
 
 pytestmark = pytest.mark.integration
 
@@ -153,7 +151,7 @@ class TestAGMReviseConsistency:
     async def test_old_revision_no_longer_tag_referenced(self, driver, fresh_kref):
         from atlas_core.revision import Kref, revise
 
-        first = await revise(
+        await revise(
             driver, Kref.parse(fresh_kref),
             new_content={"hypothesis": "old", "confidence": 0.5},
             revision_reason="v1",

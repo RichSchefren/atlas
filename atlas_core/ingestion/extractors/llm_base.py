@@ -22,7 +22,6 @@ from typing import Any
 
 from atlas_core.ingestion.budget import TokenBudget
 
-
 log = logging.getLogger(__name__)
 
 

@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
@@ -88,18 +88,6 @@ class ContradictionPair:
     severity: Severity
     rationale: str
     """Human-readable explanation surfaced in the Obsidian adjudication queue."""
-
-
-# ─── Type detection ──────────────────────────────────────────────────────────
-
-
-def _primary_type(types: tuple[str, ...]) -> str | None:
-    """Return the first non-Atlas-base label, which encodes the entity type."""
-    for label in types:
-        if label not in {"AtlasItem", "AtlasRevision", "AtlasTag", "Entity"}:
-            return label
-    # Fall back to first label if all are base
-    return types[0] if types else None
 
 
 # ─── Per-type detectors ──────────────────────────────────────────────────────
@@ -269,7 +257,6 @@ async def detect_contradictions(
             continue
 
         types = tuple(record["types"] or ())
-        primary = _primary_type(types) or ""
 
         # Heuristic dispatch by kref kind suffix or label.
         # Phase 2 W3: kref kind suffix (.belief, .decision, .commitment).

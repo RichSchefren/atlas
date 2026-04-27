@@ -15,15 +15,27 @@ Spec: 09 - Agent Runtime Memory Competitive Landscape.md
 
 from atlas_core.adapters.hermes import (
     PROVIDER_NAME as HERMES_PROVIDER_NAME,
+)
+from atlas_core.adapters.hermes import (
     AtlasHermesProvider,
     HermesMemoryItem,
 )
 from atlas_core.adapters.openclaw import (
     PLUGIN_NAME as OPENCLAW_PLUGIN_NAME,
+)
+from atlas_core.adapters.openclaw import (
     PLUGIN_TYPE as OPENCLAW_PLUGIN_TYPE,
+)
+from atlas_core.adapters.openclaw import (
     PLUGIN_VERSION as OPENCLAW_PLUGIN_VERSION,
+)
+from atlas_core.adapters.openclaw import (
     AtlasOpenClawPlugin,
+)
+from atlas_core.adapters.openclaw import (
     Recall as OpenClawRecall,
+)
+from atlas_core.adapters.openclaw import (
     plugin as openclaw_plugin,
 )
 

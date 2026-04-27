@@ -5,8 +5,8 @@ the propagation pathway round-trips through real Neo4j + a real ledger.
 """
 
 import os
-import pytest
 
+import pytest
 
 pytestmark = pytest.mark.integration
 

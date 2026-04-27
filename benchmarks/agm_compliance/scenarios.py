@@ -15,8 +15,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
-from atlas_core.revision import Kref, contract, expand, revise
-
+from atlas_core.revision import Kref, contract, revise
 from benchmarks.agm_compliance.runner import (
     ComplianceCategory,
     Postulate,
@@ -28,7 +27,7 @@ from benchmarks.agm_compliance.runner import (
 )
 
 if TYPE_CHECKING:
-    from neo4j import AsyncDriver
+    pass
 
 
 # ─── SIMPLE category (10 scenarios) ──────────────────────────────────────────

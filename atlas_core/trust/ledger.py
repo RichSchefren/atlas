@@ -26,8 +26,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
-
+from typing import Any
 
 log = logging.getLogger(__name__)
 
@@ -66,7 +65,7 @@ class LedgerEvent:
     the chain coordinates for cross-references."""
 
     event_id: str
-    previous_hash: Optional[str]
+    previous_hash: str | None
     chain_sequence: int
     event_type: str
     recorded_at: str
@@ -76,11 +75,11 @@ class LedgerEvent:
     root_id: str
     payload: dict[str, Any]
 
-    target_object_id: Optional[str] = None
-    parent_id: Optional[str] = None
-    candidate_id: Optional[str] = None
-    policy_version: Optional[str] = None
-    reason: Optional[str] = None
+    target_object_id: str | None = None
+    parent_id: str | None = None
+    candidate_id: str | None = None
+    policy_version: str | None = None
+    reason: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -91,8 +90,8 @@ class ChainVerificationResult:
     intact: bool
     last_verified_sequence: int
     last_verified_event_id: str
-    broken_at_sequence: Optional[int] = None
-    breakage_reason: Optional[str] = None
+    broken_at_sequence: int | None = None
+    breakage_reason: str | None = None
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -115,7 +114,7 @@ def _canonical_json(obj: Any) -> str:
 
 
 def _compute_event_id(
-    previous_hash: Optional[str],
+    previous_hash: str | None,
     event_type: str,
     recorded_at: str,
     object_id: str,
@@ -184,12 +183,12 @@ class HashChainedLedger:
         object_type: str,
         root_id: str,
         payload: dict[str, Any],
-        target_object_id: Optional[str] = None,
-        parent_id: Optional[str] = None,
-        candidate_id: Optional[str] = None,
-        policy_version: Optional[str] = None,
-        reason: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        target_object_id: str | None = None,
+        parent_id: str | None = None,
+        candidate_id: str | None = None,
+        policy_version: str | None = None,
+        reason: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> LedgerEvent:
         """Append a new event to the chain. Atomic.
 
@@ -334,7 +333,7 @@ class HashChainedLedger:
                 intact=True, last_verified_sequence=0, last_verified_event_id=""
             )
 
-        expected_previous_hash: Optional[str] = None
+        expected_previous_hash: str | None = None
         last_intact_sequence = 0
         last_intact_event_id = ""
 
@@ -459,7 +458,7 @@ class HashChainedLedger:
             ).fetchone()
         return row is not None
 
-    def get_event(self, event_id: str) -> Optional[dict[str, Any]]:
+    def get_event(self, event_id: str) -> dict[str, Any] | None:
         with self._connect() as conn:
             row = conn.execute(
                 "SELECT * FROM change_events WHERE event_id = ?", (event_id,)
@@ -479,7 +478,7 @@ class HashChainedLedger:
             ).fetchall()
         return [dict(r) for r in rows]
 
-    def get_typed_root_state(self, root_id: str) -> Optional[dict[str, Any]]:
+    def get_typed_root_state(self, root_id: str) -> dict[str, Any] | None:
         """Read materialized current state for a root."""
         with self._connect() as conn:
             row = conn.execute(
@@ -494,7 +493,7 @@ class HashChainedLedger:
             ).fetchone()
         return int(row["n"])
 
-    def latest_event(self) -> Optional[dict[str, Any]]:
+    def latest_event(self) -> dict[str, Any] | None:
         with self._connect() as conn:
             row = conn.execute(
                 "SELECT * FROM change_events ORDER BY chain_sequence DESC LIMIT 1"

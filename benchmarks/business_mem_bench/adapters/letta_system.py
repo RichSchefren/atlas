@@ -21,7 +21,6 @@ from benchmarks.business_mem_bench.adapters.external_stubs import (
     MissingClientError,
 )
 
-
 log = logging.getLogger(__name__)
 
 

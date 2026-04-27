@@ -16,3 +16,22 @@ dist/
 *.swp
 .atlas/
 *.cast.tmp
+
+# Neo4j data + logs created by docker compose up — Codex 2026-04-27
+# review surfaced these landing as untracked after first run.
+neo4j-data/
+neo4j-logs/
+neo4j-import/
+neo4j-plugins/
+
+# Per-host generated artifacts (laptop-setup checkpoint, secrets,
+# Obsidian plugin build output, npm noise).
+.atlas-laptop-setup.state
+.env
+.env.local
+node_modules/
+obsidian-plugin/main.js
+obsidian-plugin/package-lock.json
+
+# Ruff cache
+.ruff_cache/

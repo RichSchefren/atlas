@@ -10,7 +10,6 @@ This is the cryptographic core of Atlas's trust layer. Coverage includes:
   - Atomic append (no chain gaps)
 """
 
-import hashlib
 import sqlite3
 import tempfile
 from pathlib import Path

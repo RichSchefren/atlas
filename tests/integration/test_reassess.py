@@ -11,7 +11,6 @@ import uuid
 
 import pytest
 
-
 pytestmark = pytest.mark.integration
 
 
@@ -205,7 +204,6 @@ class TestReassessCascade:
     async def test_cascade_processes_in_bfs_order(self, driver, ns):
         """A → B → C cascade: B (depth 1) processed before C (depth 2)."""
         from atlas_core.ripple import (
-            ImpactNode,
             UpstreamChange,
             analyze_impact,
             reassess_cascade,

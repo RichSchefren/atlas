@@ -17,8 +17,8 @@ Spec: 08 - BusinessMemBench Design.md § 3 (each category has scoring rules)
 
 from __future__ import annotations
 
-from typing import Any, Callable
-
+from collections.abc import Callable
+from typing import Any
 
 Scorer = Callable[[Any, dict[str, Any]], float]
 

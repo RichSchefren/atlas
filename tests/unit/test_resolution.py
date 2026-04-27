@@ -5,7 +5,6 @@ Spec: PHASE-5-AND-BEYOND.md § 1.3
 
 import pytest
 
-
 # ─── AliasDictionary ────────────────────────────────────────────────────────
 
 
@@ -163,7 +162,9 @@ class TestEntityResolverCascade:
     async def test_resolver_uses_kind_filter_in_llm_path(self, tmp_path):
         # Without LLM enabled, we just verify the API accepts kind
         from atlas_core.resolution import (
-            AliasDictionary, EntityResolver, NoMatch,
+            AliasDictionary,
+            EntityResolver,
+            NoMatch,
         )
         d = AliasDictionary(path=tmp_path / "aliases.yaml")
         d.add("kref://x/People/foo.person", "Foo")

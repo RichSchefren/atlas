@@ -14,7 +14,6 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-
 # Tenant IDs are filesystem-safe slugs. Reject anything else early.
 _VALID_TENANT_ID = re.compile(r"^[a-zA-Z0-9_\-]{1,64}$")
 

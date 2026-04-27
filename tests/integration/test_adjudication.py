@@ -3,13 +3,18 @@
 Spec: 06 - Ripple Algorithm Spec § 6
 """
 
+from __future__ import annotations
+
 import os
 import tempfile
 import uuid
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
+if TYPE_CHECKING:
+    from atlas_core.ripple import ReassessmentProposal
 
 pytestmark = pytest.mark.integration
 
@@ -101,7 +106,7 @@ def make_proposal(
     old_conf: float,
     *,
     rationale: str = "",
-) -> "ReassessmentProposal":
+) -> ReassessmentProposal:
     from atlas_core.ripple import ReassessmentProposal
 
     return ReassessmentProposal(

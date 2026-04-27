@@ -5,7 +5,6 @@ SanitizationStats reduction-ratio metric Atlas uses to monitor
 token-saving effectiveness on real streams.
 """
 
-import pytest
 
 
 class TestStripAtlasContext:

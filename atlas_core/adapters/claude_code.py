@@ -36,7 +36,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-
 log = logging.getLogger(__name__)
 
 

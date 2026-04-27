@@ -15,8 +15,7 @@ from __future__ import annotations
 import csv
 import json
 import random
-from dataclasses import asdict
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -29,7 +28,6 @@ from benchmarks.business_mem_bench.corpus_generator.events import (
     EventLog,
     generate_events,
 )
-
 
 # ─── Public entry points ────────────────────────────────────────────────────
 
@@ -393,7 +391,8 @@ def _write_historical_questions(
     the change? Asking about the change-day itself is ambiguous (was it
     the old or new price during the day?), so we shift back one day —
     Atlas's strict-before-cutoff query is unambiguously correct."""
-    from datetime import date as _date, timedelta as _td
+    from datetime import date as _date
+    from datetime import timedelta as _td
 
     out_path = gold / "historical.jsonl"
     written = 0

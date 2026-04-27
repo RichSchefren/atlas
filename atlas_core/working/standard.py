@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from atlas_core.working.blocks import MemoryBlock
 
-
 DEFAULT_HUMAN_KREF: str = (
     "kref://AtlasCoffee/People/rich_schefren.person"
 )

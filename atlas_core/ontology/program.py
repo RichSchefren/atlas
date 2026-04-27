@@ -1,7 +1,6 @@
 """Program entity — coaching, education, or community programs Rich runs."""
 
 from enum import Enum
-from typing import Optional
 
 from pydantic import Field
 
@@ -37,7 +36,7 @@ class Program(AtlasEntity):
     deliverables: list[str] = Field(default_factory=list)
     enrollment_status: EnrollmentStatus = EnrollmentStatus.DORMANT
     lifecycle_stage: LifecycleStage = LifecycleStage.IDEATION
-    runner_kref: Optional[str] = Field(
+    runner_kref: str | None = Field(
         default=None,
         description="kref:// of Person who owns day-to-day operations of this program",
     )

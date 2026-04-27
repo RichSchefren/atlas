@@ -21,18 +21,16 @@ from __future__ import annotations
 import json
 import random
 from dataclasses import asdict, dataclass, field
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any
 
 from benchmarks.business_mem_bench.corpus_generator.business import (
     CORPUS_DAYS,
-    CORPUS_END_DATE,
     CORPUS_START_DATE,
     AtlasCoffeeWorld,
     ProductLine,
 )
-
 
 # Event-density tuning — tested empirically to land near 1,000-question target.
 # Bumping these shifts category counts proportionally.

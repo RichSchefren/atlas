@@ -18,10 +18,8 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from typing import Optional
 
-from atlas_core.ingestion.budget import TokenBudget, estimate_haiku_cost
-
+from atlas_core.ingestion.budget import TokenBudget
 
 log = logging.getLogger(__name__)
 

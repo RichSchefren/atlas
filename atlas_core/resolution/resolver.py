@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Optional, Union
 
 from atlas_core.resolution.aliases import AliasDictionary, AliasMatch
 from atlas_core.resolution.fuzzy import FuzzyEntityMatcher, FuzzyMatch
@@ -25,7 +24,6 @@ from atlas_core.resolution.llm_fallback import (
     LLMMatch,
     NoMatch,
 )
-
 
 log = logging.getLogger(__name__)
 
@@ -76,7 +74,7 @@ class EntityResolver:
             )
 
         # Stage 1: exact alias
-        alias_match: Optional[AliasMatch] = self.aliases.lookup(surface)
+        alias_match: AliasMatch | None = self.aliases.lookup(surface)
         if alias_match is not None:
             return ResolvedEntity(
                 kref=alias_match.kref,
@@ -86,7 +84,7 @@ class EntityResolver:
             )
 
         # Stage 2: fuzzy
-        fuzzy_match: Optional[FuzzyMatch] = self.fuzzy.lookup(surface)
+        fuzzy_match: FuzzyMatch | None = self.fuzzy.lookup(surface)
         if fuzzy_match is not None:
             # Promote the alias dictionary so future hits are exact.
             # Cheap learning loop — Atlas gets smarter every miss.

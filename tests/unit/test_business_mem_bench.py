@@ -3,10 +3,8 @@ schema. Uses a synthetic memory system stub — no real Atlas/baseline
 required for these tests."""
 
 import json
-from pathlib import Path
 
 import pytest
-
 
 # ─── Scoring ─────────────────────────────────────────────────────────────────
 

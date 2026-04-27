@@ -65,7 +65,6 @@ class TestSchema:
     def test_lane_constants_consistent(self):
         from atlas_core.trust import (
             LANE_CANDIDATES_ELIGIBLE,
-            LANE_CORROBORATION_ONLY,
             LANE_RETRIEVAL_ELIGIBLE_GLOBAL,
         )
 
@@ -88,7 +87,7 @@ class TestUpsertNew:
         assert result.is_corroborated is False  # single source
 
     def test_low_risk_pref_high_conf_auto_promotes(self, store):
-        from atlas_core.trust import CandidateStatus, TRUST_LEDGER
+        from atlas_core.trust import TRUST_LEDGER, CandidateStatus
 
         claim = make_claim(
             predicate="pref.color",
@@ -171,6 +170,36 @@ class TestUpsertCorroboration:
         result = store.upsert_candidate(c2)
         assert result.is_corroborated is False
 
+    def test_cross_lane_same_claim_dedups_and_corroborates(self, store):
+        """Codex review (2026-04-27) caught this: prior to fixing the
+        fingerprint, a Limitless claim and a vault claim with identical
+        (subject, predicate, object) became TWO separate candidates
+        because lane was part of the fingerprint. That broke
+        cross-stream corroboration — exactly the use case Atlas
+        exists to serve. After the fingerprint fix, cross-lane
+        identical claims collapse to ONE row with two evidence refs."""
+        # Limitless meeting transcript says role=ops
+        c1 = make_claim(
+            lane="atlas_observational",
+            source="limitless_2026-04-27",
+            source_family="meeting",
+        )
+        result1 = store.upsert_candidate(c1)
+
+        # Vault note also says role=ops (different lane, different family)
+        c2 = make_claim(
+            lane="atlas_vault",
+            source="vault://Active-Brain/People/ashley.md",
+            source_family="vault",
+        )
+        result2 = store.upsert_candidate(c2)
+
+        # Same candidate row (cross-lane dedup)
+        assert result1.candidate_id == result2.candidate_id
+        assert result2.is_new is False
+        # Two independent source families ⇒ corroborated
+        assert result2.is_corroborated is True
+
     def test_medium_risk_corroborated_high_conf_auto_promotes(self, store):
         # Medium-risk claim — needs ≥2 independent source families AND ≥0.90
         c1 = make_claim(
@@ -200,7 +229,7 @@ class TestUpsertCorroboration:
 
 class TestLifecycle:
     def test_promote_candidate_marks_approved(self, store):
-        from atlas_core.trust import CandidateStatus, TRUST_LEDGER
+        from atlas_core.trust import TRUST_LEDGER, CandidateStatus
 
         result = store.upsert_candidate(make_claim())
         store.promote_candidate(

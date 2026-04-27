@@ -20,7 +20,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from atlas_core.revision.uri import Kref
 
@@ -51,7 +51,7 @@ class RevisionOutcome:
     """
 
     new_revision_kref: Kref
-    superseded_kref: Optional[Kref]
+    superseded_kref: Kref | None
     was_first_revision: bool
     tag_updated: str
     audit_record: dict[str, Any] = field(default_factory=dict)
@@ -106,7 +106,7 @@ async def revise(
     new_content: dict[str, Any],
     *,
     revision_reason: str,
-    evidence: Optional[dict[str, Any]] = None,
+    evidence: dict[str, Any] | None = None,
     actor: str = "atlas",
     tag: str = TAG_CURRENT,
 ) -> RevisionOutcome:

@@ -11,14 +11,12 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
 
 from atlas_core.ingestion.budget import TokenBudget
 from atlas_core.working.blocks import (
     DEFAULT_SUMMARIZE_TARGET,
     MemoryBlock,
 )
-
 
 log = logging.getLogger(__name__)
 

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from atlas_core.ingestion.base import StreamType
 
-
 STREAM_CONFIDENCE_FLOORS: dict[StreamType, float] = {
     # Vault edit — Rich deliberately wrote it down → highest trust
     StreamType.VAULT: 0.70,

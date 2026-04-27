@@ -3,8 +3,6 @@ Fireflies (stub), iMessage."""
 
 import json
 import sqlite3
-import tempfile
-from pathlib import Path
 
 import pytest
 
@@ -50,7 +48,7 @@ def screenpipe_db(tmp_path):
 
 class TestScreenpipeExtractor:
     def test_skips_short_transcriptions(self, quarantine, screenpipe_db):
-        from atlas_core.ingestion import ScreenpipeExtractor, IngestionCursor, StreamType
+        from atlas_core.ingestion import IngestionCursor, ScreenpipeExtractor, StreamType
 
         ext = ScreenpipeExtractor(quarantine=quarantine, db_path=screenpipe_db)
         events = ext.fetch_new_events(IngestionCursor.fresh(StreamType.SCREENPIPE))
@@ -96,7 +94,7 @@ class TestScreenpipeExtractor:
         assert cursor.last_processed_at.startswith("2026-04-25T12:00:30")
 
     def test_missing_db_returns_empty(self, quarantine, tmp_path):
-        from atlas_core.ingestion import ScreenpipeExtractor, IngestionCursor, StreamType
+        from atlas_core.ingestion import IngestionCursor, ScreenpipeExtractor, StreamType
 
         ext = ScreenpipeExtractor(
             quarantine=quarantine,

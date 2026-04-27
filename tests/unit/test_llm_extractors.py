@@ -4,11 +4,9 @@ Spec: PHASE-5-AND-BEYOND.md § 1.4
 """
 
 import json
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-
 
 # ─── TokenBudget ────────────────────────────────────────────────────────────
 

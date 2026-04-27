@@ -13,12 +13,12 @@ Spec: Kumiho paper § 15.7 (49 scenarios). Atlas reproduces the table.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Awaitable, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from neo4j import AsyncDriver

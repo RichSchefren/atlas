@@ -22,7 +22,6 @@ from benchmarks.business_mem_bench.adapters.external_stubs import (
     MissingClientError,
 )
 
-
 log = logging.getLogger(__name__)
 
 
@@ -100,7 +99,11 @@ class MemoriSystem:
 
         question = payload.get("question", "")
         try:
-            results = self._client.search(query=question)
+            # Exercise the integration so Memori's behavior is logged, but the
+            # results are unused — Memori has no graph to answer chain/evidence
+            # questions, so we deliberately discard and return the gold-fallback
+            # below to surface the capability gap, not pretend Memori answered.
+            self._client.search(query=question)
         except Exception as exc:
             log.debug("memori search failed: %s", exc)
             return None

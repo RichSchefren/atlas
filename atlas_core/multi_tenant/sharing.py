@@ -10,13 +10,10 @@ Spec: PHASE-5-AND-BEYOND.md § 5.2
 
 from __future__ import annotations
 
-import json
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
-
 
 DEFAULT_SHARING_DB: Path = Path.home() / ".atlas" / "sharing.sqlite"
 
@@ -28,10 +25,10 @@ class SharingGrant:
     granter_tenant: str   # who owns the kref
     grantee_tenant: str   # who is being granted read access
     kref_pattern: str     # exact kref OR a kref://prefix/* glob
-    expires_at: Optional[str] = None
+    expires_at: str | None = None
     granted_at: str = ""
 
-    def is_active(self, *, now: Optional[datetime] = None) -> bool:
+    def is_active(self, *, now: datetime | None = None) -> bool:
         if not self.expires_at:
             return True
         cmp_now = (now or datetime.now(timezone.utc)).isoformat()
@@ -62,7 +59,7 @@ class SharingPolicy:
         granter_tenant: str,
         grantee_tenant: str,
         kref_pattern: str,
-        expires_at: Optional[str] = None,
+        expires_at: str | None = None,
     ) -> SharingGrant:
         granted_at = datetime.now(timezone.utc).isoformat()
         with sqlite3.connect(self.path) as conn:
@@ -145,7 +142,7 @@ def grant_share(
     granter_tenant: str,
     grantee_tenant: str,
     kref_pattern: str,
-    expires_at: Optional[str] = None,
+    expires_at: str | None = None,
 ) -> SharingGrant:
     """Convenience surface for the MCP `sharing.grant` tool."""
     return policy.grant(

@@ -13,8 +13,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Optional
-
 
 KREF_PATTERN = re.compile(
     r"^kref://"
@@ -45,8 +43,8 @@ class Kref:
     space: str
     item: str
     kind: str
-    revision: Optional[str] = None  # 'current', 'initial', 'latest', or numeric '3'
-    artifact: Optional[str] = None
+    revision: str | None = None  # 'current', 'initial', 'latest', or numeric '3'
+    artifact: str | None = None
 
     @classmethod
     def parse(cls, uri: str) -> Kref:

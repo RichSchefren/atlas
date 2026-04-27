@@ -46,7 +46,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from atlas_core.api.mcp_server import AtlasMCPServer
@@ -69,9 +69,9 @@ class HermesMemoryItem:
 
     content: str
     metadata: dict[str, Any] = field(default_factory=dict)
-    item_id: Optional[str] = None
-    created_at: Optional[str] = None
-    embedding: Optional[list[float]] = None
+    item_id: str | None = None
+    created_at: str | None = None
+    embedding: list[float] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {

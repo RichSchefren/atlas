@@ -4,10 +4,6 @@ Verifies determinism, expected category counts, and round-trip through
 the harness's question loader."""
 
 import json
-from pathlib import Path
-
-import pytest
-
 
 # ─── World + events ─────────────────────────────────────────────────────────
 

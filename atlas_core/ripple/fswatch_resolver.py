@@ -18,7 +18,7 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
@@ -55,10 +55,10 @@ class ResolverEvent:
     proposal_id: str
     decision: str
     applied: bool
-    error: Optional[str] = None
+    error: str | None = None
 
 
-def parse_decision(text: str) -> tuple[Optional[str], Optional[float]]:
+def parse_decision(text: str) -> tuple[str | None, float | None]:
     """Inspect the markdown body. Returns (decision, adjusted_confidence)
     or (None, None) if no checkbox is checked."""
     for pattern, label in _DECISION_REGEXES:
@@ -71,7 +71,7 @@ def parse_decision(text: str) -> tuple[Optional[str], Optional[float]]:
     return None, None
 
 
-def parse_proposal_id(text: str) -> Optional[str]:
+def parse_proposal_id(text: str) -> str | None:
     m = _FRONTMATTER_PROPOSAL_ID.search(text)
     return m.group(1).strip() if m else None
 
@@ -82,7 +82,7 @@ async def resolve_one(
     driver: AsyncDriver,
     ledger: HashChainedLedger,
     actor: str = "rich",
-    directory: Optional[Path] = None,
+    directory: Path | None = None,
 ) -> ResolverEvent:
     """Read one adjudication file, detect a checked decision, fire
     resolve_adjudication. Used by both the live watcher and the

@@ -5,8 +5,6 @@ Spec: PHASE-5-AND-BEYOND.md § 4
 
 from unittest.mock import MagicMock
 
-import pytest
-
 
 class TestMemoryBlock:
     def test_estimated_tokens_grows_with_content(self):

@@ -31,7 +31,8 @@ DEFAULT_HTTP_PORT: int = 9879
 # Defined at module scope (not inside create_http_app) so FastAPI can resolve
 # the annotation. `from __future__ import annotations` turns annotations into
 # strings, and FastAPI resolves them against module globals.
-from pydantic import BaseModel as _BaseModel, Field as _Field
+from pydantic import BaseModel as _BaseModel  # noqa: E402  (intentional placement; see comment above)
+from pydantic import Field as _Field  # noqa: E402
 
 
 class DispatchBody(_BaseModel):

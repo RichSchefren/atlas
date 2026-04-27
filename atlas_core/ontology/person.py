@@ -9,7 +9,6 @@ Locked via whiteboard 2026-04-24.
 from datetime import date
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -56,12 +55,12 @@ class FinancialRelationship(BaseModel):
 
     type: FinRelType
     priority_level: PriorityTier
-    lifetime_value: Optional[Decimal] = None
-    revenue_generated_ytd: Optional[Decimal] = None
-    annual_value: Optional[Decimal] = None
-    contract_path: Optional[str] = Field(default=None, description="Vault path to contract")
-    payment_terms: Optional[str] = None
-    expiration_date: Optional[date] = None
+    lifetime_value: Decimal | None = None
+    revenue_generated_ytd: Decimal | None = None
+    annual_value: Decimal | None = None
+    contract_path: str | None = Field(default=None, description="Vault path to contract")
+    payment_terms: str | None = None
+    expiration_date: date | None = None
     reciprocity_state: ReciprocityState = ReciprocityState.BALANCED
 
 
@@ -75,9 +74,9 @@ class ClosenessSignals(BaseModel):
     limitless_mentions_90d: int = 0
     limitless_minutes_90d: float = 0.0
     imessage_messages_90d: int = 0
-    imessage_recency_days: Optional[float] = None
+    imessage_recency_days: float | None = None
     meeting_attendances_90d: int = 0
-    last_interaction_date: Optional[date] = None
+    last_interaction_date: date | None = None
 
 
 class Person(AtlasEntity):
@@ -103,15 +102,15 @@ class Person(AtlasEntity):
 
     # Auto-computed signal — rolling 90-day weighted blend
     closeness_score: float = Field(default=0.0, ge=0.0, le=1.0)
-    closeness_signals: Optional[ClosenessSignals] = None
+    closeness_signals: ClosenessSignals | None = None
 
     # Rich-set, Atlas-protected
     importance_tier: ImportanceTier = ImportanceTier.PERIPHERAL
 
     # Optional structured financial relationship
-    financial_relationship: Optional[FinancialRelationship] = None
+    financial_relationship: FinancialRelationship | None = None
 
-    follow_through_rate: Optional[float] = Field(
+    follow_through_rate: float | None = Field(
         default=None,
         ge=0.0,
         le=1.0,

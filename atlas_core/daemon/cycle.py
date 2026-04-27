@@ -18,7 +18,6 @@ from pathlib import Path
 
 from atlas_core.daemon.health import HealthLogger, HealthRow
 
-
 log = logging.getLogger(__name__)
 
 

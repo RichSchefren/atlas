@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from atlas_core.working.auto_summarizer import AutoSummarizer
 from atlas_core.working.blocks import MemoryBlock
@@ -54,7 +54,7 @@ class WorkingMemoryManager:
         self,
         agent_id: str,
         *,
-        driver: Optional[AsyncDriver] = None,
+        driver: AsyncDriver | None = None,
         summarizer: AutoSummarizer | None = None,
     ):
         self.agent_id = agent_id

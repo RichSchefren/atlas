@@ -20,7 +20,6 @@ from atlas_core.ingestion.extractors.llm_base import (
     LLMExtractor,
 )
 
-
 # Limitless transcripts can be long (1-2 hours of audio). Cap input
 # at ~16K chars (~4K tokens) per call to control cost; longer files
 # get sliced.

@@ -126,6 +126,12 @@ target-version = "py310"
 select = ["E", "F", "I", "B", "UP"]
 ignore = ["E501"]
 
+[tool.ruff.lint.per-file-ignores]
+# Tests intentionally use `pytest.raises(Exception)` to assert that *any*
+# validation error is raised — narrowing the type would couple the test to
+# Pydantic internals.
+"tests/**/*.py" = ["B017"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

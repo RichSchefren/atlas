@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from graphiti_core import Graphiti
 
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def _default_anthropic_llm_client() -> Optional[Any]:
+def _default_anthropic_llm_client() -> Any | None:
     """Build a Graphiti-compatible Anthropic LLMClient if ANTHROPIC_API_KEY is set.
 
     Atlas defaults to Claude rather than OpenAI. We try to import lazily so the module
@@ -64,10 +64,10 @@ class AtlasGraphiti(Graphiti):
     def __init__(
         self,
         *args,
-        ripple_engine: Optional[RippleEngine] = None,
-        quarantine_store: Optional[QuarantineStore] = None,
-        ledger: Optional[HashChainedLedger] = None,
-        llm_client: Optional[Any] = None,
+        ripple_engine: RippleEngine | None = None,
+        quarantine_store: QuarantineStore | None = None,
+        ledger: HashChainedLedger | None = None,
+        llm_client: Any | None = None,
         **kwargs,
     ):
         if llm_client is None:

@@ -12,7 +12,6 @@ from pathlib import Path
 
 import pytest
 
-
 pytestmark = pytest.mark.integration
 
 
@@ -68,7 +67,7 @@ class TestClaudeCodeAdapter:
     """The stdio loop is wired in main(); test the dispatcher logic directly."""
 
     async def test_initialize_returns_protocol_version(self, mcp_server):
-        from atlas_core.adapters.claude_code import _handle, PROTOCOL_VERSION
+        from atlas_core.adapters.claude_code import PROTOCOL_VERSION, _handle
 
         response = await _handle(mcp_server, {
             "jsonrpc": "2.0", "id": 1, "method": "initialize",

@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-
 # ─── TenantContext ──────────────────────────────────────────────────────────
 
 
@@ -122,7 +121,10 @@ class TestSharingPolicy:
 
     def test_revoke_blocks_read(self, tmp_path):
         from atlas_core.multi_tenant import (
-            SharingPolicy, can_read, grant_share, revoke_share,
+            SharingPolicy,
+            can_read,
+            grant_share,
+            revoke_share,
         )
         policy = SharingPolicy(path=tmp_path / "sharing.sqlite")
         kref = "kref://Tenants/alice/Beliefs/x.belief"
@@ -158,7 +160,8 @@ class TestSharingPolicy:
 class TestFederatedAdjudication:
     def test_routes_to_both_tenant_dirs(self, tmp_path):
         from atlas_core.multi_tenant import (
-            FederatedAdjudication, route_to_tenants,
+            FederatedAdjudication,
+            route_to_tenants,
         )
         adj = FederatedAdjudication(
             proposal_id="fed_001",

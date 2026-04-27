@@ -3,7 +3,6 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -25,21 +24,21 @@ class ThreatLevel(str, Enum):
 
 
 class PriceRange(BaseModel):
-    low_usd: Optional[Decimal] = None
-    high_usd: Optional[Decimal] = None
-    typical_usd: Optional[Decimal] = None
+    low_usd: Decimal | None = None
+    high_usd: Decimal | None = None
+    typical_usd: Decimal | None = None
 
 
 class MarketEntity(AtlasEntity):
     """A competitor, adjacent player, market category, or platform Rich operates near."""
 
     entity_market_type: MarketEntityType
-    positioning: Optional[str] = None
-    pricing_range: Optional[PriceRange] = None
+    positioning: str | None = None
+    pricing_range: PriceRange | None = None
     strengths: list[str] = Field(default_factory=list)
     weaknesses: list[str] = Field(default_factory=list)
     threat_level: ThreatLevel = ThreatLevel.LOW
-    last_observed: Optional[datetime] = None
+    last_observed: datetime | None = None
     source_paths: list[str] = Field(
         default_factory=list,
         description="Vault paths to source materials (articles, social posts, transcripts)",

@@ -18,12 +18,12 @@ from benchmarks.business_mem_bench.adapters.external_stubs import (
     MemPalaceSystem,
     MissingClientError,
 )
-from benchmarks.business_mem_bench.adapters.memori_system import MemoriSystem
 from benchmarks.business_mem_bench.adapters.graphiti_system import (
     GraphitiSystem,
 )
 from benchmarks.business_mem_bench.adapters.letta_system import LettaSystem
 from benchmarks.business_mem_bench.adapters.mem0_system import Mem0System
+from benchmarks.business_mem_bench.adapters.memori_system import MemoriSystem
 from benchmarks.business_mem_bench.adapters.vanilla import VanillaSystem
 
 __all__ = [

@@ -26,7 +26,7 @@ import shutil
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from atlas_core.revision.uri import Kref
 from atlas_core.ripple.adjudication import DEFAULT_ADJUDICATION_DIR
@@ -65,11 +65,11 @@ class ResolveOutcome:
     decision: str
     target_kref: str
     applied: bool
-    new_revision_kref: Optional[str] = None
-    superseded_kref: Optional[str] = None
-    confidence_set: Optional[float] = None
-    ledger_event_id: Optional[str] = None
-    archived_to: Optional[str] = None
+    new_revision_kref: str | None = None
+    superseded_kref: str | None = None
+    confidence_set: float | None = None
+    ledger_event_id: str | None = None
+    archived_to: str | None = None
     notes: list[str] = field(default_factory=list)
 
 
@@ -118,7 +118,7 @@ def find_pending_entry(
     proposal_id: str,
     *,
     directory: Path | None = None,
-) -> Optional[Path]:
+) -> Path | None:
     """Scan the adjudication directory for a file whose frontmatter
     `proposal_id` matches. Returns None if not found.
 
@@ -148,7 +148,7 @@ async def resolve_adjudication(
     *,
     driver: AsyncDriver,
     ledger: HashChainedLedger,
-    adjusted_confidence: Optional[float] = None,
+    adjusted_confidence: float | None = None,
     actor: str = "rich",
     directory: Path | None = None,
 ) -> ResolveOutcome:

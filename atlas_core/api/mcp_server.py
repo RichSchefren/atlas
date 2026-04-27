@@ -19,8 +19,9 @@ Spec: 05 - Atlas Architecture & Schema § 2
 from __future__ import annotations
 
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
@@ -58,7 +59,7 @@ class MCPToolResult:
 
     ok: bool
     result: Any = None
-    error: Optional[str] = None
+    error: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -554,9 +555,9 @@ class AtlasMCPServer:
         self,
         proposal_id: str,
         decision: str,
-        adjusted_confidence: Optional[float] = None,
+        adjusted_confidence: float | None = None,
         actor: str = "rich",
-        adjudication_dir: Optional[str] = None,
+        adjudication_dir: str | None = None,
     ) -> dict[str, Any]:
         """Apply Rich's decision on a queued adjudication entry.
 
@@ -647,7 +648,7 @@ class AtlasMCPServer:
 
     async def _tool_quarantine_list_pending(
         self,
-        lane: Optional[str] = None,
+        lane: str | None = None,
         limit: int = 50,
     ) -> dict[str, Any]:
         rows = self.quarantine.list_pending(lane=lane)[:limit]
@@ -686,7 +687,7 @@ class AtlasMCPServer:
         self,
         agent_id: str = "default",
         max_tokens: int = 4000,
-        block_order: Optional[list[str]] = None,
+        block_order: list[str] | None = None,
     ) -> dict[str, Any]:
         """Assemble + return working-memory context for the given agent."""
         from atlas_core.working import (
@@ -763,7 +764,7 @@ class AtlasMCPServer:
         granter_tenant: str,
         grantee_tenant: str,
         kref_pattern: str,
-        expires_at: Optional[str] = None,
+        expires_at: str | None = None,
     ) -> dict[str, Any]:
         from atlas_core.multi_tenant import grant_share
         grant = grant_share(
@@ -798,8 +799,8 @@ class AtlasMCPServer:
 
     async def _tool_sharing_list_grants(
         self,
-        granter_tenant: Optional[str] = None,
-        grantee_tenant: Optional[str] = None,
+        granter_tenant: str | None = None,
+        grantee_tenant: str | None = None,
     ) -> dict[str, Any]:
         policy = self._ensure_sharing_policy()
         if grantee_tenant:

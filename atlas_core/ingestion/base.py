@@ -9,13 +9,12 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from atlas_core.trust import CandidateClaim, EvidenceRef, QuarantineStore
+    from atlas_core.trust import QuarantineStore
 
 
 log = logging.getLogger(__name__)

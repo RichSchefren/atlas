@@ -12,8 +12,8 @@ Spec: PHASE-5-AND-BEYOND.md § 1.4
 """
 
 from atlas_core.ingestion.extractors.llm_base import (
-    LLMExtractor,
     LLMExtractionResult,
+    LLMExtractor,
     load_prompt_template,
 )
 from atlas_core.ingestion.extractors.llm_claude_sessions import (

@@ -5,7 +5,6 @@ because the user is the sovereign node of their own world model.
 """
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -16,9 +15,9 @@ class HealthState(BaseModel):
     """Rich's current health state. Updated from health summaries + capture streams."""
 
     energy: int = Field(..., ge=1, le=10, description="Current energy 1-10")
-    sleep_last_night_hours: Optional[float] = None
+    sleep_last_night_hours: float | None = None
     workout_completed_today: bool = False
-    pain_or_injury: Optional[str] = None
+    pain_or_injury: str | None = None
     last_updated: datetime
 
 
@@ -29,8 +28,8 @@ class FinancialSnapshot(BaseModel):
         ...,
         description="Coarse band: 'sub_100k' | '100k_250k' | '250k_500k' | '500k_plus'",
     )
-    runway_months: Optional[float] = None
-    biggest_revenue_concern: Optional[str] = None
+    runway_months: float | None = None
+    biggest_revenue_concern: str | None = None
     last_updated: datetime
 
 
@@ -53,7 +52,7 @@ class Rich(AtlasEntity):
     """
 
     psychological_profiles: list[PsychReport] = Field(default_factory=list)
-    current_health: Optional[HealthState] = None
+    current_health: HealthState | None = None
     current_priorities: list[str] = Field(
         default_factory=list,
         description="Active priority refs as kref:// strings",
@@ -63,6 +62,6 @@ class Rich(AtlasEntity):
     active_excitements: list[str] = Field(default_factory=list)
     learning_in_progress: list[str] = Field(default_factory=list)
     operating_standards: list[str] = Field(default_factory=list)
-    family_state_summary: Optional[str] = None
-    relationship_state_sabrina: Optional[str] = None
-    financial_state_snapshot: Optional[FinancialSnapshot] = None
+    family_state_summary: str | None = None
+    relationship_state_sabrina: str | None = None
+    financial_state_snapshot: FinancialSnapshot | None = None

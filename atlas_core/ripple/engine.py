@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from atlas_core.ripple.adjudication import (
     AdjudicationRoute,
@@ -60,7 +60,7 @@ class CascadeResult:
     proposals: list[ReassessmentProposal] = field(default_factory=list)
     contradictions: list[ContradictionPair] = field(default_factory=list)
     routing: list[RoutingDecision] = field(default_factory=list)
-    error: Optional[str] = None
+    error: str | None = None
 
     @property
     def succeeded(self) -> bool:

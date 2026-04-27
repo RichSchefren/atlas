@@ -16,8 +16,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Optional, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
@@ -181,7 +180,7 @@ HALF_LIFE_DAYS: float = 90.0
 """Temporal decay half-life — older beliefs lose 50% influence per 90 days."""
 
 
-def _temporal_decay_factor(days_since_evidence: Optional[float]) -> float:
+def _temporal_decay_factor(days_since_evidence: float | None) -> float:
     """Compute the decay factor centered around 0.5 — see Ripple Spec § 4.1.
 
     days=0 → 1.0 (full strength)
@@ -200,7 +199,7 @@ async def _fetch_dependent_metadata(
     driver: AsyncDriver,
     upstream_kref: str,
     dependent_kref: str,
-) -> tuple[float, Optional[float], str]:
+) -> tuple[float, float | None, str]:
     """Return (dependency_strength, days_since_evidence, dependent_belief_text).
 
     Reads the DEPENDS_ON edge property dependency_strength (default 1.0 for
@@ -236,7 +235,7 @@ async def reassess_dependent(
     upstream: UpstreamChange,
     *,
     weights: ReassessWeights = DEFAULT_WEIGHTS,
-    llm: Optional[LLMReassessor] = None,
+    llm: LLMReassessor | None = None,
 ) -> ReassessmentProposal:
     """Compute new confidence_score for a single dependent.
 
@@ -311,7 +310,7 @@ async def reassess_cascade(
     upstream: UpstreamChange,
     *,
     weights: ReassessWeights = DEFAULT_WEIGHTS,
-    llm: Optional[LLMReassessor] = None,
+    llm: LLMReassessor | None = None,
 ) -> list[ReassessmentProposal]:
     """Reassess every node in a cascade. Returns proposals in BFS order.
 

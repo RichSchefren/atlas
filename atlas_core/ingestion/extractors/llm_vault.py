@@ -11,13 +11,11 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any
 
 from atlas_core.ingestion.extractors.llm_base import (
     LLMExtractionResult,
     LLMExtractor,
 )
-
 
 # Files smaller than this don't have enough body to warrant an LLM call.
 MIN_BODY_CHARS: int = 200

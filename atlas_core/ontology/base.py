@@ -8,7 +8,6 @@ attributes). All Phase 1 types verified to comply.
 
 from pydantic import BaseModel, ConfigDict
 
-
 GRAPHITI_RESERVED_FIELDS = frozenset({
     "uuid",
     "name",

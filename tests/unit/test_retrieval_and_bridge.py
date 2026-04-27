@@ -6,9 +6,6 @@ Spec: PHASE-5-AND-BEYOND.md § 1.6 + § 1.7
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-
 # ─── VaultSearchClient ──────────────────────────────────────────────────────
 
 

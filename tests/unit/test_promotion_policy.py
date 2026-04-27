@@ -76,7 +76,6 @@ class TestGate1Policy:
         assert gate1.outcome == GateOutcome.PASS
 
     def test_pending_blocks_at_gate1(self, quarantine, policy):
-        from atlas_core.trust import GateOutcome
 
         # pref/style + low confidence → PENDING (not auto-promoted)
         upsert = quarantine.upsert_candidate(

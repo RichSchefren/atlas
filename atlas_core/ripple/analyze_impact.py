@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 from collections import deque
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from atlas_core.revision.uri import Kref
 
@@ -57,7 +57,7 @@ class ImpactNode:
     types: tuple[str, ...]
     """Neo4j labels on the dependent — e.g., ('AtlasRevision',) or ('AtlasItem',)."""
 
-    current_confidence: Optional[float]
+    current_confidence: float | None
     """Current confidence_score on the node, or None if not a typed belief."""
 
     depth: int

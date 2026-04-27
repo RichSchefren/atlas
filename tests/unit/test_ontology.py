@@ -1,49 +1,49 @@
 """Unit tests for Atlas Phase 1 ontology — verifies all 8 types instantiate cleanly
 and field-name collision check fires correctly."""
 
-import pytest
-from datetime import datetime, date, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
+import pytest
+
 from atlas_core.ontology import (
-    PHASE_1_ENTITY_TYPES,
-    EDGE_TYPE_MAP,
-    StructuralEdgeType,
-    DomainEdgeType,
-    Rich,
-    Person,
-    Program,
-    Commitment,
-    MarketEntity,
-    Revenue,
-    Project,
-    StrategicBelief,
-    HealthState,
-    PsychReport,
-    FinancialSnapshot,
-    ClosenessSignals,
-    FinancialRelationship,
-    FinRelType,
-    ImportanceTier,
-    PriorityTier,
-    ReciprocityState,
-    EnrollmentStatus,
-    LifecycleStage,
-    CommitmentStatus,
-    StakeLevel,
-    MarketEntityType,
-    ThreatLevel,
-    PriceRange,
-    Period,
-    RevenueType,
-    ProjectStatus,
-    ProjectHealth,
-    Milestone,
-    ConfidenceLabel,
     CONFIDENCE_LABEL_DEFAULTS,
     CONFIDENCE_TRANSITION_HYSTERESIS,
+    EDGE_TYPE_MAP,
+    PHASE_1_ENTITY_TYPES,
+    ClosenessSignals,
+    Commitment,
+    CommitmentStatus,
+    ConfidenceLabel,
+    DomainEdgeType,
+    EnrollmentStatus,
+    FinancialRelationship,
+    FinRelType,
+    HealthState,
+    ImportanceTier,
+    LifecycleStage,
+    MarketEntity,
+    MarketEntityType,
+    Milestone,
+    Period,
+    Person,
+    PriceRange,
+    PriorityTier,
+    Program,
+    Project,
+    ProjectHealth,
+    ProjectStatus,
+    PsychReport,
+    ReciprocityState,
+    Revenue,
+    RevenueType,
+    Rich,
+    StakeLevel,
+    StrategicBelief,
+    StructuralEdgeType,
+    ThreatLevel,
 )
-from atlas_core.ontology.base import AtlasEntity, GRAPHITI_RESERVED_FIELDS
+from atlas_core.ontology.base import GRAPHITI_RESERVED_FIELDS, AtlasEntity
 
 
 class TestPhase1EntityRegistry:

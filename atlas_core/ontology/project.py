@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -26,9 +25,9 @@ class ProjectHealth(str, Enum):
 
 class Milestone(BaseModel):
     label: str
-    target_date: Optional[datetime] = None
+    target_date: datetime | None = None
     completed: bool = False
-    completed_date: Optional[datetime] = None
+    completed_date: datetime | None = None
 
 
 class Project(AtlasEntity):
@@ -37,13 +36,13 @@ class Project(AtlasEntity):
     project_status: ProjectStatus = ProjectStatus.PLANNING
     owner_kref: str = Field(..., description="kref:// of Person|Rich who owns this project")
     contributor_krefs: list[str] = Field(default_factory=list)
-    associated_program_kref: Optional[str] = None
+    associated_program_kref: str | None = None
     dependency_krefs: list[str] = Field(
         default_factory=list,
         description="kref://s of upstream Projects that must complete first",
     )
     milestones: list[Milestone] = Field(default_factory=list)
-    started_at: Optional[datetime] = None
-    target_completion: Optional[datetime] = None
-    actual_completion: Optional[datetime] = None
+    started_at: datetime | None = None
+    target_completion: datetime | None = None
+    actual_completion: datetime | None = None
     health: ProjectHealth = ProjectHealth.GREEN

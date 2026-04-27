@@ -14,10 +14,8 @@ from a seed in events.py.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Optional
-
 
 CORPUS_START_DATE: date = date(2026, 1, 1)
 CORPUS_END_DATE: date = date(2026, 3, 31)
@@ -124,19 +122,19 @@ class AtlasCoffeeWorld:
     wholesale_clients: tuple[WholesaleClient, ...] = WHOLESALE_CLIENTS
     competitors: tuple[Competitor, ...] = COMPETITORS
 
-    def employee_by_id(self, eid: str) -> Optional[Employee]:
+    def employee_by_id(self, eid: str) -> Employee | None:
         for e in self.employees:
             if e.employee_id == eid:
                 return e
         return None
 
-    def product_by_id(self, pid: str) -> Optional[ProductLine]:
+    def product_by_id(self, pid: str) -> ProductLine | None:
         for p in self.product_lines:
             if p.product_id == pid:
                 return p
         return None
 
-    def client_by_id(self, cid: str) -> Optional[WholesaleClient]:
+    def client_by_id(self, cid: str) -> WholesaleClient | None:
         for c in self.wholesale_clients:
             if c.client_id == cid:
                 return c

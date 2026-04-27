@@ -21,13 +21,11 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from benchmarks.business_mem_bench.questions import (
-    CATEGORIES,
     Category,
     Question,
     load_questions,
 )
 from benchmarks.business_mem_bench.scoring import score_answer
-
 
 log = logging.getLogger(__name__)
 

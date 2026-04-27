@@ -23,10 +23,8 @@ Spec: PHASE-5-AND-BEYOND.md § 1.3 (Tier 1 entity resolution)
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
-
 
 log = logging.getLogger(__name__)
 
@@ -115,7 +113,7 @@ class AliasDictionary:
 
     # ── Lookup / mutation ────────────────────────────────────────────
 
-    def lookup(self, surface: str) -> Optional[AliasMatch]:
+    def lookup(self, surface: str) -> AliasMatch | None:
         """Case-insensitive exact match. Returns None if no hit."""
         if not self._loaded:
             self.load()

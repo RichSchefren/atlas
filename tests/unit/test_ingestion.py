@@ -1,9 +1,6 @@
 """Unit tests for the ingestion pipeline framework + Vault + Limitless extractors."""
 
-import json
 import tempfile
-import time
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest

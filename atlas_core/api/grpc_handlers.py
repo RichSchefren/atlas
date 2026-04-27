@@ -29,7 +29,6 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from neo4j import AsyncDriver
 
-    from atlas_core.api.mcp_server import AtlasMCPServer
 
 
 log = logging.getLogger(__name__)

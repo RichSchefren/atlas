@@ -32,7 +32,6 @@ from atlas_core.ingestion.base import (
 )
 from atlas_core.ingestion.confidence import STREAM_CONFIDENCE_FLOORS
 
-
 log = logging.getLogger(__name__)
 
 

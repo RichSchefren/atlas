@@ -19,13 +19,13 @@ Spec: 05 - Atlas Architecture & Schema § 6
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING
 
 from atlas_core.trust.ledger import EventType, HashChainedLedger, LedgerEvent
 from atlas_core.trust.quarantine import (
-    AUTO_PROMOTE_THRESHOLD,
     CandidateStatus,
     QuarantineStore,
 )
@@ -66,11 +66,11 @@ class PromotionResult:
     candidate_id: str
     promoted: bool
     gates: list[GateResult] = field(default_factory=list)
-    ledger_event: Optional[LedgerEvent] = None
-    blocked_at_gate: Optional[str] = None
+    ledger_event: LedgerEvent | None = None
+    blocked_at_gate: str | None = None
     blocked_reason: str = ""
 
-    def first_failure(self) -> Optional[GateResult]:
+    def first_failure(self) -> GateResult | None:
         for g in self.gates:
             if g.outcome == GateOutcome.FAIL:
                 return g
@@ -80,7 +80,7 @@ class PromotionResult:
 # ─── Hard-block registry (configurable safety net) ───────────────────────────
 
 
-HardBlockPredicate = Callable[[dict], Optional[str]]
+HardBlockPredicate = Callable[[dict], str | None]
 """A predicate over a candidate dict. Returns None to allow, or a string
 explaining why the candidate is blocked."""
 
@@ -104,7 +104,7 @@ def clear_hard_blocks() -> None:
     _HARD_BLOCK_PREDICATES.clear()
 
 
-def _check_hard_blocks(candidate: dict) -> Optional[str]:
+def _check_hard_blocks(candidate: dict) -> str | None:
     """Run all registered predicates. Returns first block reason, or None."""
     for predicate in _HARD_BLOCK_PREDICATES:
         reason = predicate(candidate)
@@ -141,7 +141,7 @@ class PromotionPolicy:
         candidate_id: str,
         *,
         actor_id: str = "atlas",
-        decision_id: Optional[str] = None,
+        decision_id: str | None = None,
     ) -> PromotionResult:
         """Run the 4-gate pipeline. Returns PromotionResult with gates list.
 

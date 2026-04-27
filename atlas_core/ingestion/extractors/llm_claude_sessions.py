@@ -18,7 +18,6 @@ from atlas_core.ingestion.extractors.llm_base import (
     LLMExtractor,
 )
 
-
 # One Claude session can be long; we slice into ~16K char windows.
 MAX_CONVERSATION_CHARS: int = 16_000
 MIN_CONVERSATION_CHARS: int = 400

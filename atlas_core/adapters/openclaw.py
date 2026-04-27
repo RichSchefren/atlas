@@ -34,7 +34,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from atlas_core.api.mcp_server import AtlasMCPServer
@@ -56,7 +56,7 @@ class Recall:
     text: str
     score: float
     metadata: dict[str, Any] = field(default_factory=dict)
-    timestamp: Optional[str] = None
+    timestamp: str | None = None
 
 
 class AtlasOpenClawPlugin:
@@ -128,7 +128,7 @@ class AtlasOpenClawPlugin:
         return False
 
     async def list_memories(
-        self, filter: Optional[dict[str, Any]] = None,
+        self, filter: dict[str, Any] | None = None,
     ) -> list[Recall]:
         """List quarantine candidates by agent_id (filter['agent_id'])."""
         result = await self.mcp.dispatch(

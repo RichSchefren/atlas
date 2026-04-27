@@ -261,25 +261,28 @@ PYTHONPATH=. pytest tests/integration/test_agm_compliance.py -v
 
 Full scenario-level table: [`paper/appendix-a-agm-compliance.md`](paper/appendix-a-agm-compliance.md).
 
-### 2. BusinessMemBench — Atlas 1.000, Graphiti 0.711, Vanilla 0.000
+### 2. BusinessMemBench — Atlas 1.000, Graphiti 0.711, Vanilla 0.000 (preliminary, self-authored)
 
-Atlas's new 1,000-question benchmark across seven categories. Currently 149 deterministic questions auto-generated from the corpus across three paraphrase variants per template (the 200 human-authored gold subset and LLM expansion to 1,000 follow). All three columns are measured against live Neo4j 5.26.
+> ⚠ **Honesty disclaimer.** BusinessMemBench is *authored by the Atlas project*. The 149 questions in the current set are *deterministic and synthetic* — generated from corpus templates, not written by independent domain operators. Mem0, Letta, Memori, Kumiho, and MemPalace columns are still **skipped** because their API clients aren't pinned in this environment. We're publishing these numbers because the test loop reproduces on every machine that runs `scripts/run_bmb.py`, but **you should not treat them as a peer-reviewed head-to-head until the 200 human-authored gold subset and the four skipped baselines have actually run**. The full disclosure of what's authored vs measured is in `paper/atlas.md` § 6.2.
+
+Currently 149 deterministic questions across three paraphrase variants per template. The 200 human-authored gold subset and LLM expansion to 1,000 are roadmap.
 
 | System                | overall | prop | contra | line | cross | hist | prov | forget |
 |-----------------------|---------|------|--------|------|-------|------|------|--------|
 | Vanilla (no memory)   | 0.000   | 0.00 | 0.00   | 0.00 | 0.00  | 0.00 | 0.00 | 0.00   |
 | Graphiti              | 0.711   | 0.33 | 0.00   | 1.00 | 0.00  | 1.00 | 1.00 | 0.00   |
 | **Atlas**             | **1.000** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** |
+| Mem0 / Letta / Memori | _skipped — API keys not pinned_ |
 
-Atlas wins by **+28.9 percentage points** over Graphiti, the closest open-source neighbor. The four categories where Atlas dominates (contradiction, cross_stream, forgetfulness, propagation) are exactly the ones it was designed for. Mem0, Letta, Memori columns land when their API keys are pinned. Reproducible in ≤30 seconds:
+Atlas's structural lead over Graphiti — the contradiction / cross_stream / forgetfulness / propagation columns — is what the architecture was designed for. The score gap on a self-authored deterministic benchmark proves the architecture works against its own thesis; it does not yet prove general superiority. Reproducible in ≤30 seconds:
 
 ```bash
 PYTHONPATH=. python scripts/run_bmb.py
 ```
 
-### 3. LoCoMo / LongMemEval — parity claim
+### 3. LoCoMo / LongMemEval — claimed parity, NOT YET MEASURED
 
-Atlas matches Kumiho's published numbers on LoCoMo (0.447 F1) and LoCoMo-Plus (93.3% accuracy). Reported in the paper.
+> ⚠ The runners exist (`benchmarks/locomo/runner.py`, `benchmarks/longmemeval/runner.py`) and pass their own structural tests. The actual datasets — research-license JSONL files from the LongMemEval and LoCoMo papers — have **not** been downloaded and run against Atlas yet. The "parity with Kumiho's published 0.447 F1" claim is therefore an architectural prediction, not a measurement. The paper marks every cell in this category as predicted-not-measured.
 
 ---
 

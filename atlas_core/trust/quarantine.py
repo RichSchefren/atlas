@@ -16,14 +16,13 @@ import hashlib
 import json
 import logging
 import sqlite3
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from ulid import ULID
-
 
 log = logging.getLogger(__name__)
 
@@ -175,11 +174,21 @@ def _canonical_json(obj: Any) -> str:
 def _candidate_fingerprint(claim: CandidateClaim) -> str:
     """Deterministic fingerprint over the canonical claim shape.
 
-    Two claims with the same (subject, predicate, object, scope, lane) collapse
-    to one candidate row — preventing duplicate explosions from streams.
+    Two claims with the same (subject, predicate, object, scope) collapse
+    to one candidate row, regardless of which ingestion lane brought them
+    in. This is required for CROSS-LANE corroboration to work: when Sarah
+    says "launch is May 15" in a Limitless meeting (lane=
+    atlas_observational) AND Rich writes "launch is May 15" in his vault
+    (lane=atlas_vault), those should accumulate as two evidence references
+    on ONE candidate, not split into two separate candidates.
+
+    Codex review (2026-04-27) flagged this as a real design bug: prior
+    to this commit, `lane` was part of the fingerprint, which broke
+    cross-stream corroboration — exactly the use case Atlas exists to
+    serve. The `lane` column on the row records the FIRST lane that
+    asserted the claim; subsequent lanes append to evidence_refs.
     """
     canonical = _canonical_json([
-        claim.lane,
         claim.subject_kref,
         claim.predicate,
         claim.object_value,
@@ -463,7 +472,7 @@ class QuarantineStore:
         candidate_id: str,
         *,
         ledger_event_id: str,
-        decision_id: Optional[str] = None,
+        decision_id: str | None = None,
     ) -> None:
         """Mark candidate as promoted to ledger. Atomic.
 
@@ -520,14 +529,14 @@ class QuarantineStore:
                 ),
             )
 
-    def get_candidate(self, candidate_id: str) -> Optional[dict[str, Any]]:
+    def get_candidate(self, candidate_id: str) -> dict[str, Any] | None:
         with self._connect() as conn:
             row = conn.execute(
                 "SELECT * FROM candidates WHERE candidate_id = ?", (candidate_id,)
             ).fetchone()
         return dict(row) if row else None
 
-    def list_pending(self, *, lane: Optional[str] = None) -> list[dict[str, Any]]:
+    def list_pending(self, *, lane: str | None = None) -> list[dict[str, Any]]:
         """Return pending candidates, optionally filtered by lane."""
         sql = "SELECT * FROM candidates WHERE status = ?"
         params: list[Any] = [CandidateStatus.PENDING.value]
@@ -553,7 +562,7 @@ class QuarantineStore:
         source_lane: str,
         payload: dict[str, Any],
         attempts: int,
-        last_error: Optional[str] = None,
+        last_error: str | None = None,
     ) -> str:
         """Push a failed extraction into the dead letter queue. Returns DLQ id."""
         now = _utc_now()

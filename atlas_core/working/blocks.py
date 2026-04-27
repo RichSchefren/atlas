@@ -13,7 +13,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-
 DEFAULT_BLOCK_MAX_TOKENS: int = 1500
 """Sized to fit a typical block in a 16K context window without
 crowding out conversational turns. Letta's default is similar."""

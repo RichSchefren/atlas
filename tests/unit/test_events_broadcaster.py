@@ -6,8 +6,6 @@ Spec: PHASE-5-AND-BEYOND.md § 3.4
 import asyncio
 import json
 
-import pytest
-
 
 class TestAtlasEvent:
     def test_to_sse_line_format(self):

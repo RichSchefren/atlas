@@ -58,7 +58,7 @@ def main() -> int:
     candidates_db = ATLAS_DATA_DIR / "candidates.db"
     ledger_db = ATLAS_DATA_DIR / "ledger.db"
 
-    print(f"== Atlas first real run ==")
+    print("== Atlas first real run ==")
     print(f"Data dir   : {ATLAS_DATA_DIR}")
     print(f"Vault root : {VAULT_ROOT}")
     print(f"Limitless  : {LIMITLESS_ROOT}")
@@ -66,7 +66,7 @@ def main() -> int:
     print()
 
     if not VAULT_ROOT.exists():
-        print(f"  ! vault root missing — skipping vault stream", file=sys.stderr)
+        print("  ! vault root missing — skipping vault stream", file=sys.stderr)
         vault_extractor = None
     else:
         # File-cap enforced inside extractor via env contract — fall back
@@ -88,7 +88,7 @@ def main() -> int:
             archive_root=LIMITLESS_ROOT,
         ))
     else:
-        print(f"  ! limitless root missing — skipping", file=sys.stderr)
+        print("  ! limitless root missing — skipping", file=sys.stderr)
 
     # Screenpipe (read-only against ~/.screenpipe/db.sqlite)
     screenpipe_db = Path(
@@ -105,7 +105,7 @@ def main() -> int:
             batch_limit=int(os.environ.get("ATLAS_SCREENPIPE_LIMIT", "300")),
         ))
     else:
-        print(f"  ! screenpipe db missing — skipping", file=sys.stderr)
+        print("  ! screenpipe db missing — skipping", file=sys.stderr)
 
     # Claude session logs
     claude_root = Path(
@@ -121,7 +121,7 @@ def main() -> int:
             projects_root=claude_root,
         ))
     else:
-        print(f"  ! claude projects root missing — skipping", file=sys.stderr)
+        print("  ! claude projects root missing — skipping", file=sys.stderr)
 
     if not orch.registered_streams():
         print("No streams to run. Exiting.")
@@ -179,7 +179,7 @@ def main() -> int:
         "total_claims": report.total_claims,
         "total_errors": report.total_errors,
         "candidates_by_status": {s: n for s, n in status_rows},
-        "candidates_by_lane": {l: n for l, n in lane_rows},
+        "candidates_by_lane": {lane: n for lane, n in lane_rows},
         "ledger_intact": chain_status.intact,
         "ledger_last_sequence": chain_status.last_verified_sequence,
     }

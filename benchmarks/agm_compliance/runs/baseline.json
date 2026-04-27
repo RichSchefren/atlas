@@ -1,0 +1,455 @@
+{
+  "started_at": "2026-04-27T19:28:08.917828+00:00",
+  "finished_at": "2026-04-27T19:28:09.624573+00:00",
+  "neo4j_uri": "bolt://localhost:7687",
+  "scenarios_total": 49,
+  "scenarios_passed": 49,
+  "scenarios_failed": 0,
+  "pass_rate": 1.0,
+  "by_category": {
+    "simple": {
+      "passed": 10,
+      "total": 10
+    },
+    "multi_item": {
+      "passed": 8,
+      "total": 8
+    },
+    "chain": {
+      "passed": 8,
+      "total": 8
+    },
+    "temporal": {
+      "passed": 8,
+      "total": 8
+    },
+    "adversarial": {
+      "passed": 15,
+      "total": 15
+    }
+  },
+  "by_postulate": {
+    "K*2": {
+      "passed": 12,
+      "total": 12
+    },
+    "K*4": {
+      "passed": 1,
+      "total": 1
+    },
+    "K*3": {
+      "passed": 8,
+      "total": 8
+    },
+    "K*5": {
+      "passed": 9,
+      "total": 9
+    },
+    "K*6": {
+      "passed": 3,
+      "total": 3
+    },
+    "Relevance": {
+      "passed": 7,
+      "total": 7
+    },
+    "Core-Retainment": {
+      "passed": 9,
+      "total": 9
+    }
+  },
+  "results": [
+    {
+      "scenario_id": "simple-01",
+      "category": "simple",
+      "postulate": "K*2",
+      "passed": true,
+      "detail": "got={'content': {'a': 1}, 'kref': 'kref://AtlasComp/95641588/test_673c7e.belief?r=015abd7f5cc5'}",
+      "error": null
+    },
+    {
+      "scenario_id": "simple-02",
+      "category": "simple",
+      "postulate": "K*4",
+      "passed": true,
+      "detail": "supersedes_count=0",
+      "error": null
+    },
+    {
+      "scenario_id": "simple-03",
+      "category": "simple",
+      "postulate": "K*3",
+      "passed": true,
+      "detail": "got={'content': {'a': 1}, 'kref': 'kref://AtlasComp/7c613c40/test_05dbe8.belief?r=015abd7f5cc5'}",
+      "error": null
+    },
+    {
+      "scenario_id": "simple-04",
+      "category": "simple",
+      "postulate": "K*2",
+      "passed": true,
+      "detail": "got={'content': {'a': 2}, 'kref': 'kref://AtlasComp/8dcb650e/test_51de7c.belief?r=7e8059f49558'}",
+      "error": null
+    },
+    {
+      "scenario_id": "simple-05",
+      "category": "simple",
+      "postulate": "K*5",
+      "passed": true,
+      "detail": "supersedes_count=1",
+      "error": null
+    },
+    {
+      "scenario_id": "simple-06",
+      "category": "simple",
+      "postulate": "K*6",
+      "passed": true,
+      "detail": "got={'content': {'a': 2}, 'kref': 'kref://AtlasComp/88c2387b/test_708a4b.belief?r=7e8059f49558'}",
+      "error": null
+    },
+    {
+      "scenario_id": "simple-07",
+      "category": "simple",
+      "postulate": "Relevance",
+      "passed": true,
+      "detail": "got=None, deprecated=True",
+      "error": null
+    },
+    {
+      "scenario_id": "simple-08",
+      "category": "simple",
+      "postulate": "Core-Retainment",
+      "passed": true,
+      "detail": "revision_count=1",
+      "error": null
+    },
+    {
+      "scenario_id": "simple-09",
+      "category": "simple",
+      "postulate": "K*2",
+      "passed": true,
+      "detail": "evidence={'source': 'kref://Test/Meeting/m1'}",
+      "error": null
+    },
+    {
+      "scenario_id": "simple-10",
+      "category": "simple",
+      "postulate": "K*3",
+      "passed": true,
+      "detail": "got={'content': {'price': 997, 'tier': 'premium'}, 'kref': 'kref://AtlasComp/ed6aa384/test_b118fb.belief?r=54c3739d281b'}",
+      "error": null
+    },
+    {
+      "scenario_id": "multi-01",
+      "category": "multi_item",
+      "postulate": "K*5",
+      "passed": true,
+      "detail": "a={'content': {'v': 'a1'}, 'kref': 'kref://AtlasComp/a9242423/test_070c53_a.belief?r=3649771a8092'}, b={'content': {'v': 'b1'}, 'kref': 'kref://AtlasComp/a9242423/test_070c53_b.belief?r=10b3cf7aadb1'}",
+      "error": null
+    },
+    {
+      "scenario_id": "multi-02",
+      "category": "multi_item",
+      "postulate": "K*2",
+      "passed": true,
+      "detail": "item_b_supersedes=0",
+      "error": null
+    },
+    {
+      "scenario_id": "multi-03",
+      "category": "multi_item",
+      "postulate": "K*2",
+      "passed": true,
+      "detail": "a={'content': {'v': 'a2'}, 'kref': 'kref://AtlasComp/7b8f2579/test_35bd44_a.belief?r=d6bfaa73e8af'}",
+      "error": null
+    },
+    {
+      "scenario_id": "multi-04",
+      "category": "multi_item",
+      "postulate": "K*5",
+      "passed": true,
+      "detail": "b={'content': {'v': 'b1'}, 'kref': 'kref://AtlasComp/6efea9a8/test_9ceb22_b.belief?r=10b3cf7aadb1'}",
+      "error": null
+    },
+    {
+      "scenario_id": "multi-05",
+      "category": "multi_item",
+      "postulate": "Relevance",
+      "passed": true,
+      "detail": "a=None, b={'content': {'v': 'b1'}, 'kref': 'kref://AtlasComp/c5aaad42/test_e78893_b.belief?r=10b3cf7aadb1'}",
+      "error": null
+    },
+    {
+      "scenario_id": "multi-06",
+      "category": "multi_item",
+      "postulate": "Relevance",
+      "passed": true,
+      "detail": "b deprecated",
+      "error": null
+    },
+    {
+      "scenario_id": "multi-07",
+      "category": "multi_item",
+      "postulate": "Core-Retainment",
+      "passed": true,
+      "detail": "a=2, b=1, expected=3",
+      "error": null
+    },
+    {
+      "scenario_id": "multi-08",
+      "category": "multi_item",
+      "postulate": "K*3",
+      "passed": true,
+      "detail": "a={'v'}, b={'v'}",
+      "error": null
+    },
+    {
+      "scenario_id": "chain-01",
+      "category": "chain",
+      "postulate": "K*5",
+      "passed": true,
+      "detail": "supersedes=3",
+      "error": null
+    },
+    {
+      "scenario_id": "chain-02",
+      "category": "chain",
+      "postulate": "Core-Retainment",
+      "passed": true,
+      "detail": "revisions=4",
+      "error": null
+    },
+    {
+      "scenario_id": "chain-03",
+      "category": "chain",
+      "postulate": "K*2",
+      "passed": true,
+      "detail": "got={'content': {'v': 4}, 'kref': 'kref://AtlasComp/c60753dd/test_8784d5.belief?r=65024d06a006'}",
+      "error": null
+    },
+    {
+      "scenario_id": "chain-04",
+      "category": "chain",
+      "postulate": "K*5",
+      "passed": true,
+      "detail": "supersedes=9",
+      "error": null
+    },
+    {
+      "scenario_id": "chain-05",
+      "category": "chain",
+      "postulate": "K*2",
+      "passed": true,
+      "detail": "got={'content': {'v': 10}, 'kref': 'kref://AtlasComp/6d806df8/test_272fa2.belief?r=ff0dab9b658a'}",
+      "error": null
+    },
+    {
+      "scenario_id": "chain-06",
+      "category": "chain",
+      "postulate": "Relevance",
+      "passed": true,
+      "detail": "not deprecated",
+      "error": null
+    },
+    {
+      "scenario_id": "chain-07",
+      "category": "chain",
+      "postulate": "Core-Retainment",
+      "passed": true,
+      "detail": "revisions=3",
+      "error": null
+    },
+    {
+      "scenario_id": "chain-08",
+      "category": "chain",
+      "postulate": "K*3",
+      "passed": true,
+      "detail": "got={'content': {'v': 10}, 'kref': 'kref://AtlasComp/c87136a7/test_abeaed.belief?r=ff0dab9b658a'}",
+      "error": null
+    },
+    {
+      "scenario_id": "temp-01",
+      "category": "temporal",
+      "postulate": "Core-Retainment",
+      "passed": true,
+      "detail": "initial={'content': {'v': 1}, 'kref': 'kref://AtlasComp/a7b94322/test_dc0c46.belief?r=afbf9d0f3560'}",
+      "error": null
+    },
+    {
+      "scenario_id": "temp-02",
+      "category": "temporal",
+      "postulate": "K*5",
+      "passed": true,
+      "detail": "current={'content': {'v': 2}, 'kref': 'kref://AtlasComp/b9bf4f4d/test_33a3c4.belief?r=2b5442799fcc'}, initial={'content': {'v': 1}, 'kref': 'kref://AtlasComp/b9bf4f4d/test_33a3c4.belief?r=afbf9d0f3560'}",
+      "error": null
+    },
+    {
+      "scenario_id": "temp-03",
+      "category": "temporal",
+      "postulate": "Core-Retainment",
+      "passed": true,
+      "detail": "published={'content': {'v': 2}, 'kref': 'kref://AtlasComp/a7d2d9ca/test_8cea84.belief?r=2b5442799fcc'}",
+      "error": null
+    },
+    {
+      "scenario_id": "temp-04",
+      "category": "temporal",
+      "postulate": "K*5",
+      "passed": true,
+      "detail": "ts=2026-04-27T19:28:09.427432+00:00",
+      "error": null
+    },
+    {
+      "scenario_id": "temp-05",
+      "category": "temporal",
+      "postulate": "K*5",
+      "passed": true,
+      "detail": "ts=2026-04-27T19:28:09.437399+00:00",
+      "error": null
+    },
+    {
+      "scenario_id": "temp-06",
+      "category": "temporal",
+      "postulate": "K*2",
+      "passed": true,
+      "detail": "got={'content': {'v': 2}, 'kref': 'kref://AtlasComp/c361fd69/test_b89c41.belief?r=2b5442799fcc'}",
+      "error": null
+    },
+    {
+      "scenario_id": "temp-07",
+      "category": "temporal",
+      "postulate": "Relevance",
+      "passed": true,
+      "detail": "published={'content': {'v': 2}, 'kref': 'kref://AtlasComp/043c2779/test_6ad39a.belief?r=2b5442799fcc'}, current={'content': {'v': 3}, 'kref': 'kref://AtlasComp/043c2779/test_6ad39a.belief?r=ff3acadf3b29'}",
+      "error": null
+    },
+    {
+      "scenario_id": "temp-08",
+      "category": "temporal",
+      "postulate": "K*3",
+      "passed": true,
+      "detail": "got={'content': {'v': 3}, 'kref': 'kref://AtlasComp/d6a111f3/test_90c17e.belief?r=ff3acadf3b29'}",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-01",
+      "category": "adversarial",
+      "postulate": "Core-Retainment",
+      "passed": true,
+      "detail": "revisions=2",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-02",
+      "category": "adversarial",
+      "postulate": "K*5",
+      "passed": true,
+      "detail": "supersedes=1",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-03",
+      "category": "adversarial",
+      "postulate": "Core-Retainment",
+      "passed": true,
+      "detail": "revisions=5, supersedes=4",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-04",
+      "category": "adversarial",
+      "postulate": "K*2",
+      "passed": true,
+      "detail": "got={'content': {}, 'kref': 'kref://AtlasComp/b8fac410/test_2a70be.belief?r=44136fa355b3'}",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-05",
+      "category": "adversarial",
+      "postulate": "K*6",
+      "passed": true,
+      "detail": "got={'content': {'lang': 'fr', 'name': '\u00c9toile caf\u00e9 \u2014 r\u00e9sum\u00e9 \u2615'}, 'kref': 'kref://AtlasComp/d48ec309/test_3a8acb.belief?r=078876a3592b'}",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-06",
+      "category": "adversarial",
+      "postulate": "K*3",
+      "passed": true,
+      "detail": "len=10000",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-07",
+      "category": "adversarial",
+      "postulate": "K*3",
+      "passed": true,
+      "detail": "got={'content': {'outer': {'another': True, 'inner': {'deep': 'value', 'list': [1, 2, 3]}}}, 'kref': 'kref://AtlasComp/b3f5ad2d/test_3672dd.belief?r=6b2b3ac0155d'}",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-08",
+      "category": "adversarial",
+      "postulate": "K*2",
+      "passed": true,
+      "detail": "revisions=2",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-09",
+      "category": "adversarial",
+      "postulate": "Relevance",
+      "passed": true,
+      "detail": "not deprecated",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-10",
+      "category": "adversarial",
+      "postulate": "Relevance",
+      "passed": true,
+      "detail": "got={'content': {'a': 1}, 'kref': 'kref://AtlasComp/cd777b97/test_0a7171.belief?r=015abd7f5cc5'}",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-11",
+      "category": "adversarial",
+      "postulate": "K*6",
+      "passed": true,
+      "detail": "got=43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777, expected=43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-12",
+      "category": "adversarial",
+      "postulate": "K*2",
+      "passed": true,
+      "detail": "got={'content': {}, 'kref': 'kref://AtlasComp/a7f2d2cb/test_011982.belief?r=44136fa355b3'}",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-13",
+      "category": "adversarial",
+      "postulate": "Core-Retainment",
+      "passed": true,
+      "detail": "revisions=1, expected=1",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-14",
+      "category": "adversarial",
+      "postulate": "K*3",
+      "passed": true,
+      "detail": "inner={'deep': 'value', 'list': [1, 2, 3]}",
+      "error": null
+    },
+    {
+      "scenario_id": "adv-15",
+      "category": "adversarial",
+      "postulate": "K*2",
+      "passed": true,
+      "detail": "revisions=2",
+      "error": null
+    }
+  ]
+}

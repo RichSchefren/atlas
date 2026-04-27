@@ -3,8 +3,8 @@
 > **Open-source local-first cognitive memory — alpha.** Implements AGM-compliant belief revision on a property graph. Adds a propagation engine — Ripple — that recomputes downstream beliefs when an upstream fact changes. Runs entirely on your laptop.
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Tests](https://img.shields.io/badge/tests-446%20passing-brightgreen.svg)]()
-[![AGM Compliance](https://img.shields.io/badge/AGM-49%2F49%20at%20100%25-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-450%20passing-brightgreen.svg)]()
+[![AGM Compliance](https://img.shields.io/badge/AGM-49%2F49%20at%20100%25-brightgreen.svg)](docs/AGM_COMPLIANCE.md)
 [![Status: alpha](https://img.shields.io/badge/Status-alpha-orange.svg)]()
 
 ---
@@ -61,7 +61,7 @@ Verify any row above by reading the cited module or running `./demo.sh`.
 
 ### The technical claim, for people who care about the math
 
-Atlas implements AGM belief revision (Alchourrón-Gärdenfors-Makinson 1985) on a property graph. The seven postulates K\*2-K\*6 plus Hansson's Relevance and Core-Retainment all hold — verified by 49 scenarios against live Neo4j 5.26. Same compliance Kumiho's commercial paper claims, but as fully open-source local-first code anyone can audit.
+Atlas implements AGM belief revision (Alchourrón-Gärdenfors-Makinson 1985) on a property graph. The seven postulates K\*2-K\*6 plus Hansson's Relevance and Core-Retainment all hold — verified by 49 scenarios against live Neo4j 5.26. Same compliance Kumiho's commercial paper claims, but as fully open-source local-first code anyone can audit. The full per-scenario reproducibility artifact is at [`docs/AGM_COMPLIANCE.md`](docs/AGM_COMPLIANCE.md) (machine-readable rows in [`benchmarks/agm_compliance/runs/baseline.json`](benchmarks/agm_compliance/runs/baseline.json)).
 
 ### Detailed comparison vs other memory systems
 

@@ -44,6 +44,6 @@ Releasing Atlas under Apache 2.0. Releasing BusinessMemBench (1,000-question ben
 
 The code: github.com/RichSchefren/atlas
 The paper draft: github.com/RichSchefren/atlas/blob/main/paper/atlas.md
-Live interactive demo (Ripple cascade animated on a sample graph): atlas-project.org/live-demo
+Live interactive demo (Ripple cascade animated on a sample graph): <FILL-IN-AFTER-DOMAIN-REGISTERED>/live-demo
 
 Happy to answer questions about the architecture, the AGM postulate verification approach, the trust gating, the propagation algorithm, or why I chose to fork Graphiti rather than build from scratch.

@@ -239,7 +239,7 @@ Same pattern, OpenClaw side. The 363K star umbrella is the prize.
 
 **Current state:** site/live-demo.html runs synthetic data in JavaScript.
 
-**Target:** WebSocket stream from Atlas's HTTP server pushing real graph state + Ripple cascades to a browser. Hosted at atlas-project.org/live with redacted Rich data. THIS is the viral moment Gemini's review identified.
+**Target:** WebSocket stream from Atlas's HTTP server pushing real graph state + Ripple cascades to a browser. Will be hosted on the project landing domain once Rich picks and registers one — see `LAUNCH-PLAYBOOK.md` for the domain-acquisition step. Do NOT bake any specific URL into the repo until the domain is owned and DNS resolves to a Cloudflare Pages deploy we control. THIS is the viral moment Gemini's review identified.
 
 ---
 

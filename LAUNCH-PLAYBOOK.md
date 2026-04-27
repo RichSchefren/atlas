@@ -12,7 +12,7 @@ These four things must all be true before launch day. If any one is missing, pos
 
 - [ ] **Donnie has tested.** All findings either fixed or filed as known-issues. CI green.
 - [ ] **arxiv tarball uploaded.** It takes 24-48 hours for arxiv to moderate. Submit it the day BEFORE launch so the paper URL exists when the X thread goes out. https://arxiv.org/submit
-- [ ] **Domain pointed.** atlas-project.org (or whatever you bought) resolves to `site/index.html`. Cloudflare Pages, Netlify, GitHub Pages — any of them, takes 15 minutes.
+- [ ] **Domain registered + pointed.** Rich has not registered a launch domain yet. Step-by-step: (1) shortlist 3-5 candidates Rich likes (avoid `atlas-project.org` and `atlasproject.org` — both are taken by an unrelated project); (2) check availability via `dig +short` or any registrar; (3) buy at Cloudflare Registrar (at-cost pricing, no markup); (4) create a Cloudflare Pages project, point it at this repo's `site/` directory, set custom domain to the new name; (5) propagate DNS (~5 min) and verify TLS cert issued. Total wall time: 30 minutes once the name is chosen. Until this step is done, NO domain string ships in the repo.
 - [ ] **The 7 outreach emails sent.** From `launch/outreach.md`. Park first, then everyone else. Subject line: "Atlas — open-source companion to your AGM work, releasing tomorrow." Body: the draft is already in the repo. Send 18-24 hours before launch.
 
 Optional but high-leverage:

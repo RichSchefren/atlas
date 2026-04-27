@@ -92,7 +92,7 @@ The propagation-aware belief-revision loop is the jewel.
       `fail-fast: false` so one bad version doesn't mask others.
       Each Python's BMB artifact is uploaded under a version-suffixed
       name. `allow-prereleases: true` so 3.14 builds don't block on
-      release-candidate naming. (`<this commit>`)
+      release-candidate naming. (`71c0bd9`)
 
 ## P1 — Architecture Questions
 

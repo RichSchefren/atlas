@@ -153,10 +153,16 @@ The propagation-aware belief-revision loop is the jewel.
       exist, every Make target it cites must be in the Makefile,
       `scripts/doctor.py` must run cleanly, and the README must
       link to the doc. Linked from README Quickstart. (`dc112f0`)
-- [ ] **Promote backlog entries to GitHub issues** with labels
-      `credibility`, `onboarding`, `benchmark`, `docs`,
-      `architecture`, `polish`. Lets external contributors see
-      where help is welcome.
+- [x] **Promote backlog entries to GitHub issues** —
+      `scripts/promote_backlog_to_issues.sh` creates the six labels
+      (`credibility`, `onboarding`, `benchmark`, `docs`,
+      `architecture`, `polish`) and opens five issues for the
+      unchecked launch-time items: 90-second demo video (#1), BMB
+      split into its own repo (#2), continuous-capture daemons (#3),
+      arxiv paper draft (#4), domain registration + Cloudflare
+      Pages (#5). Idempotent — re-runs no-op via cached title +
+      label lists. Caught and fixed a dedup bug on the first run
+      (issues #6–#10 closed as duplicates). (`<this commit>`)
 
 ---
 

@@ -34,7 +34,7 @@ The propagation-aware belief-revision loop is the jewel.
       (Limitless-style transcript). Deterministic regex extraction (no
       API keys), six-stage output shape parallel to `./demo.sh`,
       ~6s on warm Neo4j. Regression test at
-      `tests/integration/test_demo_messy.py`. (`<this commit>`)
+      `tests/integration/test_demo_messy.py`. (`606f67a`)
 - [x] **Alpha framing visible & proud.** Sub-badge line on README.
       (`<this commit>`)
 

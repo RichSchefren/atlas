@@ -118,11 +118,16 @@ The propagation-aware belief-revision loop is the jewel.
 
 ## P2 — Viral / Adoption (post-launch nice-to-haves)
 
-- [ ] **"Why vector memory is not enough" page.** One concrete
-      worked example: vector retrieval surfaces the right document,
-      but the document's claim is now superseded; Atlas would have
-      caught the contradiction. Target: 600 words, one diagram, link
-      from README hero.
+- [x] **"Why vector memory is not enough" page.**
+      `docs/WHY_VECTOR_IS_NOT_ENOUGH.md` — concrete worked example
+      (ZenithPro pricing change three weeks before the question), one
+      mermaid diagram contrasting vector-only vs. Atlas, generalization
+      paragraph, "what this is not" section so the doc isn't an attack
+      on RAG / Mem0 / Letta. Linked from README's "What Atlas is not"
+      section. Backed by 4 doc-smoke tests in
+      `tests/unit/test_docs_why_vector.py` that guard the worked
+      example's concrete numbers, the mermaid diagram balance, and the
+      README link. (`<this commit>`)
 - [ ] **Publish BusinessMemBench as its own repo.** Currently lives
       inside Atlas. Split into `RichSchefren/businessmembench` (MIT)
       so other memory systems can adopt it without forking Atlas.

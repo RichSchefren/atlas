@@ -59,7 +59,7 @@ The last lines of `./demo.sh` should look like this — if they don't, file an i
 To save you time:
 
 - **Not a chatbot memory UI.** Atlas is a graph + an engine. The "UI" is whatever your agent runtime (Claude Code, Hermes, OpenClaw, your own MCP client) exposes. The Obsidian adjudication queue is markdown, not a chat interface.
-- **Not just vector search.** There's an embedding-aware retrieval layer, but Atlas's primary index is the typed `Depends_On` graph. Vector-only systems can retrieve old context; Atlas reassesses what depended on it.
+- **Not just vector search.** There's an embedding-aware retrieval layer, but Atlas's primary index is the typed `Depends_On` graph. Vector-only systems can retrieve old context; Atlas reassesses what depended on it. ([Worked example with stale-belief failure mode →](docs/WHY_VECTOR_IS_NOT_ENOUGH.md))
 - **Not yet a Letta replacement.** Atlas does not run agent loops. It plugs into agent runtimes as a memory backend. If you want an agent stack with memory built in, Letta or Hermes is the right answer; Atlas slots underneath.
 - **Not yet automatic free-text understanding at scale.** The ingestion pipeline works on real Limitless / Fireflies / Claude transcripts, but extraction quality on truly unstructured text is uneven and improving — see `atlas_core/ingestion/extractors/` for the prompt set we're iterating on.
 

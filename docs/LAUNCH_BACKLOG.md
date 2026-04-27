@@ -152,7 +152,7 @@ The propagation-aware belief-revision loop is the jewel.
       the doc to source — every adapter symbol the doc names must
       exist, every Make target it cites must be in the Makefile,
       `scripts/doctor.py` must run cleanly, and the README must
-      link to the doc. Linked from README Quickstart. (`<this commit>`)
+      link to the doc. Linked from README Quickstart. (`dc112f0`)
 - [ ] **Promote backlog entries to GitHub issues** with labels
       `credibility`, `onboarding`, `benchmark`, `docs`,
       `architecture`, `polish`. Lets external contributors see

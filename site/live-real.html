@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Atlas Live (real data) — Ripple stream</title>
-<meta name="description" content="Real-time stream of Atlas's actual graph activity. Subscribes to localhost:9879/events." />
+<meta name="description" content="Real-time stream of Atlas's actual graph activity. Subscribes to localhost:18879/events." />
 <style>
   :root {
     --bg: #0b0d10;
@@ -137,7 +137,7 @@
 <main>
   <div id="log">
     <div class="ev"><span class="kind">connecting</span>
-      <pre>Subscribing to <span id="endpoint">http://localhost:9879/events</span>…
+      <pre>Subscribing to <span id="endpoint">http://localhost:18879/events</span>…
 If you see "error", the API server isn't running.
 Start it with: launchctl load ~/Library/LaunchAgents/com.atlas.api-server.plist
 or:           PYTHONPATH=. uvicorn atlas_core.api.api_app:app --port 9879
@@ -147,7 +147,7 @@ or:           PYTHONPATH=. uvicorn atlas_core.api.api_app:app --port 9879
 
   <aside>
     <h3>Connection</h3>
-    <input id="endpoint-input" value="http://localhost:9879/events" />
+    <input id="endpoint-input" value="http://localhost:18879/events" />
     <p style="margin-top:6px;font-size:11px;color:var(--muted)">
       Press Enter to reconnect.
     </p>

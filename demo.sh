@@ -250,6 +250,12 @@ async def main():
         if chain.intact:
             print(f"  {GREEN}✓{RESET} chain intact at sequence "
                   f"{chain.last_verified_sequence}")
+            print(f"  {DIM}  last_verified_sequence = "
+                  f"{chain.last_verified_sequence} means the SHA-256 chain "
+                  f"is valid through that many ledger entries —{RESET}")
+            print(f"  {DIM}  this run promoted "
+                  f"{chain.last_verified_sequence} fact(s) to ledger trust "
+                  f"(1.0). Each subsequent run extends the chain.{RESET}")
         else:
             print(f"  {YELLOW}⚠ chain broken at {chain.broken_at_sequence}{RESET}")
     else:

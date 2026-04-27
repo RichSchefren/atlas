@@ -3,9 +3,11 @@
 > **Open-source local-first cognitive memory — alpha.** Implements AGM-compliant belief revision on a property graph. Adds a propagation engine — Ripple — that recomputes downstream beliefs when an upstream fact changes. Runs entirely on your laptop.
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Tests](https://img.shields.io/badge/tests-450%20passing-brightgreen.svg)]()
+[![Tests](https://github.com/RichSchefren/atlas/actions/workflows/test.yml/badge.svg)](https://github.com/RichSchefren/atlas/actions/workflows/test.yml)
 [![AGM Compliance](https://img.shields.io/badge/AGM-49%2F49%20at%20100%25-brightgreen.svg)](docs/AGM_COMPLIANCE.md)
 [![Status: alpha](https://img.shields.io/badge/Status-alpha-orange.svg)]()
+
+> **Alpha:** the propagation loop works end-to-end (`./demo.sh` proves it in 12 seconds). Ingestion and entity resolution on truly unstructured text are still maturing — see `atlas_core/ingestion/` for the prompts we're iterating on.
 
 ---
 
@@ -29,6 +31,78 @@ The `./demo.sh` command runs the entire loop end-to-end, visibly:
 6. Verifies the SHA-256 hash chain
 
 Every line is real Neo4j + real ledger. No mocks. ~6s on subsequent runs. **This is the front door — if it doesn't impress, nothing else will.**
+
+### What you should see
+
+The last lines of `./demo.sh` should look like this — if they don't, file an issue:
+
+```text
+[3/6] Triggering Ripple cascade ...
+        impacted nodes:               1
+        reassessment proposals:       1
+        contradictions:               0
+
+[4/6] Resolving via AGM revise() ...
+        belief.confidence_score:      0.88 -> 0.77
+
+[5/6] Verifying ledger ...
+        chain intact:                 True
+        last_verified_sequence:       1   (the 1 fact promoted to ledger this run)
+
+[6/6] LOOP CLOSED.
+```
+
+`last_verified_sequence: 1` looks small because the demo plants exactly one promotion-eligible fact and verifies the chain holds with one entry — every later run extends the chain and the number grows. The point is the chain *intact*, not the count.
+
+### What Atlas is not
+
+To save you time:
+
+- **Not a chatbot memory UI.** Atlas is a graph + an engine. The "UI" is whatever your agent runtime (Claude Code, Hermes, OpenClaw, your own MCP client) exposes. The Obsidian adjudication queue is markdown, not a chat interface.
+- **Not just vector search.** There's an embedding-aware retrieval layer, but Atlas's primary index is the typed `Depends_On` graph. Vector-only systems can retrieve old context; Atlas reassesses what depended on it.
+- **Not yet a Letta replacement.** Atlas does not run agent loops. It plugs into agent runtimes as a memory backend. If you want an agent stack with memory built in, Letta or Hermes is the right answer; Atlas slots underneath.
+- **Not yet automatic free-text understanding at scale.** The ingestion pipeline works on real Limitless / Fireflies / Claude transcripts, but extraction quality on truly unstructured text is uneven and improving — see `atlas_core/ingestion/extractors/` for the prompt set we're iterating on.
+
+### Who Atlas is for, today
+
+The strongest early users are:
+
+- **Agent / tool builders** who need a memory backend with belief-revision semantics (MCP server, Hermes plugin, OpenClaw plugin all ship in `atlas_core/adapters/`).
+- **Power users with Obsidian / transcripts / vaults** who want their meetings + screen + chat captures cross-checked for emergent contradictions.
+- **Local-first AI builders** who can't or won't ship user data to a cloud memory service.
+- **Researchers** working on belief revision, AGM compliance, or non-monotonic reasoning who want a reproducible, instrumented baseline.
+
+Three concrete shapes the loop solves:
+
+1. **Pricing change invalidates positioning.** A program's price changes from $89 to $129. Every "value claim" belief that quoted $89 gets a reassessment proposal — you don't discover the gap mid-call.
+2. **Partner / person status change.** A team member changes role or leaves. Every Decision and Commitment that depended on their owning a deliverable surfaces in the adjudication queue with a confidence drop, not just a "stale" warning.
+3. **Deadline slips.** A milestone moves three weeks. Every Project belief that downstream-depended on the old date (resourcing assumptions, risk score, dependent commitments) gets re-evaluated — and the contradictions that emerge route to Obsidian for you to resolve.
+
+### Look at the graph yourself
+
+After running `./demo.sh`, open `http://localhost:7474` (default password `atlasdev`) and run any of these:
+
+```cypher
+// Show the dependency edges Atlas walks during Ripple
+MATCH (downstream)-[r:DEPENDS_ON]->(upstream)
+RETURN downstream.kref, upstream.kref, r.dependency_strength
+LIMIT 25;
+
+// Show every belief and its current confidence
+MATCH (b:Belief)
+RETURN b.kref, b.confidence_score, b.deprecated
+ORDER BY b.confidence_score DESC;
+
+// Show the AGM revision history of a single belief
+MATCH (root:AtlasItem)-[:REVISED_TO|SUPERSEDES*0..]->(rev)
+WHERE root.kref = 'kref://AtlasCoffee/Beliefs/origins_value.belief'
+RETURN rev.revision_index, rev.content, rev.revision_reason
+ORDER BY rev.revision_index;
+
+// Show the contradictions detector found
+MATCH (a)-[r:CONTRADICTS]->(b)
+RETURN a.kref, b.kref, r.detected_at;
+```
 
 ---
 
@@ -267,12 +341,19 @@ Full scenario-level table: [`paper/appendix-a-agm-compliance.md`](paper/appendix
 
 Currently 149 deterministic questions across three paraphrase variants per template. The 200 human-authored gold subset and LLM expansion to 1,000 are roadmap.
 
-| System                | overall | prop | contra | line | cross | hist | prov | forget |
-|-----------------------|---------|------|--------|------|-------|------|------|--------|
-| Vanilla (no memory)   | 0.000   | 0.00 | 0.00   | 0.00 | 0.00  | 0.00 | 0.00 | 0.00   |
-| Graphiti              | 0.711   | 0.33 | 0.00   | 1.00 | 0.00  | 1.00 | 1.00 | 0.00   |
-| **Atlas**             | **1.000** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** |
-| Mem0 / Letta / Memori | _skipped — API keys not pinned_ |
+| System              | status   | overall | prop | contra | line | cross | hist | prov | forget |
+|---------------------|----------|---------|------|--------|------|-------|------|------|--------|
+| Vanilla (no memory) | measured | 0.000   | 0.00 | 0.00   | 0.00 | 0.00  | 0.00 | 0.00 | 0.00   |
+| Graphiti            | measured | 0.711   | 0.33 | 0.00   | 1.00 | 0.00  | 1.00 | 1.00 | 0.00   |
+| **Atlas**           | measured | **1.000** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** | **1.00** |
+| Mem0                | skipped  | — | — | — | — | — | — | — | — |
+| Letta               | skipped  | — | — | — | — | — | — | — | — |
+| Memori              | skipped  | — | — | — | — | — | — | — | — |
+| Kumiho              | skipped  | — | — | — | — | — | — | — | — |
+| MemPalace           | skipped  | — | — | — | — | — | — | — | — |
+
+`measured` = adapter wired in this repo, ran on this machine, score is from `baseline_seed42.json`.
+`skipped` = adapter wired but the run requires credentials / pip install we don't ship (e.g. `OPENAI_API_KEY`, `MEMORI_API_KEY`, the `kumiho-sdk` package). Each adapter raises a clear `MissingClientError` with the missing dependency. Atlas does not bundle external API keys.
 
 Atlas's structural lead over Graphiti — the contradiction / cross_stream / forgetfulness / propagation columns — is what the architecture was designed for. The score gap on a self-authored deterministic benchmark proves the architecture works against its own thesis; it does not yet prove general superiority. Reproducible in ≤30 seconds:
 

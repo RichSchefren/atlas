@@ -1,4 +1,4 @@
-.PHONY: help setup neo4j neo4j-down demo test bench bench-agm bench-bmb doctor lint clean
+.PHONY: help setup neo4j neo4j-down demo demo-messy test bench bench-agm bench-bmb doctor lint clean
 
 help:
 	@echo "Atlas — common operations"
@@ -7,7 +7,8 @@ help:
 	@echo "  make neo4j       — start the Neo4j 5.26 container (docker compose)"
 	@echo "  make neo4j-down  — stop the Neo4j container"
 	@echo "  make doctor      — check the local environment is ready to run Atlas"
-	@echo "  make demo        — run the end-to-end Ripple demo loop"
+	@echo "  make demo        — run the end-to-end Ripple demo loop (synthetic)"
+	@echo "  make demo-messy  — run the demo on real-shape vault + transcript inputs"
 	@echo "  make test        — run the full pytest suite"
 	@echo "  make lint        — ruff check (must be clean)"
 	@echo "  make bench-agm   — run the 49-scenario AGM compliance suite"
@@ -39,6 +40,10 @@ doctor:
 
 demo:
 	@./demo.sh
+
+demo-messy:
+	@PYTHONPATH=. .venv/bin/python scripts/demo_messy.py 2>/dev/null || \
+	  PYTHONPATH=. python3 scripts/demo_messy.py
 
 test:
 	@PYTHONPATH=. .venv/bin/python -m pytest tests/ -v 2>/dev/null || \

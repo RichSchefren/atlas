@@ -28,17 +28,13 @@ The propagation-aware belief-revision loop is the jewel.
       `skipped`. Run JSON at
       `benchmarks/business_mem_bench/runs/baseline_seed42.json`.
       (`14cb32c`, `<this commit>`)
-- [ ] **Messy real-world demo.** The current `./demo.sh` runs a
-      synthetic loop on planted nodes. Build a second demo
-      `scripts/demo_messy.py` that:
-        - Ingests a real markdown note + a Limitless-style transcript
-          snippet checked into `examples/messy_demo/`
-        - Runs the full extraction → quarantine → ledger → Ripple →
-          adjudication path on that input
-        - Prints the same six-stage output shape so a viewer sees
-          parity with the synthetic demo
-      Targets: ≤ 30 seconds end-to-end, no external API keys
-      required (use the offline extractor stubs).
+- [x] **Messy real-world demo.** `scripts/demo_messy.py` runs the full
+      pipeline on `examples/messy_demo/note_zenith_pricing.md` (vault
+      note) + `examples/messy_demo/transcript_pricing_meeting.md`
+      (Limitless-style transcript). Deterministic regex extraction (no
+      API keys), six-stage output shape parallel to `./demo.sh`,
+      ~6s on warm Neo4j. Regression test at
+      `tests/integration/test_demo_messy.py`. (`<this commit>`)
 - [x] **Alpha framing visible & proud.** Sub-badge line on README.
       (`<this commit>`)
 

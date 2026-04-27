@@ -157,9 +157,14 @@ git clone https://github.com/RichSchefren/atlas && cd atlas
 # 2. Run Neo4j locally
 docker compose up -d                               # bolt://localhost:7687
 
-# 3. Install
+# 3. Install — base is deterministic + $0/month; opt in to extras as you need them
 python -m venv .venv && source .venv/bin/activate
-pip install -e .
+pip install -e .              # core: AGM + Ripple + ledger + adapters + ingest
+# pip install -e .[llm]        # add Anthropic SDK for LLM-driven extraction
+# pip install -e .[embeddings] # add sentence-transformers (~2GB; rarely needed — vault-search is the default retrieval path)
+# pip install -e .[benchmarks] # add Mem0 / Letta clients for the BMB matrix
+# pip install -e .[full]       # everything above
+# pip install -e .[dev]        # contributor tooling (includes anthropic for tests)
 
 # 4. Verify with the test suite (318 tests, ~5s)
 PYTHONPATH=. pytest tests/ -v

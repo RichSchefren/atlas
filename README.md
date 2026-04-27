@@ -153,7 +153,7 @@ ATLAS_VAULT_ROOT=~/Documents/Obsidian PYTHONPATH=. python scripts/first_real_run
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │  ATLAS API LAYER                                             │
-│  MCP (8 tools) · FastAPI (:9879) · Kumiho-compatible gRPC    │
+│  MCP (10 tools) · FastAPI (:9879) · Kumiho-compatible gRPC    │
 │  + Hermes / OpenClaw / Claude Code plugins                   │
 └──────────────────────────────────────────────────────────────┘
                             │

@@ -89,7 +89,7 @@ Atlas isn't competing with agent runtimes. It's the memory substrate they plug i
 Day-one adapters:
 - @NousResearch Hermes MemoryProvider (9th backend, only AGM-compliant one)
 - OpenClaw memory plugin
-- Claude Code MCP (8 Atlas tools)
+- Claude Code MCP (10 Atlas tools)
 - Kumiho-compat gRPC (drop-in: endpoint=localhost:50051)
 
 ---

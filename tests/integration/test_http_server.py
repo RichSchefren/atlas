@@ -83,7 +83,7 @@ class TestHTTPTools:
         response = await client.get("/tools")
         assert response.status_code == 200
         tools = response.json()["tools"]
-        assert len(tools) == 8
+        assert len(tools) == 10
         names = {t["name"] for t in tools}
         assert names == set(ATLAS_MCP_TOOLS)
 

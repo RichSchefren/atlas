@@ -74,6 +74,8 @@ ATLAS_MCP_TOOLS: tuple[str, ...] = (
     "quarantine.upsert",
     "quarantine.list_pending",
     "ledger.verify_chain",
+    "working_memory.assemble",
+    "lineage.walk",
 )
 
 
@@ -276,6 +278,53 @@ class AtlasMCPServer:
             ),
             parameters_schema={"type": "object", "properties": {}},
             handler=self._tool_ledger_verify_chain,
+        ))
+
+        self.register(MCPTool(
+            name="working_memory.assemble",
+            description=(
+                "Assemble Atlas's working-memory blocks (Human, Persona, "
+                "CurrentPriorities) into a single context string for an "
+                "agent at a given token budget. Returns the text plus a "
+                "manifest of which blocks contributed and how many "
+                "tokens each used."
+            ),
+            parameters_schema={
+                "type": "object",
+                "properties": {
+                    "agent_id": {"type": "string", "default": "default"},
+                    "max_tokens": {"type": "integer", "default": 4000},
+                    "block_order": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": (
+                            "Optional override of block order. Defaults to "
+                            "[CurrentPriorities, Human, Persona]."
+                        ),
+                    },
+                },
+            },
+            handler=self._tool_working_memory_assemble,
+        ))
+
+        self.register(MCPTool(
+            name="lineage.walk",
+            description=(
+                "Walk SUPPORTS edges backward from a Decision to surface "
+                "the belief chain that justified it. Returns the depth-"
+                "ordered chain plus weakest_link_confidence and a flag "
+                "for whether load-bearing supports have weakened below "
+                "the decision-support floor."
+            ),
+            parameters_schema={
+                "type": "object",
+                "properties": {
+                    "decision_kref": {"type": "string"},
+                    "max_depth": {"type": "integer", "default": 5},
+                },
+                "required": ["decision_kref"],
+            },
+            handler=self._tool_lineage_walk,
         ))
 
     # ── Registration + dispatch ─────────────────────────────────────────────
@@ -572,4 +621,74 @@ class AtlasMCPServer:
             "last_verified_event_id": result.last_verified_event_id,
             "broken_at_sequence": result.broken_at_sequence,
             "breakage_reason": result.breakage_reason,
+        }
+
+    # ── Tier 4 working memory ───────────────────────────────────────────────
+
+    _working_managers: dict[str, Any] = {}
+
+    async def _tool_working_memory_assemble(
+        self,
+        agent_id: str = "default",
+        max_tokens: int = 4000,
+        block_order: Optional[list[str]] = None,
+    ) -> dict[str, Any]:
+        """Assemble + return working-memory context for the given agent."""
+        from atlas_core.working import (
+            WorkingMemoryManager,
+            standard_block_set,
+        )
+
+        manager = self._working_managers.get(agent_id)
+        if manager is None:
+            manager = WorkingMemoryManager(
+                agent_id=agent_id, driver=self.driver,
+            )
+            for block in standard_block_set():
+                manager.pin_block(block)
+            await manager.refresh_current_priorities()
+            self._working_managers[agent_id] = manager
+
+        ctx = manager.assemble(
+            max_tokens=max_tokens,
+            block_order=block_order or [
+                "CurrentPriorities", "Human", "Persona",
+            ],
+        )
+        return {
+            "text": ctx.text,
+            "block_manifest": ctx.block_manifest,
+            "total_tokens": ctx.total_tokens,
+            "truncated_blocks": ctx.truncated_blocks,
+        }
+
+    # ── Tier 1.5 lineage walk ──────────────────────────────────────────────
+
+    async def _tool_lineage_walk(
+        self,
+        decision_kref: str,
+        max_depth: int = 5,
+    ) -> dict[str, Any]:
+        """Walk SUPPORTS chain backward from a Decision."""
+        from atlas_core.lineage import walk_decision_chain
+
+        walk = await walk_decision_chain(
+            self.driver, decision_kref, max_depth=max_depth,
+        )
+        return {
+            "decision_kref": walk.decision_kref,
+            "chain": [
+                {
+                    "kref": n.kref,
+                    "text": n.text,
+                    "confidence": n.confidence,
+                    "deprecated": n.deprecated,
+                    "depth": n.depth,
+                    "strength_to_parent": n.strength_to_parent,
+                }
+                for n in walk.chain
+            ],
+            "weakest_link_confidence": walk.weakest_link_confidence,
+            "is_load_bearing_weakened": walk.is_load_bearing_weakened,
+            "truncated": walk.truncated,
         }

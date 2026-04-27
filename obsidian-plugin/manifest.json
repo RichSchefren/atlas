@@ -1,0 +1,10 @@
+{
+  "id": "atlas-memory",
+  "name": "Atlas Memory",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Open-source local-first cognitive memory with AGM-compliant belief revision. Adjudicate Ripple cascades from your editor.",
+  "author": "Richard Schefren",
+  "authorUrl": "https://github.com/RichSchefren/atlas",
+  "isDesktopOnly": true
+}

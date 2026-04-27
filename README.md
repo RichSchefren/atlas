@@ -214,7 +214,7 @@ ATLAS_VAULT_ROOT=~/Documents/Obsidian PYTHONPATH=. python scripts/first_real_run
 └──────────────────────────────────────────────────────────────┘
 ```
 
-Full design docs: [`Active-Brain/00 Projects/World Model Research/`](#) (specs 03–11)
+Full design docs are checked into the repo at [`paper/atlas.md`](paper/atlas.md) and [`PHASE-5-AND-BEYOND.md`](PHASE-5-AND-BEYOND.md). The deeper Phase 0 / Phase 1 specs live in the maintainer's private notes — public summaries are in the paper draft.
 
 ---
 

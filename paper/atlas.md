@@ -152,7 +152,7 @@ Each rule lives in `atlas_core/ripple/contradiction.py`. The detector runs over 
 
 ### 4.5 Adjudication routing
 
-Three buckets: **strategic** (decisions on long-running beliefs), **core_protected** (entries Rich has flagged as core), and **routine** (everything else). Strategic + core_protected route to a human-readable Obsidian markdown queue at `Active-Brain/00 Atlas/Adjudication/`; routine items auto-resolve via the AGM operator without prompting.
+Three buckets: **strategic** (decisions on long-running beliefs), **core_protected** (entries Rich has flagged as core), and **routine** (everything else). Strategic + core_protected route to a human-readable Obsidian markdown queue at `<your-vault>/00 Atlas/Adjudication/` (configurable via `ATLAS_ADJUDICATION_DIR`); routine items auto-resolve via the AGM operator without prompting.
 
 ---
 

@@ -23,13 +23,17 @@ def build_human_block(human_facts: str | None = None) -> MemoryBlock:
     """Default Human block.
 
     `human_facts` is the user-provided string. If None, ships with
-    the placeholder Rich edits in directly via Obsidian later.
+    a neutral placeholder the user edits via Obsidian (or any text
+    editor) before first use.
     """
     content = human_facts or (
-        "Rich Schefren — founder of Strategic Profits.\n"
-        "Builds open-source memory systems on top of his own life.\n"
-        "Edit this block in ~/.atlas/blocks/Human.md to add details "
-        "Atlas should remember about you in every conversation."
+        "(unconfigured — replace this with a one-paragraph "
+        "self-description that you want Atlas to remember in every "
+        "conversation: who you are, what you work on, the names of "
+        "the people / projects / programs you reference often.)\n"
+        "\n"
+        "Edit this block at ~/.atlas/blocks/Human.md or pass "
+        "human_facts= when constructing the WorkingMemoryManager."
     )
     return MemoryBlock(
         name="Human",

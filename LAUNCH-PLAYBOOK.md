@@ -148,7 +148,7 @@ The launch high is over. The grind starts. **This is where most projects die** �
 - Wire the human gold subset (`benchmarks/business_mem_bench/gold_human/`). Each batch of 25 questions is a tweet-worthy update.
 - Run the BMB matrix with `OPENAI_API_KEY` set — fill in the Mem0 / Letta / Memori columns. Update README + paper.
 - Add 10 more AGM compliance scenarios beyond the 49.
-- Write a real-world case study: "How Atlas tracked a Strategic Profits commitment from 90-day-old meeting through 5 supersessions."
+- Write a real-world case study: "How Atlas tracked a business commitment from 90-day-old meeting through 5 supersessions."
 
 ### Week 3 substantial commits
 
@@ -257,7 +257,7 @@ You'll be tempted by all of these. Resist.
 
 ### Declare defeat at any of these:
 
-- **<200 stars after 90 days** AND **no external PRs** AND **no journalist coverage**. The project hasn't found its audience. Either (a) pivot the framing — Atlas might be a tool for a different community than you expected — or (b) keep it as a personal moat for Strategic Profits and stop spending public-launch energy.
+- **<200 stars after 90 days** AND **no external PRs** AND **no journalist coverage**. The project hasn't found its audience. Either (a) pivot the framing — Atlas might be a tool for a different community than you expected — or (b) keep it as a personal moat for your own business and stop spending public-launch energy.
 - **3 months of solo commits, no contributors.** You're not building a community, you're maintaining a project alone. Fine if that's what you want; not fine if the goal was a substrate.
 - **The headline benchmark numbers don't hold up** when an external evaluator runs them. This means there's a methodological flaw. Stop launching, fix the flaw, re-launch with revised numbers.
 
@@ -289,7 +289,7 @@ If you can't do the gold questions in 4 days, pick a different launch date. Don'
 - Marketing copywriting (you have that handled — you're better at this than I am)
 - Personal brand strategy (your call)
 - The decision to commercialize (90+ days out, not today)
-- Strategic Profits integration (separate concern; out of scope here)
+- the maintainer's private business integration (separate concern; out of scope here)
 - Whether to start a company around Atlas (post-launch question)
 
 ---

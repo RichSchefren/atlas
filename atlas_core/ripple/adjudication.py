@@ -182,7 +182,7 @@ async def route_all(
 # ─── Obsidian markdown queue writer ──────────────────────────────────────────
 
 DEFAULT_ADJUDICATION_DIR = Path(
-    "/Users/richardschefren/Obsidian/Active-Brain/00 Atlas/adjudication"
+    str(Path.home() / ".atlas" / "adjudication")
 )
 """Default adjudication queue location. Overridable per environment / per
 test via the directory parameter on write_adjudication_entry()."""

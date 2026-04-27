@@ -33,11 +33,11 @@ ATLAS_DATA_DIR = Path(os.environ.get(
 ))
 VAULT_ROOT = Path(os.environ.get(
     "ATLAS_VAULT_ROOT",
-    str(Path.home() / "Obsidian/Active-Brain/000 Core Context"),
+    str(Path.home() / ".atlas" / "watch" / "vault"),
 ))
 LIMITLESS_ROOT = Path(os.environ.get(
     "ATLAS_LIMITLESS_ROOT",
-    str(Path.home() / "Obsidian/Archive-Brain/Limitless"),
+    str(Path.home() / ".atlas" / "watch" / "limitless"),
 ))
 
 VAULT_LIMIT = int(os.environ.get("ATLAS_VAULT_LIMIT", "200"))

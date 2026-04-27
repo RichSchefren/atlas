@@ -51,7 +51,7 @@ def run_ingestion_cycle() -> int:
         # Vault
         vault_root = Path(os.environ.get(
             "ATLAS_VAULT_ROOT",
-            str(Path.home() / "Obsidian" / "Active-Brain" / "000 Core Context"),
+            str(Path.home() / ".atlas" / "watch" / "vault"),
         ))
         if vault_root.exists():
             orch.register(VaultExtractor(
@@ -62,7 +62,7 @@ def run_ingestion_cycle() -> int:
         # Limitless
         limitless_root = Path(os.environ.get(
             "ATLAS_LIMITLESS_ROOT",
-            str(Path.home() / "Obsidian" / "Archive-Brain" / "Limitless"),
+            str(Path.home() / ".atlas" / "watch" / "limitless"),
         ))
         if limitless_root.exists():
             orch.register(LimitlessExtractor(

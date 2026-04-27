@@ -28,8 +28,8 @@ npm install
 npm run build
 # Copy main.js + manifest.json into your vault's
 # .obsidian/plugins/atlas-memory/ directory:
-mkdir -p ~/Obsidian/Active-Brain/.obsidian/plugins/atlas-memory
-cp main.js manifest.json ~/Obsidian/Active-Brain/.obsidian/plugins/atlas-memory/
+mkdir -p ~/Obsidian/<your-vault>/.obsidian/plugins/atlas-memory
+cp main.js manifest.json ~/Obsidian/<your-vault>/.obsidian/plugins/atlas-memory/
 ```
 
 Then in Obsidian → Settings → Community plugins → enable "Atlas Memory."

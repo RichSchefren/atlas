@@ -178,7 +178,7 @@ class TestLimitlessExtractor:
         from atlas_core.ingestion import LimitlessExtractor
         from atlas_core.ingestion.base import StreamConfig
 
-        archive = tmp_dir / "Archive-Brain" / "Limitless"
+        archive = tmp_dir / "limitless-archive"
         write_md(
             archive / "2026-04-25-team-call.md",
             (

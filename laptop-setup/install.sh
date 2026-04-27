@@ -290,10 +290,10 @@ stage_syncthing() {
     if [[ "$sync_choice" == "2" ]]; then
         log "Obsidian Sync chosen. Skipping Syncthing install."
         prompt_continue "Open Obsidian, sign in to Obsidian Sync, and add the four vault remotes:
-  - Active-Brain
+  - <your-vault-name-1>
   - Strategic-Profits
-  - Active-Knowledge
-  - Archive-Brain
+  - <your-vault-name-3>
+  - <your-vault-name-4>
 Wait for the initial sync to complete, then come back here."
         mark_done syncthing
         return
@@ -333,7 +333,7 @@ Wait for the initial sync to complete, then come back here."
     prompt_continue "On your M3 Ultra:
   1. Open Syncthing UI (http://127.0.0.1:8384 on the M3 Ultra)
   2. Add Remote Device, paste the ID above
-  3. Share the four vault folders: Active-Brain, Strategic-Profits, Active-Knowledge, Archive-Brain
+  3. Share whichever Obsidian vault folders you want synced (substitute your own names)
   4. Back on this laptop, accept each folder share at http://127.0.0.1:8384"
 
     mark_done syncthing
@@ -401,7 +401,7 @@ stage_mcp() {
       "command": "python",
       "args": ["-m", "atlas_core.adapters.claude_code"],
       "env": {
-        "PYTHONPATH": "/Users/richardschefren/Projects/atlas",
+        "PYTHONPATH": "${HOME}/Projects/atlas",
         "ATLAS_NEO4J_URI": "bolt://localhost:7687",
         "ATLAS_NEO4J_USER": "neo4j",
         "ATLAS_NEO4J_PASSWORD": "atlasdev"

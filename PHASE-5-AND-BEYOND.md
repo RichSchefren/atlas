@@ -16,7 +16,7 @@ Total estimated remaining work for full vision: **8-12 weeks** of focused engine
 
 ## Tier 1 — "Rich uses this daily" (4-6 weeks)
 
-These are the gaps between "I cloned Atlas and ran the tests" and "Atlas is the memory substrate of Strategic Profits, running 24/7 on Rich's machine, fed by every capture stream, surfacing decisions through Obsidian."
+These are the gaps between "I cloned Atlas and ran the tests" and "Atlas is the memory substrate of the maintainer's business, running 24/7 on Rich's machine, fed by every capture stream, surfacing decisions through Obsidian."
 
 ### 1.1 Continuous-ingestion daemon (launchd) — 3 days
 
@@ -61,7 +61,7 @@ He's right. The fswatch-daemon path (1.2 below) works but requires a launchd pli
 
 **Current state:** `resolve_adjudication()` exists and works (commit `8392d13`). But it requires explicit invocation through MCP / HTTP / a Python call. There is NO file-watcher reading Rich's saved markdown to detect when he checks the "Accept" box.
 
-**What ships in this tier:** An `atlas_core/ripple/fswatch_resolver.py` module that uses `watchdog` (already in dependencies) to monitor `~/Obsidian/Active-Brain/00 Atlas/adjudication/`. On save, parse the markdown, detect which checkbox is now checked, call `resolve_adjudication()` with the right decision. Move the file to `resolved/`.
+**What ships in this tier:** An `atlas_core/ripple/fswatch_resolver.py` module that uses `watchdog` (already in dependencies) to monitor `$ATLAS_ADJUDICATION_DIR` (default: `~/.atlas/adjudication/`). On save, parse the markdown, detect which checkbox is now checked, call `resolve_adjudication()` with the right decision. Move the file to `resolved/`.
 
 **Why it matters:** This is what makes adjudication actually low-friction. Without it, Rich has to switch out of Obsidian to a terminal to resolve every entry. With it, he checks a box, saves the file, and Atlas does the rest.
 
@@ -134,7 +134,7 @@ This is the single biggest gap between "Atlas runs on real data" and "Atlas unde
 
 **Current state:** No bridge.
 
-**What ships in this tier:** `atlas_core/integrations/intelligence_engine.py` — on every adjudication.resolve, on every Ripple cascade that produces a strategic-bucket entry, write a notification to `~/Obsidian/Active-Brain/memory/atlas-events.json` that the Intelligence Engine pipeline reads on its next run. Plus a section in BRIEFING.md auto-populated from Atlas's last 24h of activity.
+**What ships in this tier:** `atlas_core/integrations/intelligence_engine.py` — on every adjudication.resolve, on every Ripple cascade that produces a strategic-bucket entry, write a notification to `$ATLAS_BRAIN_EVENTS_FILE` (default: `~/.atlas/atlas-events.jsonl`) that the Intelligence Engine pipeline reads on its next run. Plus a section in BRIEFING.md auto-populated from Atlas's last 24h of activity.
 
 **Why it matters:** Atlas integrates with Rich's existing system rather than replacing it. The user-facing surface is BRIEFING.md, not Atlas's adjudication queue.
 
@@ -311,7 +311,7 @@ Atlas is single-user-single-machine by design through Tier 4. **Tier 5 unlocks m
 
 ### Decision needed before Tier 5
 
-Multi-tenant Atlas is a different shape of system than single-user Atlas. It's the foundation for "Atlas as the memory backend that Strategic Profits' team uses" or "Atlas as a hosted service for other companies." If neither of those is on your roadmap, Tier 5 is dead weight. **Lock the decision before Tier 5 starts.**
+Multi-tenant Atlas is a different shape of system than single-user Atlas. It's the foundation for "Atlas as the memory backend a small team uses" or "Atlas as a hosted service for other companies." If neither of those is on your roadmap, Tier 5 is dead weight. **Lock the decision before Tier 5 starts.**
 
 ---
 

@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 
 DEFAULT_BRAIN_DIR: Path = (
-    Path.home() / "Obsidian" / "Active-Brain" / "memory"
+    Path.home() / ".atlas" / "brain"
 )
 """Where Rich's Intelligence Engine reads from. Atlas writes
 atlas-events.json here for the brain pipeline to consume."""

@@ -15,8 +15,8 @@ Install on Claude Code:
           "ATLAS_NEO4J_URI": "bolt://localhost:7687",
           "ATLAS_NEO4J_USER": "neo4j",
           "ATLAS_NEO4J_PASSWORD": "atlasdev",
-          "ATLAS_QUARANTINE_DB": "/Users/richardschefren/.atlas/candidates.db",
-          "ATLAS_LEDGER_DB": "/Users/richardschefren/.atlas/ledger.db"
+          "ATLAS_QUARANTINE_DB": "${HOME}/.atlas/candidates.db",
+          "ATLAS_LEDGER_DB": "${HOME}/.atlas/ledger.db"
         }
       }
     }

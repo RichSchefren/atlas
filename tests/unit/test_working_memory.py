@@ -133,7 +133,10 @@ class TestStandardBlocks:
         b = build_human_block()
         assert b.name == "Human"
         assert b.write_policy == "human"
-        assert "Rich" in b.content
+        # Default content is now a neutral placeholder (sanitized
+        # 2026-04-27 audit pass — no personal info baked into defaults).
+        assert "unconfigured" in b.content
+        assert "Atlas" in b.content
 
     def test_human_block_custom_content(self):
         from atlas_core.working import build_human_block

@@ -247,8 +247,60 @@ stage_claude() {
 
 stage_syncthing() {
     if stage_done syncthing; then ok "syncthing already done"; return; fi
-    log "Stage: syncthing (replaces Obsidian Sync)"
+    log "Stage: syncthing OR Obsidian Sync (vault sync — your choice)"
 
+    hr
+    echo -e "\033[33mYou have two options for syncing your Obsidian vaults to this laptop:\033[0m"
+    echo
+    echo "  1. Syncthing — peer-to-peer, no cloud, free forever."
+    echo "     Tradeoff: requires both Macs to be online to sync."
+    echo
+    echo "  2. Obsidian Sync — paid Obsidian Inc service, cloud-mediated."
+    echo "     Tradeoff: \$8/mo, but works even when one Mac is off."
+    echo
+    echo "  3. Skip — handle vault sync manually later."
+    echo
+
+    # Allow non-interactive runs to skip via env var
+    if [[ "${ATLAS_SYNC_CHOICE:-}" == "skip" ]]; then
+        warn "ATLAS_SYNC_CHOICE=skip set; skipping vault-sync setup."
+        log "When you decide, run: ./install.sh syncthing  (or set up Obsidian Sync via the Obsidian app directly)."
+        # Still install Obsidian itself — every path needs it
+        if [[ ! -d "/Applications/Obsidian.app" ]]; then
+            brew install --quiet --cask obsidian 2>&1 | tee -a "$LOG_FILE" || true
+        fi
+        mark_done syncthing
+        return
+    fi
+
+    read -rp "Pick [1=Syncthing / 2=Obsidian Sync / 3=skip] (default: 1): " sync_choice
+    sync_choice="${sync_choice:-1}"
+
+    # Always install Obsidian.app — both Sync paths and the manual path need it
+    if [[ ! -d "/Applications/Obsidian.app" ]]; then
+        log "Installing Obsidian..."
+        brew install --quiet --cask obsidian 2>&1 | tee -a "$LOG_FILE" || true
+    fi
+
+    if [[ "$sync_choice" == "2" ]]; then
+        log "Obsidian Sync chosen. Skipping Syncthing install."
+        prompt_continue "Open Obsidian, sign in to Obsidian Sync, and add the four vault remotes:
+  - Active-Brain
+  - Strategic-Profits
+  - Active-Knowledge
+  - Archive-Brain
+Wait for the initial sync to complete, then come back here."
+        mark_done syncthing
+        return
+    fi
+
+    if [[ "$sync_choice" == "3" ]]; then
+        warn "Vault sync skipped. Run ./install.sh syncthing later when you decide."
+        mark_done syncthing
+        return
+    fi
+
+    # Path 1: Syncthing
     if ! command -v syncthing >/dev/null 2>&1; then
         log "Installing Syncthing via Homebrew cask (signed v2.0.14+ build)..."
         brew install --quiet syncthing 2>&1 | tee -a "$LOG_FILE" || true
@@ -278,12 +330,6 @@ stage_syncthing() {
   2. Add Remote Device, paste the ID above
   3. Share the four vault folders: Active-Brain, Strategic-Profits, Active-Knowledge, Archive-Brain
   4. Back on this laptop, accept each folder share at http://127.0.0.1:8384"
-
-    # Ensure Obsidian app is installed so the synced vaults open
-    if [[ ! -d "/Applications/Obsidian.app" ]]; then
-        log "Installing Obsidian..."
-        brew install --quiet --cask obsidian 2>&1 | tee -a "$LOG_FILE" || true
-    fi
 
     mark_done syncthing
 }

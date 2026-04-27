@@ -14,7 +14,7 @@ What you get on the laptop after the script finishes:
 | Docker Desktop + Neo4j 5.26 + APOC | ✓ (Atlas backing store) |
 | **Atlas** (this repo, full clone, tests passing) | ✓ |
 | Obsidian + Obsidian plugin for Atlas | ✓ |
-| **Syncthing** (replaces Obsidian Sync) | ✓ |
+| **Vault sync** — Syncthing OR Obsidian Sync (you pick at the prompt) | ✓ |
 | **Screenpipe** (full ingest + permissions guidance) | ✓ |
 | Claude Code CLI + every skill + every agent | ✓ |
 | Codex 5.5, Gemini, Kimi CLIs (Ralph rotation) | ✓ |

@@ -11,7 +11,7 @@ git clone https://github.com/RichSchefren/atlas && cd atlas
 docker compose up -d                         # Neo4j 5.26 with APOC
 python -m venv .venv && source .venv/bin/activate
 pip install -e .[dev]
-PYTHONPATH=. pytest tests/ -v                # 318 tests, ~8s
+PYTHONPATH=. pytest tests/ -v                # 469 tests, ~12s
 ```
 
 If the suite goes red on a clean checkout, that's a bug. Open an issue with the `pytest -v` output and your `python --version`.

@@ -194,9 +194,56 @@
     <p class="tagline">
       Open-source local-first cognitive memory. Same AGM-compliant math as commercial state-of-the-art. Plus the thing nobody ships: when a fact changes, dependent beliefs are <em>re-evaluated</em>, not just flagged.
     </p>
+    <div id="hero-video-wrap" style="position: relative; width: 100%; max-width: 880px; margin: 32px auto 24px; cursor: pointer;">
+      <video
+        id="hero-video"
+        class="hero-video"
+        src="atlas-launch.mp4"
+        autoplay muted loop playsinline preload="auto"
+        style="width: 100%; display: block; border: 1px solid var(--border); border-radius: 10px; aspect-ratio: 16 / 9; background: #0B0F1A;"
+      ></video>
+      <div
+        id="hero-video-overlay"
+        style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.35); border-radius: 10px; transition: opacity 0.2s; z-index: 2;"
+      >
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 36px; background: rgba(11,15,26,0.92); border: 1px solid rgba(244,213,141,0.5); border-radius: 14px; box-shadow: 0 12px 50px rgba(0,0,0,0.6);">
+          <div style="font-size: 42px; line-height: 1;">🔊</div>
+          <div style="font-size: 22px; font-weight: 700; color: #F4D58D; letter-spacing: 0.02em;">Click to play with sound</div>
+          <div style="font-size: 13px; color: #9aa0a6;">Browsers mute autoplay. One click turns it on.</div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var wrap = document.getElementById('hero-video-wrap');
+        var v = document.getElementById('hero-video');
+        var ov = document.getElementById('hero-video-overlay');
+        if (!wrap || !v || !ov) return;
+        wrap.addEventListener('click', function () {
+          v.pause();
+          v.muted = false;
+          v.removeAttribute('loop');
+          v.currentTime = 0;
+          // Wait for the seek to land before un-pausing, so audio starts
+          // cleanly at t=0 rather than mid-narration where it had been
+          // looping silently.
+          var resume = function () {
+            v.removeEventListener('seeked', resume);
+            ov.style.opacity = '0';
+            setTimeout(function () { ov.style.display = 'none'; }, 240);
+            v.play().catch(function(){});
+          };
+          if (v.readyState >= 1 && v.currentTime === 0) {
+            resume();
+          } else {
+            v.addEventListener('seeked', resume);
+          }
+        }, { once: true });
+      })();
+    </script>
     <div class="badges">
       <span class="badge green">Apache 2.0</span>
-      <span class="badge green">439 tests passing</span>
+      <span class="badge green">469 tests passing</span>
       <span class="badge green">AGM 49 / 49 at 100%</span>
       <span class="badge green">BusinessMemBench 1.000</span>
       <span class="badge green">+28.9 pts vs Graphiti</span>
@@ -205,7 +252,6 @@
     <div class="ctas">
       <a class="cta primary" href="#quickstart">Get started</a>
       <a class="cta secondary" href="live-demo.html">Live demo</a>
-      <a class="cta secondary" href="live-real.html">Real-data stream</a>
       <a class="cta secondary" href="https://github.com/RichSchefren/atlas">GitHub</a>
       <a class="cta secondary" href="https://github.com/RichSchefren/atlas/blob/master/paper/atlas.md">Paper</a>
     </div>
@@ -326,7 +372,7 @@ docker compose up -d
 python -m venv .venv &amp;&amp; source .venv/bin/activate
 pip install -e .
 
-# 3. Verify the test suite (314 tests, ~5s)
+# 3. Verify the test suite (469 tests, ~12s)
 PYTHONPATH=. pytest tests/ -v
 
 # 4. Reproduce AGM compliance (49/49 at 100%, ~30s)
@@ -358,8 +404,8 @@ PYTHONPATH=. python scripts/demo_loop.py</code></pre>
   <div class="container">
     <a href="https://github.com/RichSchefren/atlas">GitHub</a> ·
     <a href="https://github.com/RichSchefren/atlas/blob/master/paper/atlas.md">Paper</a> ·
-    <a href="docs/">Docs</a> ·
-    <a href="benchmarks/">Benchmarks</a>
+    <a href="https://github.com/RichSchefren/atlas/tree/master/docs">Docs</a> ·
+    <a href="https://github.com/RichSchefren/atlas/tree/master/benchmarks">Benchmarks</a>
     <p style="margin-top:16px">Apache 2.0 · Built by Richard Schefren and a multi-model team</p>
   </div>
 </footer>

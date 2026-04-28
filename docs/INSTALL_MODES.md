@@ -26,7 +26,7 @@ git clone https://github.com/RichSchefren/atlas && cd atlas
 make setup        # creates .venv, installs -e .[dev], adds ruff
 make neo4j        # starts the Neo4j 5.26 container with APOC
 make doctor       # confirms 9/9 environment checks pass
-make test         # 461 tests, ~12 seconds
+make test         # 469 tests, ~12 seconds
 ```
 
 What you get:

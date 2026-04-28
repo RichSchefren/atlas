@@ -257,7 +257,7 @@ pip install -e .              # core: AGM + Ripple + ledger + adapters + ingest
 # pip install -e .[full]       # everything above
 # pip install -e .[dev]        # contributor tooling (includes anthropic for tests)
 
-# 4. Verify with the test suite (318 tests, ~5s)
+# 4. Verify with the test suite (469 tests, ~12s)
 PYTHONPATH=. pytest tests/ -v
 
 # 5. Reproduce AGM compliance (49/49 scenarios, ~30s)
@@ -313,7 +313,7 @@ Full design docs are checked into the repo at [`paper/atlas.md`](paper/atlas.md)
 
 Atlas ships with three concurrent surfaces:
 
-- **MCP**: 8 Atlas-original tools — `ripple.analyze_impact`, `ripple.reassess`, `ripple.detect_contradictions`, `quarantine.upsert`, `quarantine.list_pending`, `adjudication.queue`, `adjudication.resolve`, `ledger.verify_chain`. Stdio JSON-RPC bridge for Claude Code via `python -m atlas_core.adapters.claude_code`.
+- **MCP**: 13 Atlas-original tools — `ripple.analyze_impact`, `ripple.reassess`, `ripple.detect_contradictions`, `adjudication.queue`, `adjudication.resolve`, `quarantine.upsert`, `quarantine.list_pending`, `ledger.verify_chain`, `working_memory.assemble`, `lineage.walk`, `sharing.grant`, `sharing.revoke`, `sharing.list_grants`. Stdio JSON-RPC bridge for Claude Code via `python -m atlas_core.adapters.claude_code`. Read-only vs mutation classification at [`docs/PROPOSAL_VS_MUTATION.md`](docs/PROPOSAL_VS_MUTATION.md).
 - **HTTP**: FastAPI on `localhost:9879` mirrors the MCP surface for non-MCP clients (the dashboard, curl, integration tests). Endpoints: `/health`, `/tools`, `/tools/{name}`, `/verify-chain`.
 - **gRPC** (Phase 2 W7+): scaffold with all 51 Kumiho-compatible RPC method names registered. Existing Kumiho SDK code switches to Atlas by setting `endpoint="localhost:50051"`.
 

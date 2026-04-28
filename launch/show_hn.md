@@ -21,7 +21,7 @@ Atlas closes that gap with an algorithm I'm calling Ripple. When a belief is pro
 
 What's there today:
 
-- 288 tests passing (210 integration + 78 unit) against live Neo4j 5.26
+- 469 tests passing against live Neo4j 5.26
 - AGM compliance: 49/49 scenarios pass at 100%, matching Kumiho's published verification
 - Six ingestion streams (Obsidian vault, Limitless, Screenpipe, Claude session logs, Fireflies, iMessage); idempotent cursors; per-stream confidence floors
 - Three API surfaces (MCP stdio, FastAPI HTTP, gRPC scaffold for Kumiho-SDK drop-in)
@@ -44,6 +44,6 @@ Releasing Atlas under Apache 2.0. Releasing BusinessMemBench (1,000-question ben
 
 The code: github.com/RichSchefren/atlas
 The paper draft: github.com/RichSchefren/atlas/blob/main/paper/atlas.md
-Live interactive demo (Ripple cascade animated on a sample graph): <FILL-IN-AFTER-DOMAIN-REGISTERED>/live-demo
+Live interactive demo (Ripple cascade animated on a sample graph): https://livememory.dev/live-demo.html
 
 Happy to answer questions about the architecture, the AGM postulate verification approach, the trust gating, the propagation algorithm, or why I chose to fork Graphiti rather than build from scratch.

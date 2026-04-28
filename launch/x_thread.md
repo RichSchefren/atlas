@@ -145,7 +145,7 @@ Forks Graphiti for storage (huge thanks to @danielchalef + the Zep team).
 
 Repo: github.com/RichSchefren/atlas
 Paper: arxiv.org/abs/<TBD-after-arxiv-acceptance>
-Live demo: <FILL-IN-AFTER-DOMAIN-REGISTERED>/live-demo
+Live demo: https://livememory.dev/live-demo.html
 
 Apache 2.0 substrate. MIT benchmark. No telemetry, no signup, no account.
 

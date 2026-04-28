@@ -12,7 +12,7 @@ If anything goes red, file the issue **with the matching template** — the titl
 git clone https://github.com/RichSchefren/atlas && cd atlas
 docker compose up -d                         # Neo4j 5.26 with APOC
 python -m venv .venv && source .venv/bin/activate
-pip install -e .[dev]
+pip install -e ".[dev]"
 PYTHONPATH=. pytest tests/ -v                # 318 passed expected
 ```
 

@@ -10,7 +10,7 @@ Thanks for considering a contribution. Atlas is intentionally a small, opinionat
 git clone https://github.com/RichSchefren/atlas && cd atlas
 docker compose up -d                         # Neo4j 5.26 with APOC
 python -m venv .venv && source .venv/bin/activate
-pip install -e .[dev]
+pip install -e ".[dev]"
 PYTHONPATH=. pytest tests/ -v                # 469 tests, ~12s
 ```
 

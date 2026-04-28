@@ -23,7 +23,7 @@ labels: tester-finding, smoke-test
 git clone https://github.com/RichSchefren/atlas && cd atlas
 docker compose up -d
 python -m venv .venv && source .venv/bin/activate
-pip install -e .[dev]
+pip install -e ".[dev]"
 PYTHONPATH=. pytest tests/ -v
 ```
 

@@ -12,7 +12,7 @@ Paste this as the **first reply on your own Show HN** at submission time. It pri
 >
 > **Is this just RAG with extra steps?** No. RAG is retrieval-time reasoning. Atlas adds *ingestion-time* reasoning. The cascade fires when a fact changes, not when a question gets asked. Worked example with the failure mode at docs/WHY_VECTOR_IS_NOT_ENOUGH.md.
 >
-> **How do I run it?** `git clone … && docker compose up -d && pip install -e .[dev] && ./demo.sh`. ~12 seconds to see the loop close on a synthetic graph; `make demo-messy` runs the same loop on a real markdown note + meeting transcript. No API keys required for the core path. No telemetry. Local-first means a single Neo4j instance + SQLite ledger on your machine.
+> **How do I run it?** `git clone … && docker compose up -d && pip install -e ".[dev]" && ./demo.sh`. ~12 seconds to see the loop close on a synthetic graph; `make demo-messy` runs the same loop on a real markdown note + meeting transcript. No API keys required for the core path. No telemetry. Local-first means a single Neo4j instance + SQLite ledger on your machine.
 >
 > **What does Atlas NOT do?** It's not a chatbot UI. It's not a Letta replacement (Letta runs agent loops; Atlas slots underneath). It's not a managed cloud service. The "what Atlas does worse" subsection in the README is honest about the tradeoffs.
 >

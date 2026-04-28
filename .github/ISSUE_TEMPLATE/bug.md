@@ -15,7 +15,7 @@ labels: bug
 git clone https://github.com/RichSchefren/atlas && cd atlas
 docker compose up -d
 python -m venv .venv && source .venv/bin/activate
-pip install -e .[dev]
+pip install -e ".[dev]"
 PYTHONPATH=. pytest tests/path/to/failing_test.py -v
 ```
 

@@ -64,7 +64,7 @@ surface contradictions when something downstream becomes suspect.
 ```bash
 git clone https://github.com/RichSchefren/atlas && cd atlas
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e .[llm]    # adds the Anthropic SDK for LLM extraction
+pip install -e ".[llm]"  # adds the Anthropic SDK for LLM extraction
 make neo4j               # starts Neo4j 5.26 with APOC
 make doctor              # confirms environment is ready
 ```

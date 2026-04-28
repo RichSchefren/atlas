@@ -138,7 +138,7 @@ def check_neo4j_apoc() -> tuple[bool, str, str]:
         return (
             False,
             "neo4j driver not installed",
-            "Run `make setup` (or `pip install -e .[dev]`).",
+            'Run `make setup` (or `pip install -e ".[dev]"`).',
         )
     uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
     user = os.environ.get("NEO4J_USER", "neo4j")
@@ -203,7 +203,7 @@ def check_atlas_importable() -> tuple[bool, str, str]:
         return (
             False,
             f"atlas_core not importable: {exc}",
-            "Run `pip install -e .[dev]` from the repo root.",
+            'Run `pip install -e ".[dev]"` from the repo root.',
         )
     return (True, "atlas_core importable", "")
 

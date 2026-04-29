@@ -45,6 +45,14 @@ demo-messy:
 	@PYTHONPATH=. .venv/bin/python scripts/demo_messy.py 2>/dev/null || \
 	  PYTHONPATH=. python3 scripts/demo_messy.py
 
+adjudicate:
+	@PYTHONPATH=. .venv/bin/python scripts/adjudicate.py --report 2>/dev/null || \
+	  PYTHONPATH=. python3 scripts/adjudicate.py --report
+
+adjudicate-apply:
+	@PYTHONPATH=. .venv/bin/python scripts/adjudicate.py --all 2>/dev/null || \
+	  PYTHONPATH=. python3 scripts/adjudicate.py --all
+
 test:
 	@PYTHONPATH=. .venv/bin/python -m pytest tests/ -v 2>/dev/null || \
 	  PYTHONPATH=. python3 -m pytest tests/ -v

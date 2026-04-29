@@ -9,6 +9,17 @@ categories purpose-built for it (propagation, contradiction); baselines
 (Mem0, Letta, Graphiti, Memori, Kumiho, vanilla GPT) compete on the rest.
 
 Spec: 08 - BusinessMemBench Design.md (Phase 1 lock 2026-04-24)
+
+**This benchmark is also published as its own MIT-licensed repository:**
+**https://github.com/RichSchefren/businessmembench**
+
+The standalone package (`pip install businessmembench`) is the canonical
+home — adopt freely, run on your system, publish your numbers. This
+in-repo copy is Atlas's vendored snapshot plus the Atlas-specific
+adapter (`adapters/atlas_system.py`) and run history (`runs/`). The
+framework code is identical; we maintain the in-repo copy so the Atlas
+test suite has zero external dependencies.
+
 License: MIT (max adoption — cited but never relicensed)
 """
 

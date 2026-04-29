@@ -354,6 +354,8 @@ Full scenario-level table: [`paper/appendix-a-agm-compliance.md`](paper/appendix
 
 ### 2. BusinessMemBench — Atlas 1.000, Graphiti 0.711, Vanilla 0.000 (preliminary, self-authored)
 
+> 📦 **BMB now ships as its own repo:** [github.com/RichSchefren/businessmembench](https://github.com/RichSchefren/businessmembench) (MIT, `pip install businessmembench`). Adopt it, run it on your memory system, publish your numbers. Atlas's in-tree copy stays as a vendored snapshot for zero-dep test runs.
+
 > ⚠ **Honesty disclaimer.** BusinessMemBench is *authored by the Atlas project*. The 149 questions in the current set are *deterministic and synthetic* — generated from corpus templates, not written by independent domain operators. Mem0, Letta, Memori, Kumiho, and MemPalace columns are still **skipped** because their API clients aren't pinned in this environment. We're publishing these numbers because the test loop reproduces on every machine that runs `scripts/run_bmb.py`, but **you should not treat them as a peer-reviewed head-to-head until the 200 human-authored gold subset and the four skipped baselines have actually run**. The full disclosure of what's authored vs measured is in `paper/atlas.md` § 6.2.
 
 Currently 149 deterministic questions across three paraphrase variants per template. The 200 human-authored gold subset and LLM expansion to 1,000 are roadmap.

@@ -64,7 +64,7 @@ DEFAULT_QUEUE_DIR = Path(
     )
 )
 DEFAULT_NOISE_FLOOR = 0.50
-DEFAULT_PROMOTE_LANES = ("atlas_vault",)
+DEFAULT_PROMOTE_LANES = ("atlas_vault", "atlas_meeting")
 
 
 @dataclass

@@ -130,7 +130,7 @@ def test_extractor_emits_lcl_processed_claims(store, meetings_root):
         meeting: ZenithPro Copy Clinic
         date: 2026-03-19
         host: tomhammaker
-        rich_present: false
+        rich_present: true
         lcl_processed: true
         action_items:
           - Sam: Run mimetic research
@@ -200,6 +200,103 @@ def test_extractor_emits_standup_action_items(store, meetings_root):
     assert any("Ashley:" in v for v in values)
 
 
+def test_extractor_skips_meetings_rich_not_present(store, meetings_root):
+    """rich_present: false → zero claims (Tom's client calls, etc.)."""
+    _write(meetings_root / "tom-and-client.md", """\
+        ---
+        meeting: ZenithPro Tech Setup with Brad
+        date: 2026-03-03
+        host: tomhammaker
+        rich_present: false
+        lcl_processed: true
+        action_items:
+          - Brad: Launch Income Lab on Friday
+          - Tom: Set up Brad with Claude Code account
+        decisions:
+          - Use Open Brain for knowledge retrieval
+        people:
+          - Tom
+          - Brad Coverdale
+        ---
+        """)
+    extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
+    events = extractor.fetch_new_events(extractor.load_cursor())
+    claims = extractor.extract_claims_from_event(events[0])
+    assert claims == []
+
+
+def test_extractor_skips_when_rich_not_in_participants(store, meetings_root):
+    """No `rich_present` field, but `participants` list excludes Rich → skip.
+
+    This is the real-world case: Tom's client calls have a participants list
+    with Tom + the client and no rich_present boolean. The filter should still
+    catch them.
+    """
+    _write(meetings_root / "tom-client-via-participants.md", """\
+        ---
+        date: 2026-03-03
+        type: Client Call
+        participants:
+          - Brad Coverdale
+          - Tom Hammaker
+        lcl_processed: true
+        action_items:
+          - Brad: Launch Income Lab on Friday
+        decisions:
+          - Use Open Brain for knowledge retrieval
+        ---
+        """)
+    extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
+    events = extractor.fetch_new_events(extractor.load_cursor())
+    claims = extractor.extract_claims_from_event(events[0])
+    assert claims == []
+
+
+def test_extractor_includes_when_rich_in_participants(store, meetings_root):
+    """`participants` list contains Richard Schefren → include."""
+    _write(meetings_root / "rich-attended.md", """\
+        ---
+        date: 2026-03-03
+        participants:
+          - Richard Schefren
+          - Tom Hammaker
+        lcl_processed: true
+        action_items:
+          - Tom: Send weekly update
+        ---
+        """)
+    extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
+    events = extractor.fetch_new_events(extractor.load_cursor())
+    claims = extractor.extract_claims_from_event(events[0])
+    assert len(claims) == 1
+    assert "Tom: Send weekly update" in claims[0].object_value
+
+
+def test_extractor_includes_meetings_rich_present(store, meetings_root):
+    """rich_present: true → claims emitted normally."""
+    _write(meetings_root / "rich-meeting.md", """\
+        ---
+        meeting: SP Weekly Standup
+        date: 2026-04-22
+        host: rich
+        rich_present: true
+        lcl_processed: true
+        action_items:
+          - Ashley: Pull GHL segments for replay sequence
+        decisions:
+          - Lock calendar for client follow-ups
+        people:
+          - Rich Schefren
+          - Ashley
+        ---
+        """)
+    extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
+    events = extractor.fetch_new_events(extractor.load_cursor())
+    claims = extractor.extract_claims_from_event(events[0])
+    # 1 action item + 1 decision + 2 people = 4
+    assert len(claims) == 4
+
+
 def test_extractor_skips_files_without_recognized_structure(store, meetings_root):
     _write(meetings_root / "random.md", "# Just a heading\nNot a meeting brief.")
     extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
@@ -249,6 +346,7 @@ def test_extractor_run_once_writes_to_quarantine(store, meetings_root, tmp_path)
         decisions:
           - Use Open Brain
         people:
+          - Rich Schefren
           - Tom
         ---
         """)
@@ -259,7 +357,7 @@ def test_extractor_run_once_writes_to_quarantine(store, meetings_root, tmp_path)
     )
     result = extractor.run_once()
     assert result.events_processed == 1
-    assert result.claims_extracted == 3
+    assert result.claims_extracted == 4  # 1 action + 1 decision + 2 people
     assert result.succeeded
 
     # Cursor advanced

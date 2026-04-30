@@ -101,6 +101,23 @@ def _meeting_kref(meeting_path: Path) -> str:
 _FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
 
+_RICH_NAME_PATTERNS = (
+    "richard schefren",
+    "rich schefren",
+    "rich-schefren",
+    "richard-schefren",
+    "richonly@strategicprofits.com",
+)
+
+
+def _is_rich(name: object) -> bool:
+    """Loose match — Rich appears under several names across LCL formats."""
+    s = str(name).lower().strip()
+    if s in {"rich", "richard"}:
+        return True
+    return any(p in s for p in _RICH_NAME_PATTERNS)
+
+
 def parse_frontmatter(text: str) -> tuple[dict[str, Any], str]:
     """Split frontmatter YAML from body. Returns (frontmatter_dict, body)."""
     match = _FRONTMATTER_RE.match(text)
@@ -275,6 +292,25 @@ class MeetingsExtractor(BaseExtractor):
         path: Path = event["path"]
         text: str = event["text"]
         fm, body = parse_frontmatter(text)
+
+        # Hard filter: skip meetings Rich didn't attend.
+        # Tom's 1-on-1 calls with Zenith Pro students (technical setup, onboarding,
+        # client coaching) are real meetings with real commitments — but they're
+        # Tom's job and Tom's clients, not Rich's. They contaminate Rich's belief
+        # graph if treated as first-class observations of his world.
+        #
+        # Two filter signals (in priority order):
+        #   1. Explicit `rich_present: true|false` — wins if present
+        #   2. Attendee list (`participants` or `people` fields) — skip if list
+        #      exists and Rich isn't in it
+        # If neither signal is present, fall through (default-include).
+        if fm.get("rich_present") is False:
+            return []
+        if fm.get("rich_present") is not True:
+            attendees = fm.get("participants") or fm.get("people") or []
+            if attendees and not any(_is_rich(a) for a in attendees):
+                return []
+
         meeting_kref = _meeting_kref(path)
         meeting_date = self._meeting_date(fm, event["mtime_iso"])
         evidence_kref = f"kref://Atlas/Meetings/{path.name}"

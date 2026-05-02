@@ -297,6 +297,77 @@ def test_extractor_includes_meetings_rich_present(store, meetings_root):
     assert len(claims) == 4
 
 
+def test_extractor_strict_default_skips_when_no_rich_signal(store, meetings_root):
+    """No rich_present, no participants, no Rich-suggesting filename → skip."""
+    _write(meetings_root / "Some-Random-Meeting.md", """\
+        ---
+        date: 2026-03-03
+        lcl_processed: true
+        action_items:
+          - Tom: do thing
+        decisions:
+          - Some decision
+        ---
+        """)
+    extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
+    events = extractor.fetch_new_events(extractor.load_cursor())
+    assert extractor.extract_claims_from_event(events[0]) == []
+
+
+def test_extractor_filename_pattern_includes_rich(store, meetings_root):
+    """No participants list, but filename has 'Rich Schefren' → include."""
+    _write(meetings_root / "2026-03-03 Call- Joe Smith & Richard Schefren.md", """\
+        ---
+        date: 2026-03-03
+        lcl_processed: true
+        action_items:
+          - Joe: deliver pitch deck
+        decisions:
+          - Move forward with engagement
+        ---
+        """)
+    extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
+    events = extractor.fetch_new_events(extractor.load_cursor())
+    claims = extractor.extract_claims_from_event(events[0])
+    assert len(claims) == 2  # 1 action + 1 decision
+
+
+def test_extractor_filename_pattern_skips_tech_setup(store, meetings_root):
+    """Filename matches non-Rich pattern → skip even if account: Rich Schefren."""
+    _write(meetings_root / "02.00 PM - ZenithMind Tech Set Up Call - Transcript.md", """\
+        ---
+        date: 2026-03-06
+        account: Rich Schefren
+        lcl_processed: true
+        action_items:
+          - Tom: walkthrough Cowork setup
+        decisions:
+          - Use Claude Cowork as entry point
+        ---
+        """)
+    extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
+    events = extractor.fetch_new_events(extractor.load_cursor())
+    assert extractor.extract_claims_from_event(events[0]) == []
+
+
+def test_extractor_standup_brief_filename_includes(store, meetings_root):
+    """Standup-Brief filenames are positive Rich signal even without participants."""
+    _write(meetings_root / "Standup-Brief-2026-04-22.md", """\
+        ---
+        date: 2026-04-22
+        ---
+
+        ## Open Action Items
+
+        ### Rich
+        - Make decision on E3 *(P003)*
+        """)
+    extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
+    events = extractor.fetch_new_events(extractor.load_cursor())
+    claims = extractor.extract_claims_from_event(events[0])
+    assert len(claims) == 1
+
+
 def test_extractor_skips_files_without_recognized_structure(store, meetings_root):
     _write(meetings_root / "random.md", "# Just a heading\nNot a meeting brief.")
     extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)

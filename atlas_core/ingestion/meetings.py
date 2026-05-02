@@ -118,6 +118,55 @@ def _is_rich(name: object) -> bool:
     return any(p in s for p in _RICH_NAME_PATTERNS)
 
 
+# Filenames that indicate a meeting Rich ran or attended even when no
+# participant list is in the frontmatter. These names are about Rich's
+# business by definition (standups about him, weekly reports for him,
+# his VIP sessions, calls he's named in).
+_RICH_FILENAME_INDICATORS = (
+    "standup-brief",
+    "standup-extract",
+    "weekly-report",
+    "compression window",   # Rich's VIP sessions
+    "rich schefren",        # any "X & Rich Schefren" pattern
+    "richard schefren",
+    " w-rich",              # "ZenithPro Office Hours w-Rich"
+    " w/rich",
+    " with rich",
+    " - rich.",             # "Ben - Rich. Dashboards"
+    "rich -",
+    "rich. ",
+    "& rich ",
+)
+
+
+def _filename_indicates_rich(path: Path) -> bool:
+    """True if the filename is a positive Rich-attendance signal."""
+    name = path.name.lower()
+    return any(p in name for p in _RICH_FILENAME_INDICATORS)
+
+
+# Filenames that indicate a meeting Tom or another team member ran solo
+# with clients/students. These get hard-skipped even if no other signal
+# is present.
+_NON_RICH_FILENAME_INDICATORS = (
+    "tech set up",
+    "tech setup",
+    "onboarding",
+    "coaching acct",       # Tom's accountability calls
+    "copy clinic",         # Tom's student copy clinics
+    "ops & tech session",  # Tom-led infra
+    "office hours",        # student office hours (default Tom; explicit "w-Rich" caught above)
+)
+
+
+def _filename_indicates_not_rich(path: Path) -> bool:
+    """True if the filename strongly signals a Tom-only / client-only call."""
+    name = path.name.lower()
+    if _filename_indicates_rich(path):
+        return False  # explicit Rich indicator wins
+    return any(p in name for p in _NON_RICH_FILENAME_INDICATORS)
+
+
 def parse_frontmatter(text: str) -> tuple[dict[str, Any], str]:
     """Split frontmatter YAML from body. Returns (frontmatter_dict, body)."""
     match = _FRONTMATTER_RE.match(text)
@@ -294,22 +343,41 @@ class MeetingsExtractor(BaseExtractor):
         fm, body = parse_frontmatter(text)
 
         # Hard filter: skip meetings Rich didn't attend.
-        # Tom's 1-on-1 calls with Zenith Pro students (technical setup, onboarding,
-        # client coaching) are real meetings with real commitments — but they're
-        # Tom's job and Tom's clients, not Rich's. They contaminate Rich's belief
-        # graph if treated as first-class observations of his world.
         #
-        # Two filter signals (in priority order):
-        #   1. Explicit `rich_present: true|false` — wins if present
-        #   2. Attendee list (`participants` or `people` fields) — skip if list
-        #      exists and Rich isn't in it
-        # If neither signal is present, fall through (default-include).
+        # Atlas defaults to STRICT — a meeting is only ingested when there's
+        # positive evidence Rich was in it. Tom's tech setup calls, onboarding
+        # calls, copy clinics, accountability calls, and other team-internal
+        # work happen on Rich's Zoom account but not with Rich present. Those
+        # contaminate Rich's belief graph if treated as observations of his
+        # world.
+        #
+        # Signal stack (any ONE of these positive signals confirms Rich):
+        #   1. `rich_present: true` (explicit frontmatter signal)
+        #   2. Rich named in `participants` / `people` lists
+        #   3. Filename matches a known Rich-attendance pattern
+        #      (Standup-Brief, Weekly-Report, "Rich Schefren", "& Rich",
+        #      "w-Rich", Compression Window VIP sessions, etc.)
+        #
+        # Negative signals that override everything:
+        #   1. `rich_present: false` (explicit) → skip
+        #   2. Filename matches a known non-Rich pattern (Tech Setup,
+        #      Onboarding, Coaching ACCT, Copy Clinic, Office Hours [solo],
+        #      Ops & Tech Session) → skip
         if fm.get("rich_present") is False:
             return []
-        if fm.get("rich_present") is not True:
-            attendees = fm.get("participants") or fm.get("people") or []
-            if attendees and not any(_is_rich(a) for a in attendees):
-                return []
+        if _filename_indicates_not_rich(path):
+            return []
+
+        attendees = fm.get("participants") or fm.get("people") or []
+        rich_in_attendees = bool(attendees) and any(_is_rich(a) for a in attendees)
+
+        rich_confirmed = (
+            fm.get("rich_present") is True
+            or rich_in_attendees
+            or _filename_indicates_rich(path)
+        )
+        if not rich_confirmed:
+            return []
 
         meeting_kref = _meeting_kref(path)
         meeting_date = self._meeting_date(fm, event["mtime_iso"])

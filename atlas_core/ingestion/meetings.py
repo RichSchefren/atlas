@@ -49,6 +49,7 @@ from atlas_core.ingestion.base import (
     StreamType,
 )
 from atlas_core.ingestion.confidence import STREAM_CONFIDENCE_FLOORS
+from atlas_core.people import registry as _people_registry
 
 log = logging.getLogger(__name__)
 
@@ -74,13 +75,40 @@ def _slug(text: str, max_len: int = 80) -> str:
     return s[:max_len] or "unknown"
 
 
+def _canonical_person_name(name: str) -> str | None:
+    """Resolve a name through the People Registry.
+
+    Returns the canonical name if known, the original cleaned name if
+    unknown but human-shaped, or None if the registry classifies it as
+    non-human (Claude, Cloud, Team, etc.).
+    """
+    result = _people_registry.resolve(name)
+    if result is None:
+        return name.strip() or None  # unknown person — keep as-is
+    canonical, info = result
+    if info.type == "non_human":
+        return None
+    return canonical
+
+
 def _person_kref(name: str) -> str:
-    return f"kref://Atlas/People/{_slug(name)}.person"
+    """Person kref under canonical name. Returns empty string for non-humans."""
+    canonical = _canonical_person_name(name)
+    if canonical is None:
+        return ""
+    return f"kref://Atlas/People/{_slug(canonical)}.person"
 
 
 def _commitment_kref(person: str, what: str) -> str:
+    """Commitment kref using canonical person name (or original if unknown)."""
+    canonical = _canonical_person_name(person)
+    if canonical is None:
+        # Non-human — fall back to the original raw person string so the
+        # commitment isn't silently dropped, but it won't merge with a
+        # person entity either. Caller may decide to skip.
+        canonical = person
     return (
-        f"kref://Atlas/Commitments/{_slug(person)}__"
+        f"kref://Atlas/Commitments/{_slug(canonical)}__"
         f"{_slug(what, max_len=80)}.commitment"
     )
 
@@ -342,42 +370,16 @@ class MeetingsExtractor(BaseExtractor):
         text: str = event["text"]
         fm, body = parse_frontmatter(text)
 
-        # Hard filter: skip meetings Rich didn't attend.
+        # No attendance-based filtering at ingestion. Atlas wants to know
+        # everything happening in the company — Tom's tech setup calls,
+        # onboarding calls, copy clinics, accountability calls all stay
+        # in the graph. The dashboard/briefing layer (built downstream)
+        # is what filters by tier and Rich-attendance for the daily view.
         #
-        # Atlas defaults to STRICT — a meeting is only ingested when there's
-        # positive evidence Rich was in it. Tom's tech setup calls, onboarding
-        # calls, copy clinics, accountability calls, and other team-internal
-        # work happen on Rich's Zoom account but not with Rich present. Those
-        # contaminate Rich's belief graph if treated as observations of his
-        # world.
-        #
-        # Signal stack (any ONE of these positive signals confirms Rich):
-        #   1. `rich_present: true` (explicit frontmatter signal)
-        #   2. Rich named in `participants` / `people` lists
-        #   3. Filename matches a known Rich-attendance pattern
-        #      (Standup-Brief, Weekly-Report, "Rich Schefren", "& Rich",
-        #      "w-Rich", Compression Window VIP sessions, etc.)
-        #
-        # Negative signals that override everything:
-        #   1. `rich_present: false` (explicit) → skip
-        #   2. Filename matches a known non-Rich pattern (Tech Setup,
-        #      Onboarding, Coaching ACCT, Copy Clinic, Office Hours [solo],
-        #      Ops & Tech Session) → skip
-        if fm.get("rich_present") is False:
-            return []
-        if _filename_indicates_not_rich(path):
-            return []
-
-        attendees = fm.get("participants") or fm.get("people") or []
-        rich_in_attendees = bool(attendees) and any(_is_rich(a) for a in attendees)
-
-        rich_confirmed = (
-            fm.get("rich_present") is True
-            or rich_in_attendees
-            or _filename_indicates_rich(path)
-        )
-        if not rich_confirmed:
-            return []
+        # The two filename-pattern helpers (_filename_indicates_rich /
+        # _filename_indicates_not_rich) remain for later use by the
+        # surfacing layer — they're documentation, not gates.
+        pass
 
         meeting_kref = _meeting_kref(path)
         meeting_date = self._meeting_date(fm, event["mtime_iso"])
@@ -467,17 +469,27 @@ class MeetingsExtractor(BaseExtractor):
                 evidence_timestamp=meeting_date,
             )
 
-        # People → attendance claims (one per attendee)
-        for raw in fm.get("people") or []:
+        # People → attendance claims (one per attendee).
+        # Non-human entries (Claude, Cloud, "Team", "Someone") get filtered
+        # via the People Registry — they should never appear as attendees.
+        seen_people = set()
+        for raw in (fm.get("people") or fm.get("participants") or []):
             if raw is None:
                 continue
             # Strip parenthetical handles: "Tom (tomhammaker)" -> "Tom"
             name = re.sub(r"\s*\([^)]+\)\s*$", "", str(raw)).strip()
             if not name:
                 continue
+            person_kref = _person_kref(name)
+            if not person_kref:
+                continue  # non-human, drop
+            # Dedup canonical: "Nicole" + "Nicole Mickevicius" both → one claim
+            if person_kref in seen_people:
+                continue
+            seen_people.add(person_kref)
             yield self._build_claim(
                 assertion_type="episode",
-                subject_kref=_person_kref(name),
+                subject_kref=person_kref,
                 predicate="episode.attended_meeting",
                 object_value=meeting_kref,
                 confidence=CONF_LCL_PROCESSED,

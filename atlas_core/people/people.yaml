@@ -1,0 +1,188 @@
+# Atlas People Registry — Default Seed
+#
+# This file is the seeded default. Atlas reads from
+# `~/.atlas/config/people.yaml` first if it exists; falls back to this
+# packaged default. To override locally:
+#
+#   mkdir -p ~/.atlas/config
+#   cp atlas_core/people/people.yaml ~/.atlas/config/people.yaml
+#   # edit the local copy
+#
+# Each entry has:
+#   canonical_name: the single name Atlas stores all references under
+#   aliases:        list of strings that resolve to canonical_name
+#                   (case-insensitive, exact match after lowercasing)
+#   type:           employee | external | non_human
+#   tier:           1 (closest) → 5 (most distant)
+#                   Concentric circles around Rich:
+#                     1 = inner-most contact (multiple times daily)
+#                     2 = frequent (multiple times weekly)
+#                     3 = recurring (weekly-ish)
+#                     4 = occasional (monthly-ish)
+#                     5 = distant or single-touch
+#                   external people get their own tier on the same scale
+#   notes:          (optional) free-text disambiguation context
+#
+# Non-human entries (Claude, Cloud, etc.) get filtered OUT of the
+# People namespace entirely — they should never appear as people in
+# the belief graph.
+#
+# When Rich's actual relationships change, just edit this file —
+# next ingestion picks up the changes.
+
+people:
+
+# ── Rich himself ───────────────────────────────────────────────────────────
+
+- canonical_name: Rich Schefren
+  aliases:
+    - rich
+    - richard
+    - rich schefren
+    - richard schefren
+    - "rich-schefren"
+    - "richard-schefren"
+    - "richonly@strategicprofits.com"
+  type: employee
+  tier: 0
+  notes: "the user himself"
+
+# ── Tier 1 — inner circle (multiple times daily) ───────────────────────────
+
+- canonical_name: Nicole Mickevicius
+  aliases: [nicole, "nicole mickevicius", "nicole m", "[[nicole]]"]
+  type: employee
+  tier: 1
+
+- canonical_name: Ashley Shaw
+  aliases: [ashley, "ashley shaw", "[[ashley]]"]
+  type: employee
+  tier: 1
+
+- canonical_name: Jessica
+  aliases: [jessica, "[[jessica]]"]
+  type: employee
+  tier: 1
+  notes: "TODO: confirm last name"
+
+- canonical_name: Harry Lockwood
+  aliases: [harry, "harry lockwood", "[[harry-lockwood]]", "[[harry]]"]
+  type: employee
+  tier: 1
+
+# ── Tier 2 — frequent (multiple times weekly) ──────────────────────────────
+
+- canonical_name: Ben Thole
+  aliases: [ben, "ben thole", "[[ben]]"]
+  type: employee
+  tier: 2
+
+- canonical_name: Tom Hammaker
+  aliases: [tom, "tom hammaker", tomhammaker, "[[tom]]"]
+  type: employee
+  tier: 2
+  notes: "TODO: there are two Toms — Rich to confirm second Tom's identity"
+
+# ── Tier 3 — recurring employees ───────────────────────────────────────────
+
+- canonical_name: Jem Erroba
+  aliases: [jem, "jem erroba"]
+  type: employee
+  tier: 3
+
+- canonical_name: Michelle Mattison
+  aliases: [michelle, "michelle mattison", "michelle m"]
+  type: employee
+  tier: 3
+
+- canonical_name: Mykolas Marcinkevicius
+  aliases: [mykolas, "mykolas marcinkevicius"]
+  type: employee
+  tier: 3
+
+# ── Tier 2 external — strategic / important contacts ───────────────────────
+
+- canonical_name: Jay Abraham
+  aliases: [jay, "jay abraham"]
+  type: external
+  tier: 2
+  notes: "marketing legend; strategic relationship"
+
+# ── Tier 4 — occasional employees / contractors ────────────────────────────
+
+- canonical_name: Annabelle
+  aliases: [annabelle]
+  type: employee
+  tier: 4
+
+- canonical_name: Lauren
+  aliases: [lauren]
+  type: employee
+  tier: 4
+  notes: "TODO: confirm role + last name"
+
+# ── External contacts — clients, peers, ZenithPro students ─────────────────
+
+- canonical_name: Jon Benson
+  aliases: [jon, "jon benson"]
+  type: external
+  tier: 4
+
+- canonical_name: Todd Brown
+  aliases: ["todd brown"]
+  type: external
+  tier: 4
+
+- canonical_name: James Paynter
+  aliases: ["james paynter"]
+  type: external
+  tier: 4
+
+- canonical_name: Thomas Baker
+  aliases: ["thomas baker"]
+  type: external
+  tier: 4
+  notes: "the second Tom? — Rich to confirm"
+
+- canonical_name: Kate
+  aliases: [kate]
+  type: external
+  tier: 5
+  notes: "TODO: Rich to confirm identity"
+
+- canonical_name: Katrine
+  aliases: [katrine]
+  type: external
+  tier: 5
+
+- canonical_name: Anna
+  aliases: [anna]
+  type: external
+  tier: 5
+  notes: "TODO: which Anna"
+
+- canonical_name: Irish
+  aliases: [irish]
+  type: external
+  tier: 5
+  notes: "Rich noted: very few conversations; surfaces because of name mentions"
+
+# ── Non-human — drop from People namespace entirely ────────────────────────
+
+- canonical_name: Claude
+  aliases: [claude, cloud]
+  type: non_human
+  tier: 99
+  notes: "AI tool; not a person. 'Cloud' is a transcription artifact of Claude."
+
+- canonical_name: Team
+  aliases: [team, "the team", "coaching team", "team at strategic profits"]
+  type: non_human
+  tier: 99
+  notes: "group reference, not a single person"
+
+- canonical_name: Someone
+  aliases: [someone, "someone in the team"]
+  type: non_human
+  tier: 99
+  notes: "ambiguous attribution"

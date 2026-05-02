@@ -168,7 +168,8 @@ def test_extractor_emits_lcl_processed_claims(store, meetings_root):
     assert all(c.lane == "atlas_meeting" for c in claims)
     # Person names with parenthetical handles are stripped
     person_subjects = [c.subject_kref for c in by_predicate["episode.attended_meeting"]]
-    assert any("/tom.person" in s for s in person_subjects)
+    # Tom canonicalizes to Tom Hammaker via the People Registry
+    assert any("/tom_hammaker.person" in s for s in person_subjects)
     assert not any("(tomhammaker)" in s for s in person_subjects)
 
 
@@ -200,38 +201,35 @@ def test_extractor_emits_standup_action_items(store, meetings_root):
     assert any("Ashley:" in v for v in values)
 
 
-def test_extractor_skips_meetings_rich_not_present(store, meetings_root):
-    """rich_present: false → zero claims (Tom's client calls, etc.)."""
-    _write(meetings_root / "tom-and-client.md", """\
+def test_extractor_broad_ingestion_includes_team_only_meetings(store, meetings_root):
+    """Atlas wants to know everything happening in the company.
+
+    Tech setup calls, onboarding calls, copy clinics, and other team-internal
+    meetings get ingested even when Rich isn't present. The dashboard /
+    OS layer (downstream of Atlas) is what filters by ownership when
+    surfacing items to Rich.
+    """
+    _write(meetings_root / "02.00 PM - ZenithMind Tech Set Up Call - Transcript.md", """\
         ---
-        meeting: ZenithPro Tech Setup with Brad
-        date: 2026-03-03
-        host: tomhammaker
-        rich_present: false
+        date: 2026-03-06
+        account: Rich Schefren
         lcl_processed: true
         action_items:
-          - Brad: Launch Income Lab on Friday
-          - Tom: Set up Brad with Claude Code account
+          - Tom: walkthrough Cowork setup
+          - Brad: Install Cowork app
         decisions:
-          - Use Open Brain for knowledge retrieval
-        people:
-          - Tom
-          - Brad Coverdale
+          - Use Claude Cowork as entry point for new users
         ---
         """)
     extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
     events = extractor.fetch_new_events(extractor.load_cursor())
     claims = extractor.extract_claims_from_event(events[0])
-    assert claims == []
+    # 2 action items + 1 decision = 3 claims (broad ingestion)
+    assert len(claims) == 3
 
 
-def test_extractor_skips_when_rich_not_in_participants(store, meetings_root):
-    """No `rich_present` field, but `participants` list excludes Rich → skip.
-
-    This is the real-world case: Tom's client calls have a participants list
-    with Tom + the client and no rich_present boolean. The filter should still
-    catch them.
-    """
+def test_extractor_includes_meetings_without_rich_in_participants(store, meetings_root):
+    """No Rich in participants → still ingested. Filter at display, not here."""
     _write(meetings_root / "tom-client-via-participants.md", """\
         ---
         date: 2026-03-03
@@ -249,27 +247,59 @@ def test_extractor_skips_when_rich_not_in_participants(store, meetings_root):
     extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
     events = extractor.fetch_new_events(extractor.load_cursor())
     claims = extractor.extract_claims_from_event(events[0])
-    assert claims == []
+    # 1 action + 1 decision + 2 attendees = 4 claims (broad ingestion)
+    assert len(claims) == 4
 
 
-def test_extractor_includes_when_rich_in_participants(store, meetings_root):
-    """`participants` list contains Richard Schefren → include."""
-    _write(meetings_root / "rich-attended.md", """\
+def test_extractor_drops_non_human_attendees(store, meetings_root):
+    """Claude / Cloud / Team should NOT generate person-attended claims."""
+    _write(meetings_root / "rich-with-claude-bot.md", """\
         ---
-        date: 2026-03-03
-        participants:
-          - Richard Schefren
-          - Tom Hammaker
+        date: 2026-04-22
+        rich_present: true
         lcl_processed: true
-        action_items:
-          - Tom: Send weekly update
+        action_items: []
+        decisions: []
+        people:
+          - Rich Schefren
+          - Ashley
+          - Claude
+          - Cloud
+          - Team
         ---
         """)
     extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
     events = extractor.fetch_new_events(extractor.load_cursor())
     claims = extractor.extract_claims_from_event(events[0])
-    assert len(claims) == 1
-    assert "Tom: Send weekly update" in claims[0].object_value
+    person_subjects = [c.subject_kref for c in claims if c.predicate == "episode.attended_meeting"]
+    assert any("/rich_schefren.person" in s for s in person_subjects)
+    assert any("/ashley_shaw.person" in s for s in person_subjects)
+    assert not any("/claude" in s for s in person_subjects)
+    assert not any("/cloud" in s for s in person_subjects)
+    assert not any("/team" in s for s in person_subjects)
+
+
+def test_extractor_dedups_canonical_attendees(store, meetings_root):
+    """'Nicole' + 'Nicole Mickevicius' on the same meeting → one claim."""
+    _write(meetings_root / "rich-and-nicole.md", """\
+        ---
+        date: 2026-04-22
+        rich_present: true
+        lcl_processed: true
+        action_items: []
+        decisions: []
+        people:
+          - Rich Schefren
+          - Nicole
+          - Nicole Mickevicius
+        ---
+        """)
+    extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
+    events = extractor.fetch_new_events(extractor.load_cursor())
+    claims = extractor.extract_claims_from_event(events[0])
+    person_subjects = [c.subject_kref for c in claims if c.predicate == "episode.attended_meeting"]
+    nicole_count = sum(1 for s in person_subjects if "/nicole_mickevicius.person" in s)
+    assert nicole_count == 1
 
 
 def test_extractor_includes_meetings_rich_present(store, meetings_root):
@@ -295,59 +325,6 @@ def test_extractor_includes_meetings_rich_present(store, meetings_root):
     claims = extractor.extract_claims_from_event(events[0])
     # 1 action item + 1 decision + 2 people = 4
     assert len(claims) == 4
-
-
-def test_extractor_strict_default_skips_when_no_rich_signal(store, meetings_root):
-    """No rich_present, no participants, no Rich-suggesting filename → skip."""
-    _write(meetings_root / "Some-Random-Meeting.md", """\
-        ---
-        date: 2026-03-03
-        lcl_processed: true
-        action_items:
-          - Tom: do thing
-        decisions:
-          - Some decision
-        ---
-        """)
-    extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
-    events = extractor.fetch_new_events(extractor.load_cursor())
-    assert extractor.extract_claims_from_event(events[0]) == []
-
-
-def test_extractor_filename_pattern_includes_rich(store, meetings_root):
-    """No participants list, but filename has 'Rich Schefren' → include."""
-    _write(meetings_root / "2026-03-03 Call- Joe Smith & Richard Schefren.md", """\
-        ---
-        date: 2026-03-03
-        lcl_processed: true
-        action_items:
-          - Joe: deliver pitch deck
-        decisions:
-          - Move forward with engagement
-        ---
-        """)
-    extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
-    events = extractor.fetch_new_events(extractor.load_cursor())
-    claims = extractor.extract_claims_from_event(events[0])
-    assert len(claims) == 2  # 1 action + 1 decision
-
-
-def test_extractor_filename_pattern_skips_tech_setup(store, meetings_root):
-    """Filename matches non-Rich pattern → skip even if account: Rich Schefren."""
-    _write(meetings_root / "02.00 PM - ZenithMind Tech Set Up Call - Transcript.md", """\
-        ---
-        date: 2026-03-06
-        account: Rich Schefren
-        lcl_processed: true
-        action_items:
-          - Tom: walkthrough Cowork setup
-        decisions:
-          - Use Claude Cowork as entry point
-        ---
-        """)
-    extractor = MeetingsExtractor(quarantine=store, meetings_root=meetings_root)
-    events = extractor.fetch_new_events(extractor.load_cursor())
-    assert extractor.extract_claims_from_event(events[0]) == []
 
 
 def test_extractor_standup_brief_filename_includes(store, meetings_root):

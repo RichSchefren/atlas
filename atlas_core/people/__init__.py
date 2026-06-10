@@ -15,8 +15,8 @@ should never enter the belief graph as person entities.
 """
 
 from atlas_core.people.registry import (
-    PersonInfo,
     PeopleRegistry,
+    PersonInfo,
     registry,
     resolve,
 )

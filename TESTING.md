@@ -81,6 +81,15 @@ ATLAS_VAULT_ROOT=~/Documents/Obsidian \
   PYTHONPATH=. python scripts/first_real_run.py
 ```
 
+Multiple vaults? Use `ATLAS_VAULT_ROOTS` (colon-separated, same convention
+as `PATH`). It takes precedence over `ATLAS_VAULT_ROOT`; missing paths are
+skipped with a warning:
+
+```bash
+ATLAS_VAULT_ROOTS=~/Vaults/business:~/Vaults/personal \
+  PYTHONPATH=. python scripts/first_real_run.py
+```
+
 Inspect what landed:
 
 ```bash

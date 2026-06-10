@@ -29,6 +29,7 @@ def run_ingestion_cycle() -> int:
         LimitlessExtractor,
         ScreenpipeExtractor,
         VaultExtractor,
+        resolve_vault_roots,
     )
     from atlas_core.trust import HashChainedLedger, QuarantineStore
 
@@ -47,15 +48,14 @@ def run_ingestion_cycle() -> int:
 
         orch = IngestionOrchestrator()
 
-        # Vault
-        vault_root = Path(os.environ.get(
-            "ATLAS_VAULT_ROOT",
-            str(Path.home() / ".atlas" / "watch" / "vault"),
-        ))
-        if vault_root.exists():
+        # Vault — ATLAS_VAULT_ROOTS (colon-separated) or ATLAS_VAULT_ROOT
+        vault_roots = resolve_vault_roots(
+            default=Path.home() / ".atlas" / "watch" / "vault",
+        )
+        if vault_roots:
             orch.register(VaultExtractor(
                 quarantine=quarantine,
-                vault_roots=[vault_root],
+                vault_roots=vault_roots,
             ))
 
         # Limitless

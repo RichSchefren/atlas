@@ -31,10 +31,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 ATLAS_DATA_DIR = Path(os.environ.get(
     "ATLAS_DATA_DIR", str(Path.home() / ".atlas")
 ))
-VAULT_ROOT = Path(os.environ.get(
-    "ATLAS_VAULT_ROOT",
-    str(Path.home() / ".atlas" / "watch" / "vault"),
-))
+# Resolved in main() via resolve_vault_roots() — honors ATLAS_VAULT_ROOTS
+# (colon-separated, issue #14) with ATLAS_VAULT_ROOT as the single-path
+# fallback.
+DEFAULT_VAULT_ROOT = Path.home() / ".atlas" / "watch" / "vault"
 LIMITLESS_ROOT = Path(os.environ.get(
     "ATLAS_LIMITLESS_ROOT",
     str(Path.home() / ".atlas" / "watch" / "limitless"),
@@ -51,6 +51,7 @@ def main() -> int:
         LimitlessExtractor,
         ScreenpipeExtractor,
         VaultExtractor,
+        resolve_vault_roots,
     )
     from atlas_core.trust import HashChainedLedger, QuarantineStore
 
@@ -58,22 +59,24 @@ def main() -> int:
     candidates_db = ATLAS_DATA_DIR / "candidates.db"
     ledger_db = ATLAS_DATA_DIR / "ledger.db"
 
+    vault_roots = resolve_vault_roots(default=DEFAULT_VAULT_ROOT)
+
     print("== Atlas first real run ==")
     print(f"Data dir   : {ATLAS_DATA_DIR}")
-    print(f"Vault root : {VAULT_ROOT}")
+    print(f"Vault roots: {', '.join(str(r) for r in vault_roots) or '(none)'}")
     print(f"Limitless  : {LIMITLESS_ROOT}")
     print(f"Caps       : vault={VAULT_LIMIT}, limitless={LIMITLESS_LIMIT}")
     print()
 
-    if not VAULT_ROOT.exists():
-        print("  ! vault root missing — skipping vault stream", file=sys.stderr)
+    if not vault_roots:
+        print("  ! no vault roots exist — skipping vault stream", file=sys.stderr)
         vault_extractor = None
     else:
         # File-cap enforced inside extractor via env contract — fall back
         # to raw VaultExtractor and trust caller to pre-filter via VAULT_LIMIT.
         vault_extractor = VaultExtractor(
             quarantine=QuarantineStore(candidates_db),
-            vault_roots=[VAULT_ROOT],
+            vault_roots=vault_roots,
         )
 
     quarantine = QuarantineStore(candidates_db)

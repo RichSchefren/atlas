@@ -12,6 +12,7 @@ Phase 2 W6 wires LLM-driven extraction for free-text vault changes.
 from __future__ import annotations
 
 import logging
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -42,6 +43,48 @@ VAULT_IGNORE_PATTERNS: tuple[str, ...] = (
 
 # Frontmatter parser — looks for YAML-fenced top block.
 _FRONTMATTER = re.compile(r"^---\s*\n(.+?)\n---\s*\n", re.DOTALL)
+
+
+def resolve_vault_roots(
+    env: dict[str, str] | None = None,
+    *,
+    default: Path | None = None,
+) -> list[Path]:
+    """Resolve vault roots from the environment (issue #14).
+
+    Precedence:
+      1. ``ATLAS_VAULT_ROOTS`` — colon-separated list (same convention as
+         ``PATH``), e.g. ``~/Vaults/business:~/Vaults/personal``
+      2. ``ATLAS_VAULT_ROOT`` — single path (backward compatible)
+      3. ``default`` — caller-supplied fallback (typically
+         ``~/.atlas/watch/vault``)
+
+    Paths are tilde-expanded (launchd does not run a shell, so ``~`` in a
+    plist EnvironmentVariables block reaches us literally), deduplicated
+    preserving order, and filtered to those that exist on disk.
+    """
+    env = os.environ if env is None else env
+
+    raw = env.get("ATLAS_VAULT_ROOTS") or env.get("ATLAS_VAULT_ROOT") or ""
+    candidates = [
+        Path(part.strip()).expanduser()
+        for part in raw.split(os.pathsep)
+        if part.strip()
+    ]
+    if not candidates and default is not None:
+        candidates = [Path(default).expanduser()]
+
+    seen: set[Path] = set()
+    roots: list[Path] = []
+    for root in candidates:
+        if root in seen:
+            continue
+        seen.add(root)
+        if root.exists():
+            roots.append(root)
+        else:
+            log.warning("Vault root does not exist, skipping: %s", root)
+    return roots
 
 
 class VaultExtractor(BaseExtractor):

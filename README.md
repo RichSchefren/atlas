@@ -257,7 +257,7 @@ pip install -e .              # core: AGM + Ripple + ledger + adapters + ingest
 # pip install -e ".[full]"       # everything above
 # pip install -e ".[dev]"        # contributor tooling (includes anthropic for tests)
 
-# 4. Verify with the test suite (469 tests, ~12s)
+# 4. Verify with the test suite (518 tests, ~12s)
 PYTHONPATH=. pytest tests/ -v
 
 # 5. Reproduce AGM compliance (49/49 scenarios, ~30s)
@@ -265,6 +265,10 @@ PYTHONPATH=. pytest tests/integration/test_agm_compliance.py -v
 
 # 6. First real ingest from your own Obsidian vault
 ATLAS_VAULT_ROOT=~/Documents/Obsidian PYTHONPATH=. python scripts/first_real_run.py
+
+# 6b. Multiple vaults (colon-separated, like PATH) — e.g. a shared business
+#     vault plus a personal vault feeding one belief graph
+ATLAS_VAULT_ROOTS=~/Vaults/business:~/Vaults/personal PYTHONPATH=. python scripts/first_real_run.py
 ```
 
 ---
@@ -421,7 +425,7 @@ If you want to break Atlas, [TESTING.md](TESTING.md) has five concrete paths fro
 | BusinessMemBench at 1.000 vs Graphiti 0.711 on 149 deterministic questions | `python scripts/run_bmb.py` |
 | Live ingest from real machine state (vault + Limitless + Screenpipe + Claude) | `python scripts/first_real_run.py` |
 | launchd daemon installs (continuous ingestion + API server) | `./scripts/install_launchd.sh` |
-| **All of the above run together** | `pytest tests/ -v` (446 passing) |
+| **All of the above run together** | `pytest tests/ -v` (518 passing) |
 
 ### Planned — explicitly NOT done (no proof commands, by design)
 
@@ -442,7 +446,7 @@ If a row in **Planned** is something you want sooner, file an issue describing t
 
 Atlas as v0.1.0a1 is roughly **70-80% of the full system** described in the Phase 0 design docs. See `PHASE-5-AND-BEYOND.md` for the tiered roadmap of what's left.
 
-Test count this snapshot: **446 passing** in CI against Ubuntu + Neo4j 5.26.
+Test count this snapshot: **518 passing** in CI against Ubuntu + Neo4j 5.26.
 
 ---
 

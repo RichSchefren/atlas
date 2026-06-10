@@ -54,7 +54,7 @@ from atlas_core.ingestion.orchestrator import (
     OrchestrationReport,
 )
 from atlas_core.ingestion.screenpipe import ScreenpipeExtractor
-from atlas_core.ingestion.vault import VaultExtractor
+from atlas_core.ingestion.vault import VaultExtractor, resolve_vault_roots
 
 __all__ = [
     "BaseExtractor",
@@ -74,4 +74,5 @@ __all__ = [
     "ImessageNotConfiguredError",
     "IngestionOrchestrator",
     "OrchestrationReport",
+    "resolve_vault_roots",
 ]

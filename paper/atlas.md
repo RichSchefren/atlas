@@ -295,7 +295,7 @@ git clone https://github.com/RichSchefren/atlas
 cd atlas && docker compose up -d
 python -m venv .venv && source .venv/bin/activate
 pip install -e .
-PYTHONPATH=. pytest tests/ -v   # 288+ tests, all green at submission
+PYTHONPATH=. pytest tests/ -v   # 518 tests, all green at submission
 ```
 
 ## References

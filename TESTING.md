@@ -13,7 +13,7 @@ git clone https://github.com/RichSchefren/atlas && cd atlas
 docker compose up -d                         # Neo4j 5.26 with APOC
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-PYTHONPATH=. pytest tests/ -v                # 318 passed expected
+PYTHONPATH=. pytest tests/ -v                # 518 passed expected
 ```
 
 **If RED:** file an issue using the **"Tester report — smoke test"** template. Copy the failing pytest line. Include `python --version` and your OS.

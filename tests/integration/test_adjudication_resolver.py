@@ -273,6 +273,142 @@ class TestResolveRoundtrip:
             )
 
 
+# ─── Unresolve (reverse a resolution) ───────────────────────────────────────
+
+
+class TestUnresolve:
+    """`unresolve` reverses an applied resolution by re-pointing the active
+    tag back to the superseded revision. Append-only: the revision the
+    resolution created stays in the graph; the reversal is itself audited.
+    Issue #15.
+    """
+
+    async def _current_revision_kref(self, driver, root_kref: str) -> str | None:
+        async with driver.session() as session:
+            result = await session.run(
+                "MATCH (:AtlasTag {name:'current', root_kref:$root})"
+                "-[:POINTS_TO]->(r:AtlasRevision) RETURN r.kref AS kref",
+                root=root_kref,
+            )
+            row = await result.single()
+            return row["kref"] if row else None
+
+    async def test_unresolve_restores_prior_revision(
+        self, driver, ledger, tmp_dir, ns,
+    ):
+        from atlas_core.revision.agm import revise
+        from atlas_core.revision.uri import Kref
+        from atlas_core.ripple.resolver import (
+            resolve_adjudication,
+            unresolve,
+        )
+
+        target_kref = f"kref://{ns}/Beliefs/undo_me.belief"
+        root_kref = Kref.parse(target_kref).root_kref().to_string()
+
+        # Seed an original revision (rev1), tag current -> rev1.
+        seed = await revise(
+            driver=driver,
+            target_kref=Kref.parse(target_kref),
+            new_content={"confidence": 0.85},
+            revision_reason="seed original belief",
+            actor="rich",
+        )
+        rev1 = seed.new_revision_kref.to_string()
+
+        # Accept-resolve -> creates rev2 SUPERSEDES rev1, tag current -> rev2.
+        adj_dir = tmp_dir / "adjudication"
+        _write_adjudication_file(
+            directory=adj_dir,
+            proposal_id="adj_undo",
+            target_kref=target_kref,
+            current=0.85, proposed=0.40,
+        )
+        resolved = await resolve_adjudication(
+            "adj_undo", "accept",
+            driver=driver, ledger=ledger, directory=adj_dir,
+        )
+        rev2 = resolved.new_revision_kref
+        assert resolved.superseded_kref == rev1
+        assert await self._current_revision_kref(driver, root_kref) == rev2
+
+        # Unresolve rev2 -> tag current back to rev1.
+        un = await unresolve(
+            rev2, driver=driver, ledger=ledger, actor="rich",
+        )
+
+        assert un.reverted_kref == rev2
+        assert un.restored_kref == rev1
+        assert un.ledger_event_id
+
+        # The active belief is rev1 again.
+        assert await self._current_revision_kref(driver, root_kref) == rev1
+
+        # Nothing destroyed: rev2 still exists and still SUPERSEDES rev1.
+        async with driver.session() as session:
+            result = await session.run(
+                "MATCH (a:AtlasRevision {kref:$rev2})-[:SUPERSEDES]->"
+                "(b:AtlasRevision {kref:$rev1}) RETURN a.kref AS k",
+                rev2=rev2, rev1=rev1,
+            )
+            assert await result.single() is not None
+
+        # Reversal is audited; ledger chain stays verifiable.
+        chain = ledger.verify_chain()
+        assert chain.intact is True
+
+    async def test_unresolve_first_revision_raises(
+        self, driver, ledger, tmp_dir, ns,
+    ):
+        """A revision with no SUPERSEDES target has nothing to revert to."""
+        from atlas_core.revision.agm import revise
+        from atlas_core.revision.uri import Kref
+        from atlas_core.ripple.resolver import unresolve
+
+        target_kref = f"kref://{ns}/Beliefs/only_one.belief"
+        seed = await revise(
+            driver=driver,
+            target_kref=Kref.parse(target_kref),
+            new_content={"confidence": 0.70},
+            revision_reason="first and only revision",
+            actor="rich",
+        )
+        with pytest.raises(ValueError, match="no superseded revision"):
+            await unresolve(
+                seed.new_revision_kref.to_string(),
+                driver=driver, ledger=ledger,
+            )
+
+    async def test_unresolve_non_current_revision_raises(
+        self, driver, ledger, tmp_dir, ns,
+    ):
+        """Refuse to unresolve a revision that isn't the active one — that
+        would silently corrupt the tag pointer."""
+        from atlas_core.revision.agm import revise
+        from atlas_core.revision.uri import Kref
+        from atlas_core.ripple.resolver import unresolve
+
+        target_kref = f"kref://{ns}/Beliefs/stale.belief"
+        seed = await revise(
+            driver=driver,
+            target_kref=Kref.parse(target_kref),
+            new_content={"confidence": 0.60},
+            revision_reason="rev1",
+            actor="rich",
+        )
+        rev1 = seed.new_revision_kref.to_string()
+        await revise(
+            driver=driver,
+            target_kref=Kref.parse(target_kref),
+            new_content={"confidence": 0.30},
+            revision_reason="rev2 (now current)",
+            actor="rich",
+        )
+        # rev1 is no longer current; reversing it is not allowed.
+        with pytest.raises(ValueError, match="not the active revision"):
+            await unresolve(rev1, driver=driver, ledger=ledger)
+
+
 # ─── Frontmatter parser ─────────────────────────────────────────────────────
 
 

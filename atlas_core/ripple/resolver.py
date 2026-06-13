@@ -73,6 +73,23 @@ class ResolveOutcome:
     notes: list[str] = field(default_factory=list)
 
 
+@dataclass
+class UnresolveOutcome:
+    """Returned by `unresolve()` — the reversal of an applied resolution.
+
+    `reverted_kref` is the revision the resolution created (no longer
+    current). `restored_kref` is the revision it had superseded, now
+    current again. Nothing is deleted; the reversal is itself a logged,
+    reversible tag move.
+    """
+
+    reverted_kref: str
+    restored_kref: str
+    root_kref: str
+    tag: str
+    ledger_event_id: str | None = None
+
+
 # ─── Frontmatter parser ─────────────────────────────────────────────────────
 
 
@@ -291,5 +308,141 @@ async def resolve_adjudication(
         "new_revision=%s ledger_event=%s",
         proposal_id, decision, outcome.applied,
         outcome.new_revision_kref, outcome.ledger_event_id,
+    )
+    return outcome
+
+
+# ─── Unresolve ──────────────────────────────────────────────────────────────
+
+
+async def unresolve(
+    revision_kref: str,
+    *,
+    driver: AsyncDriver,
+    ledger: HashChainedLedger,
+    actor: str = "rich",
+    tag: str = "current",
+) -> UnresolveOutcome:
+    """Reverse an applied resolution by re-pointing the active tag back to the
+    revision that the resolution superseded.
+
+    Append-only and audited:
+      - The revision the resolution created stays in the graph, along with its
+        SUPERSEDES edge — nothing is destroyed, so the reversal is itself
+        reversible (re-resolve to go forward again).
+      - An INVALIDATE ledger event records what was reverted and what was
+        restored, keeping the hash-chained audit trail complete.
+
+    Args:
+        revision_kref: kref of the revision created by the resolution — i.e.
+            ResolveOutcome.new_revision_kref. Must be the one the tag currently
+            points to.
+        driver: Live Neo4j driver
+        ledger: Hash-chained ledger — gets the reversal audit event
+        actor: Audit attribution; defaults to 'rich'
+        tag: Which tag to move back; defaults to 'current'
+
+    Returns:
+        UnresolveOutcome with reverted_kref / restored_kref / ledger_event_id
+
+    Raises:
+        ValueError: revision not found, no superseded revision to revert to,
+            or the revision is not the active one at the tag.
+    """
+    gather_cypher = """
+    MATCH (rev:AtlasRevision {kref: $rev_kref})
+    OPTIONAL MATCH (rev)-[:SUPERSEDES]->(prior:AtlasRevision)
+    OPTIONAL MATCH (:AtlasTag {name: $tag, root_kref: rev.root_kref})
+                   -[:POINTS_TO]->(cur:AtlasRevision)
+    RETURN rev.root_kref AS root_kref,
+           prior.kref AS prior_kref,
+           cur.kref AS current_kref
+    """
+    async with driver.session() as session:
+        result = await session.run(
+            gather_cypher, rev_kref=revision_kref, tag=tag
+        )
+        record = await result.single()
+
+    if record is None:
+        raise ValueError(f"revision not found: {revision_kref!r}")
+
+    root_kref = record["root_kref"]
+    prior_kref = record["prior_kref"]
+    current_kref = record["current_kref"]
+
+    # You can only unresolve the active revision — check that first so a
+    # stale kref gets the precise error rather than a misleading one.
+    if current_kref != revision_kref:
+        raise ValueError(
+            f"revision {revision_kref!r} is not the active revision at "
+            f"tag {tag!r} (current is {current_kref!r}); refusing to "
+            f"re-point the tag"
+        )
+    if prior_kref is None:
+        raise ValueError(
+            f"revision {revision_kref!r} has no superseded revision to "
+            f"revert to (it was the first revision)"
+        )
+
+    timestamp = datetime.now(timezone.utc).isoformat()
+    repoint_cypher = """
+    MATCH (tag:AtlasTag {name: $tag, root_kref: $root_kref})
+    OPTIONAL MATCH (tag)-[old:POINTS_TO]->(:AtlasRevision)
+    DELETE old
+    WITH tag
+    MATCH (prior:AtlasRevision {kref: $prior_kref})
+    CREATE (tag)-[:POINTS_TO {moved_at: $timestamp, reverted_from: $rev_kref}]->(prior)
+    RETURN prior.kref AS restored
+    """
+    async with driver.session() as session:
+        result = await session.run(
+            repoint_cypher,
+            tag=tag,
+            root_kref=root_kref,
+            prior_kref=prior_kref,
+            rev_kref=revision_kref,
+            timestamp=timestamp,
+        )
+        repoint = await result.single()
+
+    if repoint is None:
+        raise RuntimeError(
+            f"unresolve: failed to re-point tag {tag!r} for {root_kref!r}"
+        )
+
+    outcome = UnresolveOutcome(
+        reverted_kref=revision_kref,
+        restored_kref=prior_kref,
+        root_kref=root_kref,
+        tag=tag,
+    )
+
+    from atlas_core.trust.ledger import EventType
+
+    ledger_event = ledger.append_event(
+        event_type=EventType.INVALIDATE,
+        actor_id=actor,
+        object_id=revision_kref,
+        object_type="ripple_unresolve",
+        root_id=root_kref,
+        target_object_id=prior_kref,
+        reason=(
+            f"unresolve: reverted {revision_kref}, restored {prior_kref} "
+            f"as {tag}"
+        ),
+        payload={
+            "reverted_kref": revision_kref,
+            "restored_kref": prior_kref,
+            "tag": tag,
+            "actor": actor,
+            "reverted_at": timestamp,
+        },
+    )
+    outcome.ledger_event_id = ledger_event.event_id
+
+    log.info(
+        "Unresolve: reverted=%s restored=%s tag=%s ledger_event=%s",
+        revision_kref, prior_kref, tag, outcome.ledger_event_id,
     )
     return outcome

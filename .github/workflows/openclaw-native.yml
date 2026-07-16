@@ -1,0 +1,92 @@
+name: OpenClaw native plugin
+
+on:
+  pull_request:
+    paths:
+      - "integrations/openclaw-atlas/**"
+      - ".github/workflows/openclaw-native.yml"
+  push:
+    branches: [master]
+    paths:
+      - "integrations/openclaw-atlas/**"
+      - ".github/workflows/openclaw-native.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-openclaw-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22.22.3"
+
+      - name: Install pinned pnpm
+        run: npm install --global pnpm@11.2.2
+
+      - name: Check out pinned OpenClaw contract fixture
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: openclaw/openclaw
+          ref: d830fda0893bb0a716f015478269d344eba7a6f7
+          path: .contract/openclaw
+
+      - name: Prepare pinned host and public SDK declarations
+        working-directory: .contract/openclaw
+        run: |
+          pnpm install --frozen-lockfile --reporter=append-only
+          pnpm build:plugin-sdk:strict-smoke
+          pnpm build
+
+      - name: Install package-only development dependencies
+        working-directory: integrations/openclaw-atlas
+        run: |
+          npm ci --omit=optional
+          ln -s ../../../.contract/openclaw node_modules/openclaw
+
+      - name: Strict build and package tests
+        working-directory: integrations/openclaw-atlas
+        env:
+          NEO4J_URI: bolt://127.0.0.1:1
+        run: npm test
+
+      - name: Build and verify release tarball
+        working-directory: integrations/openclaw-atlas
+        run: |
+          shasum -a 256 -c CHECKSUMS.sha256
+          mkdir -p ../../.contract/package-committed ../../.contract/package-rebuilt
+          cp atlas-memory-openclaw-0.1.0.tgz ../../.contract/atlas-memory-openclaw-committed.tgz
+          tar -xzf atlas-memory-openclaw-0.1.0.tgz -C ../../.contract/package-committed
+          rm atlas-memory-openclaw-0.1.0.tgz
+          npm pack
+          tar -xzf atlas-memory-openclaw-0.1.0.tgz -C ../../.contract/package-rebuilt
+          diff -ru ../../.contract/package-committed/package ../../.contract/package-rebuilt/package
+          mv ../../.contract/atlas-memory-openclaw-committed.tgz atlas-memory-openclaw-0.1.0.tgz
+
+      - name: Install and load through the real pinned host
+        env:
+          OPENCLAW_STATE_DIR: ${{ runner.temp }}/atlas-openclaw-ci
+        run: |
+          node .contract/openclaw/openclaw.mjs plugins install integrations/openclaw-atlas/atlas-memory-openclaw-0.1.0.tgz --force
+          node .contract/openclaw/openclaw.mjs config set plugins.slots.memory atlas-memory
+          node .contract/openclaw/openclaw.mjs plugins inspect atlas-memory --runtime --json > "${RUNNER_TEMP}/atlas-openclaw-inspect.json"
+          node -e '
+            const fs = require("node:fs");
+            const data = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/atlas-openclaw-inspect.json", "utf8"));
+            const plugin = data.plugin || data;
+            if (plugin.status !== "loaded") throw new Error(`status=${plugin.status}`);
+            if ((plugin.diagnostics || []).length) throw new Error(JSON.stringify(plugin.diagnostics));
+            const registrations = data.tools || data.runtime?.tools || [];
+            const tools = new Set(registrations.flatMap((tool) => {
+              if (typeof tool === "string") return [tool];
+              if (Array.isArray(tool.names)) return tool.names;
+              return tool.name ? [tool.name] : [];
+            }));
+            for (const name of ["memory_search", "memory_get", "memory_store", "memory_forget"]) {
+              if (!tools.has(name)) throw new Error(`missing tool ${name}`);
+            }
+          '

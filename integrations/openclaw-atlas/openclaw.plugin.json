@@ -1,0 +1,49 @@
+{
+  "id": "atlas-memory",
+  "name": "Atlas Memory",
+  "description": "Auditable SQLite-backed long-term memory with lexical retrieval, safe auto-recall, and opt-in capture.",
+  "kind": "memory",
+  "contracts": {
+    "tools": ["memory_forget", "memory_get", "memory_search", "memory_store"]
+  },
+  "uiHints": {
+    "scope": {
+      "label": "Memory scope",
+      "help": "Agent isolates by profile and agent. Session also isolates each conversation."
+    },
+    "autoRecall": {
+      "label": "Auto-recall",
+      "help": "Inject up to three relevant memories as explicitly untrusted historical context."
+    },
+    "autoCapture": {
+      "label": "Auto-capture",
+      "help": "Opt-in capture of bounded user preferences, facts, and explicit decisions."
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "scope": {
+        "type": "string",
+        "enum": ["agent", "session"]
+      },
+      "autoRecall": {
+        "type": "boolean"
+      },
+      "autoCapture": {
+        "type": "boolean"
+      },
+      "recallLimit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 5
+      },
+      "captureMaxChars": {
+        "type": "integer",
+        "minimum": 100,
+        "maximum": 2000
+      }
+    }
+  }
+}

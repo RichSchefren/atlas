@@ -98,6 +98,8 @@ dev = [
     "hypothesis>=6.100",
     "ruff>=0.4",
     "mypy>=1.10",
+    # The sdist-allowlist tests build a real sdist; without this they skip.
+    "build>=1.0",
     "testcontainers[neo4j]>=4.0",
     # Tests cover the LLM paths via mocked clients; no need to ship
     # the real anthropic SDK for the test suite, but include it so
@@ -118,6 +120,20 @@ Repository = "https://github.com/RichSchefren/atlas"
 
 [tool.hatch.build.targets.wheel]
 packages = ["atlas_core"]
+
+# Source distribution is an explicit allowlist: a runtime install only
+# needs the importable package plus the metadata files that build/install
+# and license the project. Everything else in the repo tree (dev tooling,
+# docs, site assets, benchmarks, examples, ops material, CI config, ...)
+# is excluded by construction rather than by an ever-growing deny list.
+[tool.hatch.build.targets.sdist]
+include = [
+    "atlas_core/**",
+    "/README.md",
+    "/LICENSE",
+    "/NOTICE",
+    "/pyproject.toml",
+]
 
 [tool.ruff]
 line-length = 120

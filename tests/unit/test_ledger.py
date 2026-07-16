@@ -10,7 +10,6 @@ This is the cryptographic core of Atlas's trust layer. Coverage includes:
   - Atomic append (no chain gaps)
 """
 
-import sqlite3
 import tempfile
 from pathlib import Path
 
@@ -198,7 +197,7 @@ class TestVerifyChain:
                 payload={"v": i + 1},
             )
         # Tamper with the second event's payload
-        with sqlite3.connect(tmp_ledger.db_path) as conn:
+        with tmp_ledger._connection() as conn:
             conn.execute(
                 "UPDATE change_events SET payload_json = ? WHERE chain_sequence = 2",
                 ('{"v":999}',),
@@ -224,7 +223,7 @@ class TestVerifyChain:
             )
         # Tamper: overwrite event_id at seq 2 with a fake hash
         fake = "0" * 64
-        with sqlite3.connect(tmp_ledger.db_path) as conn:
+        with tmp_ledger._connection() as conn:
             conn.execute(
                 "UPDATE change_events SET event_id = ? WHERE chain_sequence = 2",
                 (fake,),
@@ -252,7 +251,7 @@ class TestVerifyChain:
                 root_id="kref://test/x.belief",
                 payload={"v": i + 1},
             )
-        with sqlite3.connect(tmp_ledger.db_path) as conn:
+        with tmp_ledger._connection() as conn:
             conn.execute(
                 "UPDATE change_events SET previous_hash = ? WHERE chain_sequence = 2",
                 ("a" * 64,),
@@ -397,7 +396,7 @@ class TestVerificationAudit:
         )
         tmp_ledger.verify_chain()
 
-        with sqlite3.connect(tmp_ledger.db_path) as conn:
+        with tmp_ledger._connection() as conn:
             count = conn.execute(
                 "SELECT COUNT(*) FROM chain_verifications"
             ).fetchone()[0]

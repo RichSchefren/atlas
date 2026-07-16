@@ -122,7 +122,9 @@ class VaultExtractor(BaseExtractor):
             if not root.exists():
                 continue
             for path in root.rglob("*.md"):
-                rel = str(path.relative_to(root))
+                # krefs and ignore patterns are platform-independent.  Store
+                # vault-relative paths with forward slashes even on Windows.
+                rel = path.relative_to(root).as_posix()
                 if any(pattern in rel for pattern in VAULT_IGNORE_PATTERNS):
                     continue
 

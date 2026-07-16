@@ -81,5 +81,6 @@ def test_tilde_expansion(tmp_path: Path, monkeypatch):
     home = tmp_path / "home"
     (home / "vault").mkdir(parents=True)
     monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
     env = {"ATLAS_VAULT_ROOTS": "~/vault"}
     assert resolve_vault_roots(env) == [home / "vault"]

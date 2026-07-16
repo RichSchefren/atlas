@@ -814,13 +814,14 @@ def test_simultaneous_processes_atomically_publish_one_managed_state(
     data_dir = home / "atlas" / "data"
     start_gate = tmp_path / "start"
     stop_gate = tmp_path / "stop"
+    ready_gates = [tmp_path / f"ready-{index}" for index in range(2)]
     client_path = PACKAGE_ROOT / "atlas" / "cognitive_client.py"
     scope_id = "atomic-state-scope"
     script = "\n".join(
         [
             "import importlib.util, json, sys, time",
             "from pathlib import Path",
-            "client_path, home, data, scope, start, stop = sys.argv[1:]",
+            "client_path, home, data, scope, start, ready, stop = sys.argv[1:]",
             "spec = importlib.util.spec_from_file_location('atomic_client', client_path)",
             "module = importlib.util.module_from_spec(spec)",
             "spec.loader.exec_module(module)",
@@ -831,6 +832,7 @@ def test_simultaneous_processes_atomically_publish_one_managed_state(
             "print(json.dumps({'token': client.token, 'port': client.base_url, "
             "'owns': client._owns_running_instance, "
             "'server_pid': health['managed_owner']['server_pid']}), flush=True)",
+            "Path(ready).touch()",
             "while not Path(stop).exists(): time.sleep(0.005)",
             "client.shutdown()",
         ]
@@ -845,9 +847,10 @@ def test_simultaneous_processes_atomically_publish_one_managed_state(
             str(data_dir),
             scope_id,
             str(start_gate),
+            str(ready_gate),
             str(stop_gate),
         ]
-        for _ in range(2)
+        for ready_gate in ready_gates
     ]
     processes = [
         subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -855,7 +858,12 @@ def test_simultaneous_processes_atomically_publish_one_managed_state(
     ]
     assert not (home / "atlas" / "service" / f"{scope_id}.json").exists()
     start_gate.touch()
-    time.sleep(1.0)
+    deadline = time.monotonic() + 8.0
+    while time.monotonic() < deadline and not all(gate.exists() for gate in ready_gates):
+        time.sleep(0.01)
+    assert all(gate.exists() for gate in ready_gates), [
+        process.poll() for process in processes
+    ]
     stop_gate.touch()
     outputs = [process.communicate(timeout=10) for process in processes]
     assert [process.returncode for process in processes] == [0, 0], outputs

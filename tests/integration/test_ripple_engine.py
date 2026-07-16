@@ -100,7 +100,7 @@ class TestEngineOneHop:
                 "  a.confidence_score = 0.9 "
                 "MERGE (b:AtlasItem {kref: $b}) SET b.deprecated = false, "
                 "  b.confidence_score = 0.85, b.last_evidence_days = 0 "
-                "MERGE (b)-[:DEPENDS_ON {strength: 0.8}]->(a)",
+                "MERGE (b)-[:DEPENDS_ON {dependency_strength: 0.8}]->(a)",
                 a=upstream, b=downstream,
             )
 
@@ -128,7 +128,7 @@ class TestEngineOneHop:
                 "  a.confidence_score = 0.9 "
                 "MERGE (b:AtlasItem {kref: $b}) SET b.deprecated = false, "
                 "  b.confidence_score = 0.8, b.last_evidence_days = 0 "
-                "MERGE (b)-[:DEPENDS_ON {strength: 0.7}]->(a)",
+                "MERGE (b)-[:DEPENDS_ON {dependency_strength: 0.7}]->(a)",
                 a=upstream, b=downstream,
             )
 
@@ -163,8 +163,8 @@ class TestEngineMultiHop:
                 "  m.confidence_score = 0.85, m.last_evidence_days = 0 "
                 "MERGE (l:AtlasItem {kref: $l}) SET l.deprecated = false, "
                 "  l.confidence_score = 0.80, l.last_evidence_days = 0 "
-                "MERGE (m)-[:DEPENDS_ON {strength: 0.8}]->(r) "
-                "MERGE (l)-[:DEPENDS_ON {strength: 0.7}]->(m)",
+                "MERGE (m)-[:DEPENDS_ON {dependency_strength: 0.8}]->(r) "
+                "MERGE (l)-[:DEPENDS_ON {dependency_strength: 0.7}]->(m)",
                 r=upstream, m=mid, l=leaf,
             )
 

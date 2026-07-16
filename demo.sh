@@ -148,8 +148,8 @@ async def main():
             "MERGE (c:AtlasItem:Decision {kref: $c}) SET c.deprecated = false, "
             "  c.confidence_score = 0.80, c.last_evidence_days = 0, "
             "  c.text = 'Market Origins to newcomers' "
-            "MERGE (b)-[:DEPENDS_ON {strength: 0.9}]->(a) "
-            "MERGE (c)-[:DEPENDS_ON {strength: 0.7}]->(b)",
+            "MERGE (b)-[:DEPENDS_ON {dependency_strength: 0.9}]->(a) "
+            "MERGE (c)-[:DEPENDS_ON {dependency_strength: 0.7}]->(b)",
             a=upstream, b=belief, c=decision,
         )
     print(f"  {GREEN}✓{RESET} 3 nodes + 2 Depends_On edges planted")

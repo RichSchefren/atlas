@@ -1,0 +1,47 @@
+name: Hermes native provider
+
+on:
+  pull_request:
+    paths:
+      - "integrations/hermes-atlas/**"
+      - "tests/hermes/**"
+      - ".github/workflows/hermes-native.yml"
+  push:
+    branches: [master]
+    paths:
+      - "integrations/hermes-atlas/**"
+      - "tests/hermes/**"
+      - ".github/workflows/hermes-native.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-hermes-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: python -m pip install pytest pytest-asyncio pyyaml rich platformdirs
+
+      - name: Check out pinned Hermes contract fixture
+        uses: actions/checkout@v4
+        with:
+          repository: NousResearch/hermes-agent
+          ref: b5bd0ef38b538627a0e5d2cbe5d3eef2c38ec792
+          path: .contract/hermes-agent
+
+      - name: Test real Hermes loader and provider contract
+        env:
+          HERMES_UPSTREAM: ${{ github.workspace }}/.contract/hermes-agent
+        run: python -m pytest -q tests/hermes/test_native_hermes_plugin.py
+
+      - name: Lint native provider package
+        run: |
+          python -m pip install ruff
+          ruff check integrations/hermes-atlas/atlas tests/hermes/test_native_hermes_plugin.py

@@ -1,0 +1,57 @@
+{
+  "api_version": "v1",
+  "service_version": "0.1.0",
+  "bind_host": "127.0.0.1",
+  "default_port": 8741,
+  "scope": "Required at launch and immutable for the process. Requests cannot override it.",
+  "authorization": {
+    "scheme": "Bearer",
+    "token_env": "ATLAS_COGNITIVE_TOKEN",
+    "required_on_every_route": true
+  },
+  "idempotency": {
+    "required_for": ["create", "revise", "cascade"],
+    "same_key_same_request": "Return the persisted original response.",
+    "same_key_different_request": "HTTP 409 idempotency_conflict.",
+    "revision_precondition": "old_confidence_ppm is validated on first execution but excluded from retry identity, allowing the same semantic revision intent to replay after its first success.",
+    "revision_audit_identity": "Each item_revised audit event exposes details.idempotency_key together with details.revision_id so an authenticated client can identify and replay the exact persisted operation."
+  },
+  "routes": {
+    "GET /v1/health": {
+      "managed_owner": "Managed launches expose instance_id, parent_pid, and server_pid. External launches omit it."
+    },
+    "POST /v1/control/shutdown": {
+      "required": ["owner_instance"],
+      "availability": "Managed launches only. Bearer authentication, fixed scope, and exact owner instance must all match."
+    },
+    "POST /v1/items/create": {
+      "required": ["idempotency_key", "root_kref", "kind", "content", "confidence_ppm"]
+    },
+    "POST /v1/items/revise": {
+      "required": ["idempotency_key", "root_kref", "content", "revision_reason", "old_confidence_ppm", "new_confidence_ppm"]
+    },
+    "POST /v1/dependencies": {
+      "required": ["dependent_kref", "support_kref", "strength_ppm"]
+    },
+    "GET /v1/items/get": {"query": ["root_kref"]},
+    "GET /v1/items/audit": {
+      "query": ["root_kref"],
+      "returns": ["item including deprecated", "all live tags", "full lineage", "audit_events"]
+    },
+    "POST /v1/items/search": {"required": ["query"]},
+    "GET /v1/items/list": {"query": ["limit"]},
+    "POST /v1/items/forget": {"required": ["root_kref", "proposition", "reason"]},
+    "POST /v1/cascades": {
+      "required": ["idempotency_key", "origin_kref", "old_confidence_ppm", "new_confidence_ppm"]
+    },
+    "POST /v1/admin/reset": {
+      "required": ["confirm=reset-scope"],
+      "availability": "Only with --allow-test-reset. Never enabled by installers."
+    }
+  },
+  "launch": "ATLAS_COGNITIVE_TOKEN=... python integrations/cognitive-service/server.py --db PATH --scope PROFILE --port 8741. Managed clients also pass --owner-instance and --parent-pid. Healthy exact-scope clients attach without ownership; after owner shutdown or parent loss, an attached client may launch and own the replacement.",
+  "restart_proof": "Stop and relaunch the same command with the same db, scope, and token; item, revision, and proposal IDs must remain identical.",
+  "managed_failover": "A healthy exact-scope client attaches without ownership. On transport unavailability after health verification, managed clients may fail over and retry the same replay-safe request once.",
+  "convergent_path_semantics": "Traversal selects one deterministic affected upstream path per convergent node; proposal deltas from multiple converging supports are not aggregated.",
+  "cognitive_owner": "One Python implementation. SQLite is persistence only and contains no cognitive branching, confidence formula, traversal, contradiction, routing, or idempotency decisions."
+}

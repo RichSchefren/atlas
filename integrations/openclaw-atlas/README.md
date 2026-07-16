@@ -4,6 +4,11 @@ This package is the native current-OpenClaw integration for Atlas portable memor
 
 It does not require Neo4j, Docker, Python, an embedding provider, or a background daemon.
 
+This package does **not** claim Atlas cognitive-service support yet. AGM
+revision, dependency traversal, and Ripple proposals are proven through the
+native Hermes client today; OpenClaw remains retrieval-only until its own thin
+service client passes the same authenticated corpus inside the pinned host.
+
 ## Install
 
 Install a release tarball from this directory:

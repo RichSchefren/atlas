@@ -1,0 +1,1 @@
+"""Atlas cognitive localhost service."""

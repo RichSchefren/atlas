@@ -1,0 +1,22 @@
+{
+  "format": "atlas-kernel-vectors-v1",
+  "id": "cascade-ab-01",
+  "clock": "2026-01-01T00:00:04.000000Z",
+  "ops": [
+    {"op":"store_fact","item":"A","content_json":"{\"price_usd\":2995}","confidence_ppm":920000,"at":"2026-01-01T00:00:01.000000Z"},
+    {"op":"store_belief","item":"B","content_json":"{\"claim\":\"belief B depends on A\"}","confidence_ppm":880000,"last_evidence_days":0,"at":"2026-01-01T00:00:02.000000Z"},
+    {"op":"add_dependency","dependent":"B","support":"A","strength_ppm":950000,"at":"2026-01-01T00:00:03.000000Z"},
+    {"op":"revise_and_reassess","item":"A","old_content_json":"{\"price_usd\":2995}","new_content_json":"{\"price_usd\":3495}","old_confidence_ppm":920000,"new_confidence_ppm":300000,"contradiction":true,"reason":"new evidence contradicts prior price","idempotency_key":"cascade-ab-01","inputs":[{"target":"B","llm_delta_ppm":-500000,"rationale":"fixed conformance input"}],"max_depth":10,"max_nodes":5000,"attempts":2,"at":"2026-01-01T00:00:04.000000Z"}
+  ],
+  "expected": {
+    "cascade_key":"cascade-ab-01",
+    "status":"complete",
+    "origin":"A",
+    "facts":[{"item":"A","current_content_json":"{\"price_usd\":3495}","confidence_ppm":300000,"revision_count":2}],
+    "beliefs":[{"item":"B","content_json":"{\"claim\":\"belief B depends on A\"}","confidence_ppm":880000}],
+    "dependencies":[{"dependent":"B","support":"A","strength_ppm":950000}],
+    "contradictions":[{"item":"A","prior_revision_seq":1,"new_revision_seq":2,"kind":"revision_content_conflict","status":"detected"}],
+    "proposals":[{"seq":1,"target":"B","upstream":"A","old_confidence_ppm":880000,"new_confidence_ppm":766650,"depth":1,"status":"pending","components_ppm":{"beta":-176700,"gamma":-75000,"delta":25000,"perturbation":-226700,"damped":-113350}}],
+    "persistence":{"cascade_rows":1,"proposal_rows":1,"revision_contradiction_rows":1}
+  }
+}

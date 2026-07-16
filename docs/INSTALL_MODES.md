@@ -114,9 +114,12 @@ plain Python process, no system services to uninstall).
 
 ## Mode 3 — Agent-runtime integration
 
-You're building on Hermes, OpenClaw, Claude Code, or any MCP-speaking
-client. Start with the portable SQLite memory surface; add Neo4j only if
-you need Atlas's graph revision and Ripple behavior.
+You're building on Hermes, OpenClaw, Claude Code, or any MCP-speaking client.
+Start with the portable SQLite memory surface. Native Hermes can also run the
+bundled local cognitive service for the bounded AGM/Ripple wedge without
+Neo4j; OpenClaw remains retrieval-only until its service client clears the
+same conformance gate. Add Neo4j for Atlas's broader typed graph, canonical
+ledger projection, and adjudication stack.
 
 ```bash
 git clone https://github.com/RichSchefren/atlas && cd atlas
@@ -175,7 +178,11 @@ hits = await memory.search("pricing decision", k=5)
 For native Hermes installation, use the package and Mac/Linux or Windows
 installer in [`integrations/hermes-atlas/`](../integrations/hermes-atlas/).
 It implements the current lifecycle-based `MemoryProvider` contract and is
-tested against the pinned Hermes host with Neo4j unavailable.
+tested against the pinned Hermes host with Neo4j unavailable. The installer
+also includes a managed profile-scoped localhost cognitive service. The
+provider launches it on demand, verifies its bearer token and exact internal
+scope, and routes cognitive store/dependency/get/search/list/forget calls over
+the versioned HTTP boundary.
 
 ### OpenClaw
 
@@ -199,9 +206,14 @@ What you get without Neo4j:
   auditable forgetting.
 - Four portable tools: `memory.search`, `memory.get`, `memory.list`, and
   `memory.forget`.
+- In native Hermes: idempotent fact/belief revision, dependency traversal,
+  immutable lineage, transactional audit, and persisted Ripple proposals via
+  the bundled cognitive service.
+- In OpenClaw: the four working retrieval tools only; no cognitive claim yet.
 
 What Neo4j adds:
-- The full Ripple cascade and AGM graph revision.
+- The broader typed property graph and existing Cypher-backed AGM/Ripple path.
+- Canonical ledger projection and graph adjudication workflows.
 - Read-only tools (analyze_impact, reassess, detect_contradictions,
   list_pending, verify_chain, assemble, lineage_walk, list_grants) that
   your agent can call freely without confirm-gating.

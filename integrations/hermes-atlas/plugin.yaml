@@ -1,5 +1,5 @@
 name: atlas
 version: 0.1.0
-description: "Atlas — local-first SQLite memory with automatic retrieval and audit-preserving forget."
+description: "Atlas — local-first memory with managed cognitive service, AGM revision, dependencies, and Ripple proposals."
 pip_dependencies: []
 requires_env: []

@@ -1,0 +1,32 @@
+{
+  "format": "atlas-cognitive-service-vectors-v1",
+  "unicode_scalar_keys": {
+    "root_kref": "kref://vectors/unicode-scalar-keys.fact",
+    "content": {"𐀀": 1, "": 2},
+    "expected_canonical_content": "{\"\\ue000\":2,\"\\ud800\\udc00\":1}"
+  },
+  "create_idempotency": {
+    "idempotency_key": "vector-create-idempotency-01",
+    "root_kref": "kref://vectors/create-idempotency.fact",
+    "content": {"value": 1},
+    "conflicting_content": {"value": 2}
+  },
+  "revise_idempotency": {
+    "create_key": "vector-revise-base-01",
+    "revise_key": "vector-revise-idempotency-01",
+    "root_kref": "kref://vectors/revise-idempotency.fact",
+    "initial_content": {"value": 1},
+    "revised_content": {"value": 2},
+    "conflicting_content": {"value": 3}
+  },
+  "restart_persistence": {
+    "root_kref": "kref://vectors/revise-idempotency.fact",
+    "required_equal_fields": ["item_id", "revision_id", "content", "confidence_ppm"]
+  },
+  "scope_isolation": {
+    "root_kref": "kref://vectors/scope-isolation.fact",
+    "scope_a_content": {"owner": "A"},
+    "scope_b_content": {"owner": "B"},
+    "wrong_token_status": 401
+  }
+}

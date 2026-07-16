@@ -73,7 +73,7 @@ To save you time:
 - **Not yet a Letta replacement.** Atlas does not run agent loops. It plugs into agent runtimes as a memory backend. If you want an agent stack with memory built in, Letta or Hermes is the right answer; Atlas slots underneath.
 - **Not yet automatic free-text understanding at scale.** The ingestion pipeline works on real Limitless / Fireflies / Claude transcripts, but extraction quality on truly unstructured text is uneven and improving — see `atlas_core/ingestion/extractors/` for the prompt set we're iterating on.
 
-### Hermes and OpenClaw: real retrieval, honest boundary
+### Hermes and OpenClaw: real packages, different proven boundaries
 
 The adapter cores now perform real local `store`, `search` / `recall`, `get`,
 `list`, and `forget` operations against Atlas's SQLite trust store. This path
@@ -88,9 +88,21 @@ Atlas also ships native packages for current Hermes Agent and OpenClaw:
 [`integrations/hermes-atlas/`](integrations/hermes-atlas/) implements Hermes's
 `MemoryProvider` lifecycle, and
 [`integrations/openclaw-atlas/`](integrations/openclaw-atlas/) is a TypeScript
-memory-capability plugin. Both are tested inside pinned upstream hosts, use
-SQLite directly, and work without Neo4j or Docker. The exact capability split
-and installation paths are documented in
+memory-capability plugin. Both are tested inside pinned upstream hosts and
+provide real local retrieval without Neo4j or Docker.
+
+Hermes now has an additional proven cognitive boundary: its native provider
+manages a profile-scoped, authenticated localhost service that owns AGM
+revision, dependency traversal, and persisted Ripple proposals. Cognitive
+records participate in recall, search, list, get, forget, audit, and restart.
+The service uses SQLite for persistence but keeps cognitive semantics in one
+Python owner, not in host-specific adapters or SQL. Its black-box suite covers
+49 AGM scenario IDs plus the canonical A-to-B cascade, and its 10k/20k
+performance contract is enforced in CI.
+
+OpenClaw remains deliberately retrieval-only today. Atlas does not claim
+OpenClaw cognition until a thin client passes the same service corpus inside
+the pinned host. The exact capability split and installation paths are in
 [`docs/RUNTIME_ADAPTERS.md`](docs/RUNTIME_ADAPTERS.md).
 
 ### Who Atlas is for, today
@@ -220,7 +232,11 @@ Honest accounting. Atlas's cost story shifts dramatically between v0.1.0a1 (toda
 **v0.1.0a1 (today): ≈ $0/month.**
 - Extractors are 100% deterministic — frontmatter parsing, YAML readers, regex pattern matching. No LLM calls.
 - Ripple's `HeuristicReassessor` (default) does no LLM call; it's a closed-form damped formula. The `LLMReassessor` exists but is opt-in and not the default.
-- The portable adapter-memory tier uses SQLite only. Neo4j 5.26 runs locally in Docker when graph revision and Ripple are enabled. No telemetry, cloud, or API keys are required.
+- Portable retrieval uses SQLite only. Native Hermes can add the bundled
+  localhost cognitive service for the bounded AGM/Ripple wedge without Docker
+  or Neo4j. Neo4j 5.26 remains the documented local backend for the broader
+  property-graph, ledger-projection, MCP, and adjudication stack. No telemetry,
+  cloud, or API keys are required.
 - The only ongoing cost is the electricity to keep your machine on.
 
 **Post-Tier-1.4 (LLM-driven extraction lands): bounded by your token budget.**
@@ -280,7 +296,10 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e .
 PYTHONPATH=. python scripts/demo_runtime_adapters.py
 
-# 2b. Add the cognitive-graph tier (required for AGM + Ripple)
+# 2b. Native Hermes: install its managed cognitive service (no Docker)
+bash integrations/hermes-atlas/install.sh
+
+# 2c. Optional broader property-graph/MCP/adjudication tier
 docker compose up -d                               # bolt://localhost:7687
 
 # 3. Install — base is deterministic + $0/month; opt in to extras as you need them
@@ -353,6 +372,10 @@ Atlas ships with three concurrent surfaces:
 
 - **MCP**: 17 Atlas-original tools — the graph/Ripple, adjudication, quarantine, ledger, working-memory, lineage, and sharing tools plus portable `memory.search`, `memory.get`, `memory.list`, and `memory.forget`. Stdio JSON-RPC bridge for Claude Code via `python -m atlas_core.adapters.claude_code`. Read-only vs mutation classification at [`docs/PROPOSAL_VS_MUTATION.md`](docs/PROPOSAL_VS_MUTATION.md).
 - **HTTP**: FastAPI on `localhost:9879` mirrors the MCP surface for non-MCP clients (the dashboard, curl, integration tests). Endpoints: `/health`, `/tools`, `/tools/{name}`, `/verify-chain`.
+- **Portable cognitive HTTP**: the authenticated, single-scope localhost v1
+  service in `integrations/cognitive-service/`. Native Hermes manages this
+  sidecar automatically; it is separate from the broader FastAPI/MCP server so
+  host clients cannot accidentally inherit Neo4j or Atlas-core dependencies.
 - **gRPC** (Phase 2 W7+): scaffold with all 51 Kumiho-compatible RPC method names registered. Existing Kumiho SDK code switches to Atlas by setting `endpoint="localhost:50051"`.
 
 Plus runtime adapters:

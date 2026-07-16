@@ -15,7 +15,10 @@ destination="${hermes_home}/plugins/atlas"
 mkdir -p "${destination}"
 cp "${script_dir}/atlas/__init__.py" "${destination}/__init__.py"
 cp "${script_dir}/atlas/store.py" "${destination}/store.py"
+cp "${script_dir}/atlas/cognitive_client.py" "${destination}/cognitive_client.py"
 cp "${script_dir}/plugin.yaml" "${destination}/plugin.yaml"
+rm -rf "${destination}/cognitive-service" "${destination}/cognitive-kernel"
+cp -R "${script_dir}/../cognitive-service" "${destination}/cognitive-service"
 
 echo "Installed Atlas Hermes provider at ${destination}"
 

@@ -84,18 +84,20 @@ PYTHONPATH=. python scripts/demo_runtime_adapters.py
 ```
 
 CI runs that proof with the Neo4j endpoint deliberately pointed at a dead port.
-The remaining boundary is packaging: current Hermes Agent uses its newer
-`MemoryProvider` lifecycle, and current OpenClaw uses a TypeScript plugin SDK.
-The Python modules in `atlas_core/adapters/` are functional SDK-neutral cores,
-not yet installable native packages for those latest upstream runtimes. The
-exact capability split and acceptance test are documented in
+Atlas also ships native packages for current Hermes Agent and OpenClaw:
+[`integrations/hermes-atlas/`](integrations/hermes-atlas/) implements Hermes's
+`MemoryProvider` lifecycle, and
+[`integrations/openclaw-atlas/`](integrations/openclaw-atlas/) is a TypeScript
+memory-capability plugin. Both are tested inside pinned upstream hosts, use
+SQLite directly, and work without Neo4j or Docker. The exact capability split
+and installation paths are documented in
 [`docs/RUNTIME_ADAPTERS.md`](docs/RUNTIME_ADAPTERS.md).
 
 ### Who Atlas is for, today
 
 The strongest early users are:
 
-- **Agent / tool builders** who need a memory backend with belief-revision semantics (MCP/HTTP surfaces plus tested Hermes/OpenClaw adapter cores ship today).
+- **Agent / tool builders** who need a memory backend with belief-revision semantics (MCP/HTTP surfaces plus native Hermes/OpenClaw packages ship today).
 - **Power users with Obsidian / transcripts / vaults** who want their meetings + screen + chat captures cross-checked for emergent contradictions.
 - **Local-first AI builders** who can't or won't ship user data to a cloud memory service.
 - **Researchers** working on belief revision, AGM compliance, or non-monotonic reasoning who want a reproducible, instrumented baseline.
@@ -358,9 +360,11 @@ Plus runtime adapters:
 - `atlas_core.adapters.claude_code` — MCP stdio bridge for Claude Code
 - `atlas_core.adapters.hermes.AtlasHermesProvider` — functional SQLite-backed Hermes-shaped core
 - `atlas_core.adapters.openclaw.AtlasOpenClawPlugin` — functional SQLite-backed OpenClaw-shaped core
+- `integrations/hermes-atlas/` — native current-Hermes `MemoryProvider` plugin
+- `integrations/openclaw-atlas/` — native current-OpenClaw TypeScript memory plugin
 
-The latter two are not labeled current upstream-native packages; see
-[`docs/RUNTIME_ADAPTERS.md`](docs/RUNTIME_ADAPTERS.md).
+See [`docs/RUNTIME_ADAPTERS.md`](docs/RUNTIME_ADAPTERS.md) for the portable
+core/native package boundary and proof matrix.
 
 ---
 
@@ -469,7 +473,6 @@ If you want to break Atlas, [TESTING.md](TESTING.md) has five concrete paths fro
 | LoCoMo + LongMemEval **measured** numbers (not asserted) | Datasets are research-license; haven't been downloaded + run yet. Runners exist (`benchmarks/locomo/`, `benchmarks/longmemeval/`); just need someone with dataset access to fire them. |
 | Mem0 / Letta / Memori columns in BMB matrix | Adapters fail-loud without `OPENAI_API_KEY` / `MEMORI_API_KEY`. Set the keys + re-run `scripts/run_bmb.py` to fill the rows. |
 | 1,000-question BusinessMemBench (currently 149 deterministic) | The 200 human-authored gold subset (templates in `benchmarks/business_mem_bench/gold_human/`) needs domain-operator authors. The remaining 800 are LLM-expanded from templates — runner ready, expansion not yet executed. |
-| Native latest-Hermes and latest-OpenClaw packages | Portable core is complete and tested; Hermes still needs a current `MemoryProvider` lifecycle wrapper ([#27](https://github.com/RichSchefren/atlas/issues/27)), and OpenClaw needs a TypeScript `registerMemoryCapability` package ([#26](https://github.com/RichSchefren/atlas/issues/26)). Neither will be called drop-in before a real upstream-process round trip passes. |
 | arxiv submission live | Tarball ready at `paper/arxiv/atlas-arxiv.tar.gz`. Submission goes through arxiv.org/submit (24-48h moderation). |
 | Confidence-threshold empirical calibration | Script exists at `scripts/calibrate_confidence_thresholds.py`. Needs a week of real ingest data before it produces a meaningful recommendation. |
 | Obsidian plugin in the Community Plugins registry | Plugin code complete at `obsidian-plugin/`. Manual install path documented; registry submission deferred. |

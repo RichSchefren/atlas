@@ -8,7 +8,7 @@ needs and skips the rest.
 |---|---|---|---|
 | **Researcher / dev** | You're reading the source, running benchmarks, contributing PRs | ~5 min | $0 |
 | **Obsidian power-user** | You have a vault and want Atlas watching it for contradictions | ~10 min | $0–$1/day in API calls if you turn on LLM extraction |
-| **Agent-runtime integration** | You're building a Python/MCP integration; native latest-Hermes/OpenClaw packages remain planned | varies | $0 |
+| **Agent-runtime integration** | You're building a Python/MCP integration or installing native Hermes/OpenClaw memory | varies | $0 |
 
 Each section is self-contained — you should not need to read the others to
 get going.
@@ -125,9 +125,8 @@ pip install -e .         # core only — no LLM, no embeddings
 PYTHONPATH=. python scripts/demo_runtime_adapters.py  # no Docker
 ```
 
-That command proves Hermes-shaped and OpenClaw-shaped storage, retrieval,
-fetch/list, and forgetting. The current upstream-native packaging boundary is
-documented in [`RUNTIME_ADAPTERS.md`](RUNTIME_ADAPTERS.md).
+That command proves the SDK-neutral cores. Native packages and their pinned-host
+proof are documented in [`RUNTIME_ADAPTERS.md`](RUNTIME_ADAPTERS.md).
 
 Pick the surface for your runtime:
 
@@ -173,11 +172,10 @@ memory_id = await memory.put(item)
 hits = await memory.search("pricing decision", k=5)
 ```
 
-This is a functional Python adapter core, not a native current-Hermes plugin.
-Hermes Agent now requires a subclass of its lifecycle-based `MemoryProvider`
-with `initialize`, `prefetch`, `sync_turn`, tool dispatch, and shutdown hooks.
-Atlas will not claim native Hermes installation until that wrapper passes an
-actual Hermes-process round trip.
+For native Hermes installation, use the package and Mac/Linux or Windows
+installer in [`integrations/hermes-atlas/`](../integrations/hermes-atlas/).
+It implements the current lifecycle-based `MemoryProvider` contract and is
+tested against the pinned Hermes host with Neo4j unavailable.
 
 ### OpenClaw
 
@@ -190,12 +188,11 @@ memory_id = await atlas.store("Customer prefers weekly summaries", metadata)
 hits = await atlas.recall("reporting preference", k=5)
 ```
 
-The factory returns `AtlasOpenClawPlugin`, the SDK-neutral Python core.
-Current OpenClaw cannot load this Python factory as a native memory plugin. It
-expects a TypeScript package using its plugin SDK and
-`registerMemoryCapability`. The core operations above are real; the npm
-wrapper remains planned and must pass inside an actual OpenClaw process before
-Atlas calls it drop-in.
+The factory returns the SDK-neutral Python core, `AtlasOpenClawPlugin`. For native OpenClaw, install
+the checksum-pinned tarball from
+[`integrations/openclaw-atlas/`](../integrations/openclaw-atlas/), then select
+`atlas-memory` as the memory slot. That TypeScript package is tested through
+the real pinned OpenClaw CLI and runtime loader.
 
 What you get without Neo4j:
 - SQLite-backed storage, deterministic lexical retrieval, fetch/list, and

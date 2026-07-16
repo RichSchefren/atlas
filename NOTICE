@@ -1,0 +1,10 @@
+Atlas
+Copyright 2026 Richard Schefren and Atlas Contributors
+
+This product includes software developed by Zep Software, Inc. as part of
+Graphiti (https://github.com/getzep/graphiti), licensed under Apache-2.0.
+
+Atlas is inspired by the Kumiho cognitive memory architecture described in
+Young Bin Park, "Graph-Native Cognitive Memory for AI Agents"
+(arXiv:2603.17244, 2026). Atlas is an independent implementation and is not
+affiliated with Kumiho Inc.

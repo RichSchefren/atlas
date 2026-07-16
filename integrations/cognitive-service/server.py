@@ -7,6 +7,7 @@ import hmac
 import json
 import os
 import signal
+import socket
 import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -21,6 +22,19 @@ MAX_BODY_BYTES = 2 * 1024 * 1024
 
 class CognitiveHTTPServer(ThreadingHTTPServer):
     daemon_threads = True
+
+    def server_bind(self) -> None:
+        # Windows permits multiple listeners on one address unless the socket
+        # explicitly requests exclusive ownership. Two simultaneous Hermes
+        # launchers must converge on one sidecar, with the losing client
+        # attaching to the winner after its child fails to bind.
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(
+                socket.SOL_SOCKET,
+                socket.SO_EXCLUSIVEADDRUSE,
+                1,
+            )
+        super().server_bind()
 
     def __init__(
         self,

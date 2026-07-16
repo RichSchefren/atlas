@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
+from atlas_core.migrations.schema import ensure_schema
 from atlas_core.revision.uri import Kref
 
 if TYPE_CHECKING:
@@ -110,6 +111,10 @@ async def materialize_approved_candidates(
     quarantine: QuarantineStore,
 ) -> MaterializationReport:
     """Project every approved candidate; continue and report per-item failures."""
+    # Guarantee the belief-node uniqueness constraints exist before any MERGE,
+    # so concurrent materialization can never mint duplicate belief nodes.
+    await ensure_schema(driver)
+
     report = MaterializationReport()
     for candidate in quarantine.list_approved():
         report.attempted += 1

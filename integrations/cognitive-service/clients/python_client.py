@@ -107,7 +107,11 @@ def main() -> int:
     token = os.environ.get(args.token_env)
     if not token:
         raise SystemExit(f"missing bearer token environment variable: {args.token_env}")
-    captures = json.loads(args.captures_in.read_text()) if args.captures_in else {}
+    captures = (
+        json.loads(args.captures_in.read_text(encoding="utf-8"))
+        if args.captures_in
+        else {}
+    )
     plan = json.loads(args.plan.read_text(encoding="utf-8"))
     results = run_plan(plan, args.base_url, token, captures)
     if args.captures_out:

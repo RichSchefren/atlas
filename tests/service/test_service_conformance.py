@@ -198,7 +198,9 @@ def test_health_authentication_and_launch_fixed_scope(service: Service) -> None:
 
 
 def test_unicode_scalar_key_canonicalization(service: Service) -> None:
-    vector = json.loads((VECTORS / "service-boundary.json").read_text())["unicode_scalar_keys"]
+    vector = json.loads(
+        (VECTORS / "service-boundary.json").read_text(encoding="utf-8")
+    )["unicode_scalar_keys"]
     data = _ok(
         service.request(
             "POST",
@@ -405,7 +407,9 @@ def test_public_revise_rejects_deprecated_item_without_mutation(
 
 
 def test_create_and_revise_idempotency(service: Service) -> None:
-    vectors = json.loads((VECTORS / "service-boundary.json").read_text())
+    vectors = json.loads(
+        (VECTORS / "service-boundary.json").read_text(encoding="utf-8")
+    )
     create = vectors["create_idempotency"]
     create_body = _create_body(
         create["idempotency_key"], create["root_kref"], create["content"]
@@ -449,7 +453,7 @@ def test_create_and_revise_idempotency(service: Service) -> None:
 
 
 def _build_cascade(service: Service) -> tuple[dict[str, Any], dict[str, Any]]:
-    vector = json.loads((VECTORS / "cascade-ab.json").read_text())
+    vector = json.loads((VECTORS / "cascade-ab.json").read_text(encoding="utf-8"))
     a_root, b_root = "kref://cascade/A", "kref://cascade/B"
     _ok(service.request("POST", "/v1/items/create", _create_body(
         "ab-create-a", a_root, {"price_usd": 2995}, confidence=920_000
@@ -602,7 +606,7 @@ def test_transport_only_clients_execute_public_http_plan(
     }]
 
 
-AGM = json.loads((VECTORS / "agm-49.json").read_text())
+AGM = json.loads((VECTORS / "agm-49.json").read_text(encoding="utf-8"))
 SCENARIOS = AGM["scenarios"]
 
 

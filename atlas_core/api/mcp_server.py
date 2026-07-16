@@ -63,7 +63,7 @@ class MCPToolResult:
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
-# ─── Tool inventory (Atlas-original 8) ───────────────────────────────────────
+# ─── Tool inventory ──────────────────────────────────────────────────────────
 
 
 ATLAS_MCP_TOOLS: tuple[str, ...] = (
@@ -74,6 +74,10 @@ ATLAS_MCP_TOOLS: tuple[str, ...] = (
     "adjudication.resolve",
     "quarantine.upsert",
     "quarantine.list_pending",
+    "memory.search",
+    "memory.get",
+    "memory.list",
+    "memory.forget",
     "ledger.verify_chain",
     "working_memory.assemble",
     "lineage.walk",
@@ -87,7 +91,7 @@ ATLAS_MCP_TOOLS: tuple[str, ...] = (
 
 
 class AtlasMCPServer:
-    """Atlas MCP server. Wires the 8 Atlas-original tools to their backends.
+    """Atlas MCP server. Wires Atlas's public tools to their backends.
 
     The server is transport-agnostic — `dispatch(tool_name, params)` is the
     single entry point. Production wiring (stdio for Claude Code plugin, HTTP
@@ -271,6 +275,63 @@ class AtlasMCPServer:
                 },
             },
             handler=self._tool_quarantine_list_pending,
+        ))
+
+        self.register(MCPTool(
+            name="memory.search",
+            description=(
+                "Search Atlas's local SQLite memory store with deterministic "
+                "lexical ranking. Works without Neo4j or Docker."
+            ),
+            parameters_schema={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "limit": {"type": "integer", "default": 10, "minimum": 1},
+                    "lane": {"type": "string"},
+                },
+                "required": ["query"],
+            },
+            handler=self._tool_memory_search,
+        ))
+
+        self.register(MCPTool(
+            name="memory.get",
+            description="Fetch one Atlas memory by candidate ID. No graph required.",
+            parameters_schema={
+                "type": "object",
+                "properties": {"memory_id": {"type": "string"}},
+                "required": ["memory_id"],
+            },
+            handler=self._tool_memory_get,
+        ))
+
+        self.register(MCPTool(
+            name="memory.list",
+            description="List retrievable non-denied Atlas memories newest first.",
+            parameters_schema={
+                "type": "object",
+                "properties": {
+                    "lane": {"type": "string"},
+                    "limit": {"type": "integer", "default": 50, "minimum": 1},
+                },
+            },
+            handler=self._tool_memory_list,
+        ))
+
+        self.register(MCPTool(
+            name="memory.forget",
+            description=(
+                "Remove a memory from the retrieval surface while preserving "
+                "its auditable quarantine record. This does not contract an "
+                "already-promoted graph belief or ledger event."
+            ),
+            parameters_schema={
+                "type": "object",
+                "properties": {"memory_id": {"type": "string"}},
+                "required": ["memory_id"],
+            },
+            handler=self._tool_memory_forget,
         ))
 
         self.register(MCPTool(
@@ -668,6 +729,60 @@ class AtlasMCPServer:
             ],
             "count": len(rows),
         }
+
+    @staticmethod
+    def _memory_row(row: dict[str, Any]) -> dict[str, Any]:
+        """Stable public shape shared by MCP and runtime adapters."""
+        return {
+            "memory_id": row["candidate_id"],
+            "text": row["object_value"],
+            "score": float(row.get("retrieval_score", row.get("trust_score", 0.0))),
+            "status": row["status"],
+            "lane": row["lane"],
+            "subject_kref": row["subject_kref"],
+            "predicate": row["predicate"],
+            "confidence": float(row["confidence"]),
+            "trust_score": float(row["trust_score"]),
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+        }
+
+    async def _tool_memory_search(
+        self,
+        query: str,
+        limit: int = 10,
+        lane: str | None = None,
+    ) -> dict[str, Any]:
+        rows = self.quarantine.search_memories(query, limit=limit, lane=lane)
+        memories = [self._memory_row(row) for row in rows]
+        return {"memories": memories, "count": len(memories), "backend": "sqlite"}
+
+    async def _tool_memory_get(self, memory_id: str) -> dict[str, Any]:
+        row = self.quarantine.get_candidate(memory_id)
+        if row is None or row["status"] == "denied":
+            return {"memory": None}
+        return {"memory": self._memory_row(row)}
+
+    async def _tool_memory_list(
+        self,
+        lane: str | None = None,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        rows = self.quarantine.list_memories(lane=lane, limit=limit)
+        memories = [self._memory_row(row) for row in rows]
+        return {"memories": memories, "count": len(memories), "backend": "sqlite"}
+
+    async def _tool_memory_forget(self, memory_id: str) -> dict[str, Any]:
+        row = self.quarantine.get_candidate(memory_id)
+        if row is None:
+            return {"forgotten": False, "memory_id": memory_id}
+        if row["status"] != "denied":
+            self.quarantine.deny_candidate(
+                memory_id,
+                reason="removed from adapter retrieval surface",
+                decision_id="memory.forget",
+            )
+        return {"forgotten": True, "memory_id": memory_id}
 
     async def _tool_ledger_verify_chain(self) -> dict[str, Any]:
         result = self.ledger.verify_chain()

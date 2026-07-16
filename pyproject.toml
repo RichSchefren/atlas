@@ -105,12 +105,10 @@ dev = [
     "anthropic>=0.49.0",
 ]
 
-# pip install atlas-core[adapters]
-#   Hermes / OpenClaw integration deps installed only when wiring
-#   Atlas as a memory backend in those upstream runtimes.
+# The SDK-neutral Hermes/OpenClaw cores need no extra dependencies.
+# Native current-upstream wrappers are not yet distributed from this repo.
 adapters = [
-    # Reserved — Hermes-agent and OpenClaw clients ship their own
-    # SDKs; we don't pin them here to avoid version drift.
+    # Reserved for future version-pinned native wrapper packages.
 ]
 
 [project.urls]

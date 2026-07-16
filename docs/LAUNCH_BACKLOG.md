@@ -108,7 +108,7 @@ The propagation-aware belief-revision loop is the jewel.
 - [x] **Proposal-vs-mutation explicit in API surface.**
       `docs/PROPOSAL_VS_MUTATION.md` classifies every public method in
       `atlas_core/ripple/`, `atlas_core/revision/`, `atlas_core/trust/`,
-      and the 13 MCP tools in `atlas_core/api/mcp_server.py` into
+      and the 17 MCP tools in `atlas_core/api/mcp_server.py` into
       READ-ONLY / PROPOSAL / MUTATION buckets. The invariant — *no
       typed-graph mutation happens automatically as part of Ripple
       propagation* — is enforced by an AST-based regression test

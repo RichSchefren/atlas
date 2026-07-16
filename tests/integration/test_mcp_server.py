@@ -1,6 +1,6 @@
 """Integration tests for Atlas MCP server — uses live Neo4j.
 
-Verifies the 8 Atlas-original tools dispatch correctly and produce the
+Verifies Atlas's public tools dispatch correctly and produce the
 expected result shapes.
 """
 
@@ -85,13 +85,13 @@ async def cleanup_neo4j(driver, ns):
 
 
 class TestServerRegistration:
-    def test_eight_tools_registered(self, mcp_server):
+    def test_seventeen_tools_registered(self, mcp_server):
         from atlas_core.api import ATLAS_MCP_TOOLS
 
         listed = mcp_server.list_tools()
         names = {t["name"] for t in listed}
         assert names == set(ATLAS_MCP_TOOLS)
-        assert len(listed) == 13
+        assert len(listed) == 17
 
     def test_tool_definitions_have_input_schema(self, mcp_server):
         for tool in mcp_server.list_tools():
@@ -223,6 +223,47 @@ class TestQuarantineTools:
         assert result.ok is True
         assert result.result["is_auto_promoted"] is True
         assert result.result["trust_score"] == 1.0
+
+
+# ─── portable memory tools (SQLite only) ───────────────────────────────────
+
+
+class TestMemoryTools:
+    async def test_search_get_list_forget_round_trip(self, mcp_server):
+        upsert = await mcp_server.dispatch("quarantine.upsert", {
+            "lane": "atlas_chat_history",
+            "assertion_type": "preference",
+            "subject_kref": "kref://test/People/rich.person",
+            "predicate": "pref.reporting_style",
+            "object_value": "concise weekly reports",
+            "confidence": 0.75,
+            "evidence_source": "adapter_test",
+            "evidence_source_family": "agent",
+            "evidence_kref": "kref://test/Sessions/adapter.session",
+            "evidence_timestamp": "2026-07-16T00:00:00+00:00",
+        })
+        assert upsert.ok is True
+        memory_id = upsert.result["candidate_id"]
+
+        search = await mcp_server.dispatch(
+            "memory.search", {"query": "concise weekly reports", "limit": 5},
+        )
+        assert search.ok is True and search.result["backend"] == "sqlite"
+        assert [row["memory_id"] for row in search.result["memories"]] == [memory_id]
+
+        fetched = await mcp_server.dispatch("memory.get", {"memory_id": memory_id})
+        assert fetched.ok is True
+        assert fetched.result["memory"]["text"] == "concise weekly reports"
+
+        listed = await mcp_server.dispatch("memory.list", {"limit": 10})
+        assert memory_id in {row["memory_id"] for row in listed.result["memories"]}
+
+        forgotten = await mcp_server.dispatch("memory.forget", {"memory_id": memory_id})
+        assert forgotten.ok is True and forgotten.result["forgotten"] is True
+        after = await mcp_server.dispatch(
+            "memory.search", {"query": "concise weekly reports", "limit": 5},
+        )
+        assert after.result["memories"] == []
 
 
 # ─── ledger.verify_chain ────────────────────────────────────────────────────

@@ -15,6 +15,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
 import sqlite3
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -580,6 +581,109 @@ class QuarantineStore:
                 (CandidateStatus.APPROVED.value,),
             ).fetchall()
         return [dict(r) for r in rows]
+
+    def list_memories(
+        self,
+        *,
+        lane: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """Return retrievable, non-denied candidates newest first.
+
+        This is the portable adapter surface.  It intentionally reads the
+        SQLite trust store directly, so basic agent memory does not require
+        Neo4j.  Graph propagation remains an optional higher tier.
+        """
+        if limit < 1:
+            return []
+        sql = "SELECT * FROM candidates WHERE status != ?"
+        params: list[Any] = [CandidateStatus.DENIED.value]
+        if lane is not None:
+            sql += " AND lane = ?"
+            params.append(lane)
+        sql += " ORDER BY updated_at DESC LIMIT ?"
+        params.append(limit)
+        with self._connection() as conn:
+            rows = conn.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def search_memories(
+        self,
+        query: str,
+        *,
+        limit: int = 10,
+        lane: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Rank non-denied candidates with deterministic lexical retrieval.
+
+        The scorer favors phrase matches in memory text, then token coverage
+        across text, predicate, and subject.  Confidence and trust break ties.
+        It is deliberately dependency-free and local; deployments can layer
+        embeddings or graph traversal on top without changing adapter APIs.
+        """
+        terms = tuple(dict.fromkeys(
+            token for token in re.findall(r"[a-z0-9_]+", query.lower())
+            if len(token) > 1
+        ))
+        if not terms or limit < 1:
+            return []
+
+        clauses: list[str] = []
+        params: list[Any] = [CandidateStatus.DENIED.value]
+        for term in terms:
+            clauses.append(
+                "(lower(object_value) LIKE ? OR lower(predicate) LIKE ? "
+                "OR lower(subject_kref) LIKE ?)"
+            )
+            like = f"%{term}%"
+            params.extend((like, like, like))
+        sql = (
+            "SELECT * FROM candidates WHERE status != ? AND ("
+            + " OR ".join(clauses)
+            + ")"
+        )
+        if lane is not None:
+            sql += " AND lane = ?"
+            params.append(lane)
+        sql += " ORDER BY updated_at DESC LIMIT ?"
+        params.append(max(1000, limit * 50))
+        with self._connection() as conn:
+            rows = conn.execute(sql, params).fetchall()
+        candidates = [dict(row) for row in rows]
+        phrase = " ".join(terms)
+        ranked: list[tuple[float, str, dict[str, Any]]] = []
+        for candidate in candidates:
+            text = str(candidate["object_value"]).lower()
+            predicate = str(candidate["predicate"]).lower()
+            subject = str(candidate["subject_kref"]).lower()
+            combined = f"{text} {predicate} {subject}"
+            matched = sum(term in combined for term in terms)
+            if not matched:
+                continue
+
+            coverage = matched / len(terms)
+            text_coverage = sum(term in text for term in terms) / len(terms)
+            predicate_coverage = sum(term in predicate for term in terms) / len(terms)
+            subject_coverage = sum(term in subject for term in terms) / len(terms)
+            exact_phrase = 1.0 if phrase and phrase in text else 0.0
+            confidence = float(candidate.get("confidence", 0.0))
+            trust = float(candidate.get("trust_score", 0.0))
+            score = min(
+                1.0,
+                0.40 * coverage
+                + 0.25 * text_coverage
+                + 0.10 * predicate_coverage
+                + 0.05 * subject_coverage
+                + 0.10 * exact_phrase
+                + 0.05 * confidence
+                + 0.05 * trust,
+            )
+            item = dict(candidate)
+            item["retrieval_score"] = round(score, 6)
+            ranked.append((score, str(candidate["updated_at"]), item))
+
+        ranked.sort(key=lambda row: (row[0], row[1]), reverse=True)
+        return [row[2] for row in ranked[:limit]]
 
     def upsert_dead_letter(
         self,

@@ -98,7 +98,7 @@ stays sharp.
 
 ### `atlas_core/api/mcp_server.py` — the public MCP tool surface
 
-The 13 tools registered in `_register_atlas_tools()`, classified:
+The 17 tools registered in `_register_atlas_tools()`, classified:
 
 | MCP tool name | Class | Notes |
 |---|---|---|
@@ -109,6 +109,10 @@ The 13 tools registered in `_register_atlas_tools()`, classified:
 | `adjudication.resolve` | **MUTATION** | The *one* MCP tool that mutates the graph. Calls `resolve_adjudication()` → `revise()` / `contract()` + ledger append. **Requires a `proposal_id` that already exists in the queue + an explicit `decision` arg.** |
 | `quarantine.upsert` | **MUTATION (non-graph)** | Wraps `QuarantineStore.upsert_candidate()`. SQLite write only. |
 | `quarantine.list_pending` | **READ-ONLY** | SQLite read. |
+| `memory.search` | **READ-ONLY** | Deterministic lexical retrieval over non-denied SQLite candidates. |
+| `memory.get` | **READ-ONLY** | Fetches one non-denied SQLite candidate. |
+| `memory.list` | **READ-ONLY** | Lists non-denied SQLite candidates. |
+| `memory.forget` | **MUTATION (non-graph)** | Marks the candidate denied so retrieval excludes it; preserves the audit row. |
 | `ledger.verify_chain` | **READ-ONLY** | SQLite read + hash check. |
 | `working_memory.assemble` | **READ-ONLY** | Loads working-memory blocks; no writes. |
 | `lineage.walk` | **READ-ONLY** | Cypher MATCH traversal. |
@@ -123,11 +127,13 @@ The 13 tools registered in `_register_atlas_tools()`, classified:
 **For agent-runtime integrators (Hermes, OpenClaw, Claude Code):**
 You can wire `ripple.analyze_impact`, `ripple.reassess`,
 `ripple.detect_contradictions`, `adjudication.queue`,
-`quarantine.list_pending`, `ledger.verify_chain`, `working_memory.assemble`,
-`lineage.walk`, and `sharing.list_grants` as *read-only tools*. Your
+`quarantine.list_pending`, `memory.search`, `memory.get`, `memory.list`,
+`ledger.verify_chain`, `working_memory.assemble`, `lineage.walk`, and
+`sharing.list_grants` as *read-only tools*. Your
 agent can call them as often as it wants in a single turn; nothing in
 Atlas's state changes. Only `adjudication.resolve`, `quarantine.upsert`,
-and the two `sharing.{grant,revoke}` calls require user-confirm gating.
+`memory.forget`, and the two `sharing.{grant,revoke}` calls require
+user-confirm gating.
 
 **For Ripple-cascade callers:**
 `RippleEngine.propagate()` is safe to invoke speculatively. It returns

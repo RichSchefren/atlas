@@ -4,7 +4,7 @@ Forks a subprocess running `python -m atlas_core.adapters.claude_code`
 and exchanges actual JSON-RPC 2.0 frames over stdin/stdout. Asserts:
 
   - initialize handshake returns protocol version + serverInfo
-  - tools/list returns all 13 Atlas tools
+  - tools/list returns all 17 Atlas tools
   - tools/call dispatches a real tool (ledger.verify_chain) and the
     response chain is intact
   - tools/call on an unknown tool surfaces isError=True
@@ -92,7 +92,7 @@ class TestStdioWireProtocol:
         assert response["result"]["protocolVersion"]
         assert response["result"]["serverInfo"]["name"] == "atlas"
 
-    def test_tools_list_returns_eight(self, stdio_server):
+    def test_tools_list_returns_seventeen(self, stdio_server):
         # Initialize first per MCP spec
         send(stdio_server, {
             "jsonrpc": "2.0", "id": 1, "method": "initialize",
@@ -105,7 +105,7 @@ class TestStdioWireProtocol:
         })
         assert response is not None
         tools = response["result"]["tools"]
-        assert len(tools) == 13
+        assert len(tools) == 17
         names = {t["name"] for t in tools}
         # Spot check the headline tools
         assert "ripple.analyze_impact" in names

@@ -73,11 +73,29 @@ To save you time:
 - **Not yet a Letta replacement.** Atlas does not run agent loops. It plugs into agent runtimes as a memory backend. If you want an agent stack with memory built in, Letta or Hermes is the right answer; Atlas slots underneath.
 - **Not yet automatic free-text understanding at scale.** The ingestion pipeline works on real Limitless / Fireflies / Claude transcripts, but extraction quality on truly unstructured text is uneven and improving — see `atlas_core/ingestion/extractors/` for the prompt set we're iterating on.
 
+### Hermes and OpenClaw: real retrieval, honest boundary
+
+The adapter cores now perform real local `store`, `search` / `recall`, `get`,
+`list`, and `forget` operations against Atlas's SQLite trust store. This path
+does **not** require Neo4j, Docker, an embedding model, or an API key:
+
+```bash
+PYTHONPATH=. python scripts/demo_runtime_adapters.py
+```
+
+CI runs that proof with the Neo4j endpoint deliberately pointed at a dead port.
+The remaining boundary is packaging: current Hermes Agent uses its newer
+`MemoryProvider` lifecycle, and current OpenClaw uses a TypeScript plugin SDK.
+The Python modules in `atlas_core/adapters/` are functional SDK-neutral cores,
+not yet installable native packages for those latest upstream runtimes. The
+exact capability split and acceptance test are documented in
+[`docs/RUNTIME_ADAPTERS.md`](docs/RUNTIME_ADAPTERS.md).
+
 ### Who Atlas is for, today
 
 The strongest early users are:
 
-- **Agent / tool builders** who need a memory backend with belief-revision semantics (MCP server, Hermes plugin, OpenClaw plugin all ship in `atlas_core/adapters/`).
+- **Agent / tool builders** who need a memory backend with belief-revision semantics (MCP/HTTP surfaces plus tested Hermes/OpenClaw adapter cores ship today).
 - **Power users with Obsidian / transcripts / vaults** who want their meetings + screen + chat captures cross-checked for emergent contradictions.
 - **Local-first AI builders** who can't or won't ship user data to a cloud memory service.
 - **Researchers** working on belief revision, AGM compliance, or non-monotonic reasoning who want a reproducible, instrumented baseline.
@@ -161,7 +179,7 @@ If you're shopping memory backends for an agent system, here's how Atlas stacks 
 | **Automatic downstream reassessment (Ripple)** | ✅ | ❌ flag-only | ❌ | ❌ | ❌ | ❌ |
 | Domain-typed business ontology shipped | ✅ 8 entity types | ❌ | ❌ | ❌ | ❌ | partial |
 | Continuous multi-stream ingestion | ✅ 6 streams | ❌ SDK only | ❌ | ❌ | ❌ | partial |
-| Hermes / OpenClaw / Claude Code adapters | ✅ all 3 | partial | ❌ | partial | ❌ | ❌ |
+| Runtime integration | ✅ Claude MCP + functional Hermes/OpenClaw cores | partial | ❌ | partial | ❌ | ❌ |
 
 #### What Atlas does *worse* (today)
 
@@ -200,7 +218,7 @@ Honest accounting. Atlas's cost story shifts dramatically between v0.1.0a1 (toda
 **v0.1.0a1 (today): ≈ $0/month.**
 - Extractors are 100% deterministic — frontmatter parsing, YAML readers, regex pattern matching. No LLM calls.
 - Ripple's `HeuristicReassessor` (default) does no LLM call; it's a closed-form damped formula. The `LLMReassessor` exists but is opt-in and not the default.
-- Neo4j 5.26 runs locally in Docker. SQLite ledger is local. No telemetry, no cloud, no API keys.
+- The portable adapter-memory tier uses SQLite only. Neo4j 5.26 runs locally in Docker when graph revision and Ripple are enabled. No telemetry, cloud, or API keys are required.
 - The only ongoing cost is the electricity to keep your machine on.
 
 **Post-Tier-1.4 (LLM-driven extraction lands): bounded by your token budget.**
@@ -255,11 +273,15 @@ Re-runs are idempotent: 0.9s for the next cycle, with all duplicate claims finge
 # 1. Clone
 git clone https://github.com/RichSchefren/atlas && cd atlas
 
-# 2. Run Neo4j locally
+# 2a. Prove portable Hermes/OpenClaw storage + retrieval (no Docker)
+python -m venv .venv && source .venv/bin/activate
+pip install -e .
+PYTHONPATH=. python scripts/demo_runtime_adapters.py
+
+# 2b. Add the cognitive-graph tier (required for AGM + Ripple)
 docker compose up -d                               # bolt://localhost:7687
 
 # 3. Install — base is deterministic + $0/month; opt in to extras as you need them
-python -m venv .venv && source .venv/bin/activate
 pip install -e .              # core: AGM + Ripple + ledger + adapters + ingest
 # pip install -e ".[llm]"        # add Anthropic SDK for LLM-driven extraction
 # pip install -e ".[embeddings]" # add sentence-transformers (~2GB; rarely needed — vault-search is the default retrieval path)
@@ -267,7 +289,7 @@ pip install -e .              # core: AGM + Ripple + ledger + adapters + ingest
 # pip install -e ".[full]"       # everything above
 # pip install -e ".[dev]"        # contributor tooling (includes anthropic for tests)
 
-# 4. Verify with the test suite (518 tests, ~12s)
+# 4. Verify with the test suite (532 tests in this snapshot)
 PYTHONPATH=. pytest tests/ -v
 
 # 5. Reproduce AGM compliance (49/49 scenarios, ~30s)
@@ -289,7 +311,7 @@ ATLAS_VAULT_ROOTS=~/Vaults/business:~/Vaults/personal PYTHONPATH=. python script
 ┌──────────────────────────────────────────────────────────────┐
 │  ATLAS API LAYER                                             │
 │  MCP (13 tools) · FastAPI (:9879) · Kumiho-compatible gRPC    │
-│  + Hermes / OpenClaw / Claude Code plugins                   │
+│  + Hermes / OpenClaw cores + Claude Code MCP                 │
 └──────────────────────────────────────────────────────────────┘
                             │
 ┌──────────────────────────────────────────────────────────────┐
@@ -327,15 +349,18 @@ Full design docs are checked into the repo at [`paper/atlas.md`](paper/atlas.md)
 
 Atlas ships with three concurrent surfaces:
 
-- **MCP**: 13 Atlas-original tools — `ripple.analyze_impact`, `ripple.reassess`, `ripple.detect_contradictions`, `adjudication.queue`, `adjudication.resolve`, `quarantine.upsert`, `quarantine.list_pending`, `ledger.verify_chain`, `working_memory.assemble`, `lineage.walk`, `sharing.grant`, `sharing.revoke`, `sharing.list_grants`. Stdio JSON-RPC bridge for Claude Code via `python -m atlas_core.adapters.claude_code`. Read-only vs mutation classification at [`docs/PROPOSAL_VS_MUTATION.md`](docs/PROPOSAL_VS_MUTATION.md).
+- **MCP**: 17 Atlas-original tools — the graph/Ripple, adjudication, quarantine, ledger, working-memory, lineage, and sharing tools plus portable `memory.search`, `memory.get`, `memory.list`, and `memory.forget`. Stdio JSON-RPC bridge for Claude Code via `python -m atlas_core.adapters.claude_code`. Read-only vs mutation classification at [`docs/PROPOSAL_VS_MUTATION.md`](docs/PROPOSAL_VS_MUTATION.md).
 - **HTTP**: FastAPI on `localhost:9879` mirrors the MCP surface for non-MCP clients (the dashboard, curl, integration tests). Endpoints: `/health`, `/tools`, `/tools/{name}`, `/verify-chain`.
 - **gRPC** (Phase 2 W7+): scaffold with all 51 Kumiho-compatible RPC method names registered. Existing Kumiho SDK code switches to Atlas by setting `endpoint="localhost:50051"`.
 
-Plus runtime adapters (drop-in plugins):
+Plus runtime adapters:
 
 - `atlas_core.adapters.claude_code` — MCP stdio bridge for Claude Code
-- `atlas_core.adapters.hermes.AtlasHermesProvider` — NousResearch Hermes MemoryProvider
-- `atlas_core.adapters.openclaw.AtlasOpenClawPlugin` — OpenClaw memory plugin
+- `atlas_core.adapters.hermes.AtlasHermesProvider` — functional SQLite-backed Hermes-shaped core
+- `atlas_core.adapters.openclaw.AtlasOpenClawPlugin` — functional SQLite-backed OpenClaw-shaped core
+
+The latter two are not labeled current upstream-native packages; see
+[`docs/RUNTIME_ADAPTERS.md`](docs/RUNTIME_ADAPTERS.md).
 
 ---
 
@@ -427,15 +452,15 @@ If you want to break Atlas, [TESTING.md](TESTING.md) has five concrete paths fro
 | Working-memory block manager (Letta-style) | `pytest tests/unit/test_working_memory.py -v` |
 | Multi-tenant tenant context + sharing policy + federated adjudication | `pytest tests/unit/test_multi_tenant.py -v` |
 | Adjudication round-trip — markdown queue → AGM revise → ledger SUPERSEDE → archive | `pytest tests/integration/test_adjudication_resolver.py -v` |
-| 13 MCP tools dispatch correctly via stdio JSON-RPC | `pytest tests/integration/test_mcp_server.py tests/integration/test_claude_code_stdio.py -v` |
+| 17 MCP tools dispatch correctly via stdio JSON-RPC | `pytest tests/integration/test_mcp_server.py tests/integration/test_claude_code_stdio.py -v` |
 | FastAPI surface with CORS + Server-Sent Events stream | `pytest tests/integration/test_http_server.py tests/unit/test_events_broadcaster.py -v` |
-| Hermes / OpenClaw / Claude Code adapters at the contract level | `pytest tests/integration/test_adapters.py -v` |
+| Hermes/OpenClaw adapter storage, retrieval, fetch, list, and forget without Neo4j | `python scripts/demo_runtime_adapters.py` |
 | Kumiho-compat gRPC handlers (10 of 51 methods wired, 41 return UNIMPLEMENTED) | `pytest tests/integration/test_grpc_handlers.py -v` |
 | Property-based AGM testing (hypothesis-driven) | `pytest tests/unit/test_agm_property_based.py -v` |
 | BusinessMemBench at 1.000 vs Graphiti 0.711 on 149 deterministic questions | `python scripts/run_bmb.py` |
 | Live ingest from real machine state (vault + Limitless + Screenpipe + Claude) | `python scripts/first_real_run.py` |
 | launchd daemon installs (continuous ingestion + API server) | `./scripts/install_launchd.sh` |
-| **All of the above run together** | `pytest tests/ -v` (518 passing) |
+| **All of the above run together** | `pytest tests/ -v` (532 passing) |
 
 ### Planned — explicitly NOT done (no proof commands, by design)
 
@@ -444,7 +469,7 @@ If you want to break Atlas, [TESTING.md](TESTING.md) has five concrete paths fro
 | LoCoMo + LongMemEval **measured** numbers (not asserted) | Datasets are research-license; haven't been downloaded + run yet. Runners exist (`benchmarks/locomo/`, `benchmarks/longmemeval/`); just need someone with dataset access to fire them. |
 | Mem0 / Letta / Memori columns in BMB matrix | Adapters fail-loud without `OPENAI_API_KEY` / `MEMORI_API_KEY`. Set the keys + re-run `scripts/run_bmb.py` to fill the rows. |
 | 1,000-question BusinessMemBench (currently 149 deterministic) | The 200 human-authored gold subset (templates in `benchmarks/business_mem_bench/gold_human/`) needs domain-operator authors. The remaining 800 are LLM-expanded from templates — runner ready, expansion not yet executed. |
-| Live Hermes / OpenClaw round-trip in their actual upstream processes | Adapter code complete + tested; round-trip in a real `hermes-agent` / `openclaw` runtime requires cloning those upstreams and configuring Atlas as memory backend. |
+| Native latest-Hermes and latest-OpenClaw packages | Portable core is complete and tested; Hermes still needs a current `MemoryProvider` lifecycle wrapper ([#27](https://github.com/RichSchefren/atlas/issues/27)), and OpenClaw needs a TypeScript `registerMemoryCapability` package ([#26](https://github.com/RichSchefren/atlas/issues/26)). Neither will be called drop-in before a real upstream-process round trip passes. |
 | arxiv submission live | Tarball ready at `paper/arxiv/atlas-arxiv.tar.gz`. Submission goes through arxiv.org/submit (24-48h moderation). |
 | Confidence-threshold empirical calibration | Script exists at `scripts/calibrate_confidence_thresholds.py`. Needs a week of real ingest data before it produces a meaningful recommendation. |
 | Obsidian plugin in the Community Plugins registry | Plugin code complete at `obsidian-plugin/`. Manual install path documented; registry submission deferred. |
@@ -456,7 +481,7 @@ If a row in **Planned** is something you want sooner, file an issue describing t
 
 Atlas as v0.1.0a1 is roughly **70-80% of the full system** described in the Phase 0 design docs. See `PHASE-5-AND-BEYOND.md` for the tiered roadmap of what's left.
 
-Test count this snapshot: **518 passing** in CI against Ubuntu + Neo4j 5.26.
+Test count this snapshot: **532 passing** locally against Python 3.14 + Neo4j 5.26; the pull-request matrix independently verifies Python 3.10–3.14 and Windows.
 
 ---
 

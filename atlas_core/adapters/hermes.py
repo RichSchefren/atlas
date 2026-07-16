@@ -1,20 +1,22 @@
-"""Hermes MemoryProvider adapter — Atlas as the 9th memory backend for
-NousResearch's Hermes agent runtime.
+"""SDK-neutral Hermes adapter core backed by Atlas's local memory tools.
 
-Hermes' MemoryProvider plugin contract (inferred from hermes-agent
-plugin/memory/*.py — the project ships 8 backends including ChromaDB, Qdrant,
-Weaviate, PostgreSQL, Redis, in-memory, JSON file, and SQLite). Each backend
-implements a 4-method protocol:
+The CRUD-shaped interface below was drafted against an older Hermes contract.
+It remains useful as a tested adapter core, but current Hermes Agent plugins
+subclass ``agent.memory_provider.MemoryProvider`` and use lifecycle hooks such
+as ``prefetch`` and ``sync_turn``.  Atlas does not describe this module as a
+drop-in current-Hermes plugin; the native wrapper belongs in a separately
+versioned integration package.
+
+This core now implements all four operations for real:
 
     async def put(item: MemoryItem) -> str            # returns item_id
     async def search(query: str, k: int) -> list[MemoryItem]
     async def get(item_id: str) -> MemoryItem | None
     async def delete(item_id: str) -> bool
 
-Atlas's differentiator: this is the only backend that runs AGM-compliant
-revision and Ripple reassessment under the hood. From Hermes's POV, `put`
-is just "remember this"; under the hood Atlas routes through quarantine →
-promotion → AGM revise() → Ripple cascade.
+Basic storage and lexical retrieval use Atlas's SQLite trust store and need no
+Neo4j or Docker.  Deployments that enable Neo4j can additionally use AGM
+revision, graph lineage, and Ripple reassessment through Atlas's MCP surface.
 
 INSTALL (Hermes side):
     # hermes_config.yaml
@@ -26,33 +28,24 @@ INSTALL (Hermes side):
         neo4j_password: atlasdev
         atlas_data_dir: ~/.atlas
 
-CONTRACT NOTES (W7 follow-ups):
+CONTRACT NOTES:
 1. Hermes MemoryItem fields we expect: id, content (str), metadata (dict),
    created_at (iso8601), embedding (optional list[float]).
-2. Atlas owns the canonical id (kref:// scheme); hermes_id ↔ kref map lives
-   in atlas_core/adapters/hermes_id_map.py (W7).
-3. `search` routes through atlas_core/retrieval (vault-search 768-dim BGE) +
-   Cypher kref hop expansion. Top-k is post-AGM-state, so superseded
-   revisions never surface unless explicitly requested via tag.
-4. `delete` becomes AGM contract() (Hansson Relevance + Core-Retainment),
-   not a tombstone — Atlas removes the belief from the closure rather than
-   from storage. The revision history stays auditable.
+2. Atlas owns the canonical candidate ID returned from `put`.
+3. `search` is deterministic local lexical retrieval over non-denied memory.
+4. `delete` removes the item from retrieval while preserving its audit row.
 
 Spec: 09 - Agent Runtime Memory Competitive Landscape.md (Hermes section)
 """
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from atlas_core.api.mcp_server import AtlasMCPServer
-
-
-log = logging.getLogger(__name__)
 
 
 PROVIDER_NAME: str = "atlas"
@@ -63,8 +56,7 @@ PROVIDER_NAME: str = "atlas"
 class HermesMemoryItem:
     """Mirrors hermes_agent.memory.MemoryItem shape.
 
-    Phase 2 W6 keeps this as a local dataclass to avoid importing Hermes;
-    W7 will switch to the upstream type once the plugin manifest is published.
+    Kept local so the adapter core has no Hermes installation dependency.
     """
 
     content: str
@@ -84,15 +76,33 @@ class HermesMemoryItem:
 
 
 class AtlasHermesProvider:
-    """Hermes MemoryProvider implementation backed by AtlasMCPServer.
+    """Hermes-shaped adapter core backed by AtlasMCPServer.
 
-    Hermes calls the four methods (put / search / get / delete) without
-    knowing they trigger AGM revision + Ripple cascade under the hood.
-    Errors surface as exceptions so Hermes' default error handler triggers.
+    The four operations use Atlas's portable SQLite memory tools. A caller
+    connected to a graph-enabled MCP server can separately invoke Atlas's AGM
+    and Ripple tools; ordinary CRUD does not pretend to trigger them.
     """
 
     def __init__(self, *, mcp_server: AtlasMCPServer):
         self.mcp = mcp_server
+
+    @classmethod
+    def from_config(cls, config: dict[str, Any] | None = None) -> AtlasHermesProvider:
+        """Construct the functional SQLite adapter without Neo4j or Docker."""
+        from pathlib import Path
+
+        from atlas_core.api import AtlasMCPServer
+        from atlas_core.trust import HashChainedLedger, QuarantineStore
+
+        config = config or {}
+        data_dir = Path(config.get("atlas_data_dir", str(Path.home() / ".atlas")))
+        data_dir = data_dir.expanduser()
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return cls(mcp_server=AtlasMCPServer(
+            driver=None,
+            quarantine=QuarantineStore(data_dir / "candidates.db"),
+            ledger=HashChainedLedger(data_dir / "ledger.db"),
+        ))
 
     async def put(self, item: HermesMemoryItem) -> str:
         """Hermes wants to remember `item`. Atlas routes through quarantine.
@@ -102,7 +112,7 @@ class AtlasHermesProvider:
           - item.metadata['subject_kref'] → subject_kref (REQUIRED)
           - item.metadata['predicate']    → predicate (REQUIRED)
           - item.metadata['confidence']   → confidence (default 0.6)
-          - item.metadata['lane']         → lane (default 'atlas_curated')
+          - item.metadata['lane']         → lane (default 'atlas_chat_history')
           - item.created_at        → evidence_timestamp
         """
         meta = item.metadata
@@ -137,29 +147,40 @@ class AtlasHermesProvider:
     async def search(
         self, query: str, k: int = 10,
     ) -> list[HermesMemoryItem]:
-        """W7 wires this through atlas_core/retrieval (vault-search BGE +
-        Cypher kref expansion). Phase 2 W6 returns an empty list with a
-        clear log line so Hermes' fallback path is exercised in dev.
-        """
-        log.info(
-            "AtlasHermesProvider.search(%r, k=%d) — W7 wires retrieval; "
-            "returning [] for now.", query, k,
-        )
-        return []
+        """Return real SQLite-ranked Atlas memories."""
+        result = await self.mcp.dispatch("memory.search", {"query": query, "limit": k})
+        if not result.ok:
+            raise RuntimeError(f"Atlas search failed: {result.error}")
+        return [self._from_memory(row) for row in result.result["memories"]]
 
     async def get(self, item_id: str) -> HermesMemoryItem | None:
-        """item_id is a quarantine candidate_id ULID. W7 wires the lookup."""
-        log.info(
-            "AtlasHermesProvider.get(%r) — W7 wires candidate lookup; "
-            "returning None for now.", item_id,
-        )
-        return None
+        """Fetch one retrievable memory by Atlas candidate ID."""
+        result = await self.mcp.dispatch("memory.get", {"memory_id": item_id})
+        if not result.ok:
+            raise RuntimeError(f"Atlas get failed: {result.error}")
+        row = result.result["memory"]
+        return self._from_memory(row) if row else None
 
     async def delete(self, item_id: str) -> bool:
-        """W7 routes through AGM contract(). Phase 2 W6 returns False so
-        Hermes doesn't think the delete succeeded silently."""
-        log.info(
-            "AtlasHermesProvider.delete(%r) — W7 routes via AGM contract(); "
-            "returning False for now.", item_id,
+        """Remove one memory from retrieval while retaining its audit row."""
+        result = await self.mcp.dispatch("memory.forget", {"memory_id": item_id})
+        if not result.ok:
+            raise RuntimeError(f"Atlas delete failed: {result.error}")
+        return bool(result.result["forgotten"])
+
+    @staticmethod
+    def _from_memory(row: dict[str, Any]) -> HermesMemoryItem:
+        return HermesMemoryItem(
+            item_id=row["memory_id"],
+            content=row["text"],
+            created_at=row.get("created_at"),
+            metadata={
+                "score": row["score"],
+                "status": row["status"],
+                "lane": row["lane"],
+                "subject_kref": row["subject_kref"],
+                "predicate": row["predicate"],
+                "confidence": row["confidence"],
+                "trust_score": row["trust_score"],
+            },
         )
-        return False

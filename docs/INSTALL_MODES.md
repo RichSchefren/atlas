@@ -8,7 +8,7 @@ needs and skips the rest.
 |---|---|---|---|
 | **Researcher / dev** | You're reading the source, running benchmarks, contributing PRs | ~5 min | $0 |
 | **Obsidian power-user** | You have a vault and want Atlas watching it for contradictions | ~10 min | $0–$1/day in API calls if you turn on LLM extraction |
-| **Agent-runtime integration** | You're building on Hermes / OpenClaw / Claude Code and want a memory backend with belief revision | ~10 min | $0 |
+| **Agent-runtime integration** | You're building a Python/MCP integration; native latest-Hermes/OpenClaw packages remain planned | varies | $0 |
 
 Each section is self-contained — you should not need to read the others to
 get going.
@@ -26,13 +26,13 @@ git clone https://github.com/RichSchefren/atlas && cd atlas
 make setup        # creates .venv, installs -e .[dev], adds ruff
 make neo4j        # starts the Neo4j 5.26 container with APOC
 make doctor       # confirms 9/9 environment checks pass
-make test         # 518 tests, ~12 seconds
+make test         # 532 tests in this snapshot
 ```
 
 What you get:
 - All deterministic code paths (no LLM calls, no API keys required).
 - The full Ripple cascade, AGM operators, trust quarantine, hash-chained
-  ledger, and the 13 MCP tools.
+  ledger, and the 17 MCP tools.
 - The 49-scenario AGM compliance suite (`make bench-agm`).
 - The BusinessMemBench head-to-head matrix
   (`make bench-bmb` — runs the three measurable adapters; the five that
@@ -115,18 +115,21 @@ plain Python process, no system services to uninstall).
 ## Mode 3 — Agent-runtime integration
 
 You're building on Hermes, OpenClaw, Claude Code, or any MCP-speaking
-client, and you want Atlas as the memory backend that handles
-belief-revision under the hood.
+client. Start with the portable SQLite memory surface; add Neo4j only if
+you need Atlas's graph revision and Ripple behavior.
 
 ```bash
 git clone https://github.com/RichSchefren/atlas && cd atlas
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e .         # core only — no LLM, no embeddings
-make neo4j
-make doctor
+PYTHONPATH=. python scripts/demo_runtime_adapters.py  # no Docker
 ```
 
-Pick the adapter for your runtime:
+That command proves Hermes-shaped and OpenClaw-shaped storage, retrieval,
+fetch/list, and forgetting. The current upstream-native packaging boundary is
+documented in [`RUNTIME_ADAPTERS.md`](RUNTIME_ADAPTERS.md).
+
+Pick the surface for your runtime:
 
 ### Claude Code (MCP, stdio)
 
@@ -152,58 +155,56 @@ Add Atlas to `~/.claude/.mcp.json` (the canonical Claude Code MCP config — see
 
 Restart Claude Code; Atlas's tools appear in the MCP tool list.
 
-Atlas exposes the 13 MCP tools (`ripple.analyze_impact`,
+Atlas exposes the 17 MCP tools (`ripple.analyze_impact`,
 `ripple.reassess`, `ripple.detect_contradictions`, `adjudication.queue`,
 `adjudication.resolve`, `quarantine.upsert`, `quarantine.list_pending`,
-`ledger.verify_chain`, `working_memory.assemble`, `lineage.walk`,
-`sharing.grant`, `sharing.revoke`, `sharing.list_grants`). Read-only vs
+`memory.search`, `memory.get`, `memory.list`, `memory.forget`,
+`ledger.verify_chain`, `working_memory.assemble`, `lineage.walk`, `sharing.grant`,
+`sharing.revoke`, `sharing.list_grants`). Read-only vs
 mutation classification is in [`docs/PROPOSAL_VS_MUTATION.md`](PROPOSAL_VS_MUTATION.md).
 
 ### Hermes
 
 ```python
-# In your Hermes agent config:
 from atlas_core.adapters.hermes import AtlasHermesProvider
 
-agent = Hermes(
-    memory_provider=AtlasHermesProvider(
-        neo4j_uri="bolt://localhost:7687",
-        neo4j_user="neo4j",
-        neo4j_password="atlasdev",
-    ),
-    ...
-)
+memory = AtlasHermesProvider.from_config({"atlas_data_dir": "~/.atlas"})
+memory_id = await memory.put(item)
+hits = await memory.search("pricing decision", k=5)
 ```
 
-Atlas registers as the 9th MemoryProvider in the Hermes ecosystem and is
-the only one that ships AGM-compliant revision.
+This is a functional Python adapter core, not a native current-Hermes plugin.
+Hermes Agent now requires a subclass of its lifecycle-based `MemoryProvider`
+with `initialize`, `prefetch`, `sync_turn`, tool dispatch, and shutdown hooks.
+Atlas will not claim native Hermes installation until that wrapper passes an
+actual Hermes-process round trip.
 
 ### OpenClaw
 
 ```python
-# Programmatic install — point your OpenClaw runtime at the plugin factory:
+# Python-hosted use of the SDK-neutral core:
 from atlas_core.adapters.openclaw import plugin as atlas_plugin
 
-atlas = atlas_plugin({
-    "neo4j_uri": "bolt://localhost:7687",
-    "neo4j_user": "neo4j",
-    "neo4j_password": "atlasdev",
-})  # returns AtlasOpenClawPlugin
+atlas = atlas_plugin({"atlas_data_dir": "~/.atlas"})
+memory_id = await atlas.store("Customer prefers weekly summaries", metadata)
+hits = await atlas.recall("reporting preference", k=5)
 ```
 
-Or, if your OpenClaw build supports declarative manifests:
+The factory returns `AtlasOpenClawPlugin`, the SDK-neutral Python core.
+Current OpenClaw cannot load this Python factory as a native memory plugin. It
+expects a TypeScript package using its plugin SDK and
+`registerMemoryCapability`. The core operations above are real; the npm
+wrapper remains planned and must pass inside an actual OpenClaw process before
+Atlas calls it drop-in.
 
-```yaml
-plugins:
-  - name: atlas-memory
-    type: memory
-    module: atlas_core.adapters.openclaw
-    factory: plugin
-```
+What you get without Neo4j:
+- SQLite-backed storage, deterministic lexical retrieval, fetch/list, and
+  auditable forgetting.
+- Four portable tools: `memory.search`, `memory.get`, `memory.list`, and
+  `memory.forget`.
 
-What you get:
-- The full Ripple cascade behind whatever interface your runtime
-  expects.
+What Neo4j adds:
+- The full Ripple cascade and AGM graph revision.
 - Read-only tools (analyze_impact, reassess, detect_contradictions,
   list_pending, verify_chain, assemble, lineage_walk, list_grants) that
   your agent can call freely without confirm-gating.
@@ -225,8 +226,8 @@ What you skip:
 ## Switching modes
 
 The modes are not exclusive. Researcher → Obsidian: just `pip install
-.[llm]` and set the env vars. Obsidian → Agent-runtime: install the
-adapter and point your runtime at the same Neo4j instance. The data dir
+.[llm]` and set the env vars. Obsidian → Agent-runtime: use the portable
+SQLite tools first, then point graph-capable clients at the same Neo4j instance. The data dir
 (`~/.atlas/`) and the Neo4j namespace are shared across modes by default,
 so you can run the synthetic demo, then start watching your vault, then
 plug Claude Code in — all against the same belief graph.

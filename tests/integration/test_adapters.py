@@ -75,13 +75,13 @@ class TestClaudeCodeAdapter:
         assert response["result"]["protocolVersion"] == PROTOCOL_VERSION
         assert response["result"]["serverInfo"]["name"] == "atlas"
 
-    async def test_tools_list_returns_eight(self, mcp_server):
+    async def test_tools_list_returns_seventeen(self, mcp_server):
         from atlas_core.adapters.claude_code import _handle
 
         response = await _handle(mcp_server, {
             "jsonrpc": "2.0", "id": 2, "method": "tools/list",
         })
-        assert len(response["result"]["tools"]) == 13
+        assert len(response["result"]["tools"]) == 17
 
     async def test_tools_call_dispatches(self, mcp_server):
         from atlas_core.adapters.claude_code import _handle
@@ -142,17 +142,29 @@ class TestHermesAdapter:
         with pytest.raises(ValueError, match="subject_kref"):
             await provider.put(HermesMemoryItem(content="x", metadata={}))
 
-    async def test_search_stub_returns_empty(self, mcp_server):
-        from atlas_core.adapters import AtlasHermesProvider
+    async def test_search_get_delete_round_trip(self, mcp_server):
+        from atlas_core.adapters import AtlasHermesProvider, HermesMemoryItem
 
         provider = AtlasHermesProvider(mcp_server=mcp_server)
-        assert await provider.search("anything", k=5) == []
+        memory_id = await provider.put(HermesMemoryItem(
+            content="The launch webinar is scheduled for Thursday",
+            metadata={
+                "subject_kref": "kref://test/Events/launch.event",
+                "predicate": "schedule.date",
+                "confidence": 0.7,
+                "lane": "atlas_chat_history",
+            },
+        ))
 
-    async def test_delete_stub_returns_false(self, mcp_server):
-        from atlas_core.adapters import AtlasHermesProvider
-
-        provider = AtlasHermesProvider(mcp_server=mcp_server)
-        assert await provider.delete("any-id") is False
+        hits = await provider.search("launch webinar Thursday", k=5)
+        assert [hit.item_id for hit in hits] == [memory_id]
+        assert hits[0].content == "The launch webinar is scheduled for Thursday"
+        fetched = await provider.get(memory_id)
+        assert fetched is not None and fetched.item_id == memory_id
+        assert await provider.delete(memory_id) is True
+        assert await provider.get(memory_id) is None
+        assert await provider.search("launch webinar Thursday", k=5) == []
+        assert await provider.delete("missing-id") is False
 
 
 # ─── OpenClaw memory plugin ─────────────────────────────────────────────────
@@ -197,19 +209,35 @@ class TestOpenClawAdapter:
         for m in agent_alpha:
             assert "agent_alpha" in m.metadata["subject_kref"]
 
-    async def test_plugin_factory_constructs_plugin(self, tmp_dir, neo4j_uri, neo4j_auth):
+    async def test_recall_and_forget_round_trip(self, mcp_server):
+        from atlas_core.adapters import AtlasOpenClawPlugin
+
+        plugin = AtlasOpenClawPlugin(mcp_server=mcp_server)
+        memory_id = await plugin.store(
+            "Customer prefers concise weekly reports",
+            metadata={
+                "agent_id": "chief_of_staff",
+                "session_id": "sess_recall",
+                "predicate": "pref.reporting_style",
+                "confidence": 0.8,
+            },
+        )
+
+        hits = await plugin.recall("concise weekly reports", k=5)
+        assert [hit.memory_id for hit in hits] == [memory_id]
+        assert hits[0].text == "Customer prefers concise weekly reports"
+        assert await plugin.forget(memory_id) is True
+        assert await plugin.recall("concise weekly reports", k=5) == []
+        assert await plugin.forget("missing-id") is False
+
+    async def test_plugin_factory_needs_no_neo4j(self, tmp_dir):
         from atlas_core.adapters import openclaw_plugin
 
-        user, password = neo4j_auth
         plug = openclaw_plugin({
-            "neo4j_uri": neo4j_uri,
-            "neo4j_user": user,
-            "neo4j_password": password,
             "atlas_data_dir": str(tmp_dir),
         })
         assert plug is not None
-        # Cleanup driver opened by factory
-        await plug.mcp.driver.close()
+        assert plug.mcp.driver is None
 
     async def test_plugin_metadata_constants(self):
         from atlas_core.adapters import (

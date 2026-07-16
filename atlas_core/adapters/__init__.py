@@ -1,14 +1,15 @@
-"""Atlas adapters — drop-in plugins for agent runtimes.
+"""Atlas runtime adapters.
 
 Each adapter wraps AtlasMCPServer in the contract a target runtime expects:
 
   - claude_code  → JSON-RPC 2.0 over stdio (MCP spec)
-  - hermes       → MemoryProvider protocol (NousResearch hermes-agent)
-  - openclaw     → Memory plugin (OpenClawIO/openclaw)
+  - hermes       → functional SDK-neutral CRUD/retrieval core
+  - openclaw     → functional SDK-neutral CRUD/retrieval core
 
-All three share the same Atlas backend, so AGM revision and Ripple
-cascade behavior are identical across runtimes — Atlas is the substrate,
-runtimes are the consumer.
+The Hermes and OpenClaw cores provide real SQLite-backed storage, retrieval,
+listing, and forgetting without Neo4j. Current upstream-native wrappers are a
+separate packaging layer; see docs/RUNTIME_ADAPTERS.md. When Neo4j is enabled,
+the same Atlas substrate also exposes AGM revision and Ripple behavior.
 
 Spec: 09 - Agent Runtime Memory Competitive Landscape.md
 """

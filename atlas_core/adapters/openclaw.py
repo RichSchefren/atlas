@@ -1,8 +1,11 @@
-"""OpenClaw memory plugin adapter — Atlas as a memory backend in
-OpenClaw's plugin architecture (363K stars, plugin manifest at
-github.com/OpenClawIO/openclaw/blob/main/docs/plugins/memory.md inferred).
+"""SDK-neutral OpenClaw adapter core backed by Atlas local memory tools.
 
-OpenClaw plugin contract (memory subtype):
+The Python protocol below was drafted against an earlier inferred OpenClaw
+contract. Current OpenClaw memory plugins are TypeScript packages built on the
+official plugin SDK and ``registerMemoryCapability``. This module is therefore
+a tested integration core, not a claim of current native plugin packaging.
+
+The adapter operations are real and need no Neo4j or Docker:
     plugin.json:
       {
         "name": "atlas-memory",
@@ -20,10 +23,10 @@ OpenClaw plugin contract (memory subtype):
 
     Recall = dataclass(memory_id, text, score, metadata, timestamp)
 
-OpenClaw is more conversational than Hermes — it expects raw text as
-the storage primitive. Atlas wraps that by auto-extracting subject_kref +
-predicate via LLM (W7), with a deterministic fallback that uses the agent
-session id as the subject and 'said' as the predicate.
+OpenClaw is more conversational than Hermes, so Atlas deterministically maps
+raw text to an agent/session subject and a configurable predicate. Storage,
+retrieval, listing, and forgetting run against the local SQLite trust store.
+Neo4j remains optional for Atlas's graph revision and Ripple features.
 
 Spec: 09 - Agent Runtime Memory Competitive Landscape.md (OpenClaw section)
       Plugin manifest: contract sketched here, validated against upstream W7.
@@ -31,16 +34,12 @@ Spec: 09 - Agent Runtime Memory Competitive Landscape.md (OpenClaw section)
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from atlas_core.api.mcp_server import AtlasMCPServer
-
-
-log = logging.getLogger(__name__)
 
 
 PLUGIN_NAME: str = "atlas-memory"
@@ -60,12 +59,11 @@ class Recall:
 
 
 class AtlasOpenClawPlugin:
-    """OpenClaw memory plugin backed by AtlasMCPServer.
+    """OpenClaw-shaped adapter core backed by AtlasMCPServer.
 
-    Differs from Hermes adapter in that OpenClaw passes raw text and expects
-    the plugin to handle structuring. We auto-derive subject + predicate
-    from session metadata + a default 'said' predicate; W7 swaps in LLM
-    extraction when an extractor is configured.
+    It accepts raw text and deterministically derives subject + predicate from
+    session metadata. Native current-OpenClaw packaging lives outside this
+    Python protocol.
     """
 
     def __init__(self, *, mcp_server: AtlasMCPServer):
@@ -110,83 +108,78 @@ class AtlasOpenClawPlugin:
         return result.result["candidate_id"]
 
     async def recall(self, query: str, k: int = 5) -> list[Recall]:
-        """W7 wires through retrieval layer (BGE + kref hop). Phase 2 W6
-        returns empty list — OpenClaw falls back to in-context memory."""
-        log.info(
-            "AtlasOpenClawPlugin.recall(%r, k=%d) — W7 wires retrieval; "
-            "returning [] for now.", query, k,
-        )
-        return []
+        """Return real SQLite-ranked Atlas memories."""
+        result = await self.mcp.dispatch("memory.search", {"query": query, "limit": k})
+        if not result.ok:
+            raise RuntimeError(f"Atlas recall failed: {result.error}")
+        return [self._from_memory(row) for row in result.result["memories"]]
 
     async def forget(self, memory_id: str) -> bool:
-        """W7 wires AGM contract(). Phase 2 W6 returns False so OpenClaw
-        knows the deletion didn't actually happen."""
-        log.info(
-            "AtlasOpenClawPlugin.forget(%r) — W7 wires AGM contract; "
-            "returning False for now.", memory_id,
-        )
-        return False
+        """Remove one memory from retrieval while retaining its audit row."""
+        result = await self.mcp.dispatch("memory.forget", {"memory_id": memory_id})
+        if not result.ok:
+            raise RuntimeError(f"Atlas forget failed: {result.error}")
+        return bool(result.result["forgotten"])
 
     async def list_memories(
         self, filter: dict[str, Any] | None = None,
     ) -> list[Recall]:
-        """List quarantine candidates by agent_id (filter['agent_id'])."""
-        result = await self.mcp.dispatch(
-            "quarantine.list_pending",
-            {"limit": (filter or {}).get("limit", 50)},
-        )
+        """List retrievable memories, optionally filtered by agent ID."""
+        result = await self.mcp.dispatch("memory.list", {
+            "limit": (filter or {}).get("limit", 50),
+            **({"lane": filter["lane"]} if filter and filter.get("lane") else {}),
+        })
         if not result.ok:
-            return []
+            raise RuntimeError(f"Atlas list failed: {result.error}")
         agent_id = (filter or {}).get("agent_id")
-        rows = result.result["candidates"]
+        rows = result.result["memories"]
         if agent_id:
             rows = [
                 r for r in rows
                 if f"openclaw/Agents/{agent_id}" in r["subject_kref"]
             ]
-        return [
-            Recall(
-                memory_id=r["candidate_id"],
-                text=r["object_value"],
-                score=float(r.get("trust_score", 0.0)),
-                metadata={
-                    "lane": r["lane"],
-                    "subject_kref": r["subject_kref"],
-                    "predicate": r["predicate"],
-                },
-                timestamp=r.get("created_at"),
-            )
-            for r in rows
-        ]
+        return [self._from_memory(row) for row in rows]
+
+    @staticmethod
+    def _from_memory(row: dict[str, Any]) -> Recall:
+        return Recall(
+            memory_id=row["memory_id"],
+            text=row["text"],
+            score=float(row["score"]),
+            metadata={
+                "status": row["status"],
+                "lane": row["lane"],
+                "subject_kref": row["subject_kref"],
+                "predicate": row["predicate"],
+                "confidence": row["confidence"],
+                "trust_score": row["trust_score"],
+            },
+            timestamp=row.get("created_at"),
+        )
 
 
 def plugin(config: dict[str, Any]) -> AtlasOpenClawPlugin:
-    """OpenClaw plugin entrypoint. `openclaw load atlas-memory` calls this.
+    """Construct the functional SQLite adapter core.
 
     config keys:
-      neo4j_uri / neo4j_user / neo4j_password — Neo4j connection
-      atlas_data_dir                          — for candidates.db + ledger.db
+      atlas_data_dir — for candidates.db + ledger.db
+
+    This factory does not claim to be OpenClaw's current TypeScript plugin SDK
+    entrypoint. It exists for Python hosts and contract-level testing.
     """
     from pathlib import Path
-
-    from neo4j import AsyncGraphDatabase
 
     from atlas_core.api import AtlasMCPServer
     from atlas_core.trust import HashChainedLedger, QuarantineStore
 
-    data_dir = Path(config.get("atlas_data_dir", str(Path.home() / ".atlas")))
+    data_dir = Path(
+        config.get("atlas_data_dir", str(Path.home() / ".atlas")),
+    ).expanduser()
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    driver = AsyncGraphDatabase.driver(
-        config.get("neo4j_uri", "bolt://localhost:7687"),
-        auth=(
-            config.get("neo4j_user", "neo4j"),
-            config.get("neo4j_password", "atlasdev"),
-        ),
-    )
     quarantine = QuarantineStore(data_dir / "candidates.db")
     ledger = HashChainedLedger(data_dir / "ledger.db")
     server = AtlasMCPServer(
-        driver=driver, quarantine=quarantine, ledger=ledger,
+        driver=None, quarantine=quarantine, ledger=ledger,
     )
     return AtlasOpenClawPlugin(mcp_server=server)

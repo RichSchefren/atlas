@@ -281,6 +281,62 @@ class TestLifecycle:
         assert result1.candidate_id in ids
         assert result2.candidate_id not in ids
 
+    def test_list_memories_includes_all_non_denied_statuses(self, store):
+        pending = store.upsert_candidate(make_claim(
+            predicate="project.status", object_value="Atlas is active", confidence=0.5,
+        ))
+        denied = store.upsert_candidate(make_claim(
+            predicate="project.owner", object_value="Nobody", confidence=0.5,
+        ))
+        store.deny_candidate(denied.candidate_id, reason="wrong", decision_id="test")
+
+        ids = {row["candidate_id"] for row in store.list_memories()}
+        assert pending.candidate_id in ids
+        assert denied.candidate_id not in ids
+
+    def test_search_memories_ranks_phrase_and_hides_denied(self, store):
+        exact = store.upsert_candidate(make_claim(
+            predicate="schedule.launch",
+            object_value="Launch webinar happens Thursday morning",
+            confidence=0.8,
+        ))
+        partial = store.upsert_candidate(make_claim(
+            predicate="schedule.review",
+            object_value="Webinar review happens Friday",
+            confidence=0.8,
+        ))
+
+        hits = store.search_memories("launch webinar Thursday", limit=5)
+        assert [row["candidate_id"] for row in hits] == [exact.candidate_id, partial.candidate_id]
+        assert hits[0]["retrieval_score"] > hits[1]["retrieval_score"]
+
+        store.deny_candidate(exact.candidate_id, reason="forget", decision_id="test")
+        assert [row["candidate_id"] for row in store.search_memories(
+            "launch webinar Thursday", limit=5,
+        )] == [partial.candidate_id]
+
+    def test_search_memories_supports_lane_filter(self, store):
+        session = store.upsert_candidate(make_claim(
+            lane="atlas_sessions",
+            predicate="pref.format",
+            object_value="concise weekly reports",
+            confidence=0.8,
+        ))
+        chat = store.upsert_candidate(make_claim(
+            lane="atlas_chat_history",
+            predicate="pref.format",
+            object_value="concise weekly reports with charts",
+            confidence=0.8,
+            source="chat_1",
+            source_family="chat",
+        ))
+
+        hits = store.search_memories(
+            "concise weekly reports", lane="atlas_sessions", limit=5,
+        )
+        assert [row["candidate_id"] for row in hits] == [session.candidate_id]
+        assert chat.candidate_id not in {row["candidate_id"] for row in hits}
+
 
 # ─── Dead letter queue ───────────────────────────────────────────────────────
 

@@ -2,13 +2,13 @@
 
 Atlas extracts claims into a quarantine pool tagged `requires_approval`.
 Until they're moved out of quarantine — either promoted to the canonical
-ledger or denied — Ripple has nothing to walk on and Atlas can't produce
-contradictions, lineage, or any of its propagation-aware behavior.
+ledger and projected into Neo4j, or denied — Atlas's trusted graph remains
+incomplete and downstream graph analysis cannot see those claims.
 
 This CLI is the human-in-the-loop unblocker. It does three things:
 
   • Auto-promote: candidates above the verification floor (0.80 by
-    default) and on a trusted lane go straight into the ledger.
+    default) and on a trusted lane go into the ledger, then Neo4j.
   • Queue: candidates below the floor are written as Markdown files to
     the adjudication queue (an Obsidian-readable folder) so the user can
     resolve them by editing `decision: accept|reject|adjust` in the
@@ -19,7 +19,8 @@ This CLI is the human-in-the-loop unblocker. It does three things:
 Usage:
     python scripts/adjudicate.py --report                     # show buckets, no changes
     python scripts/adjudicate.py --auto-promote --dry-run     # preview ledger writes
-    python scripts/adjudicate.py --auto-promote               # apply promotions
+    python scripts/adjudicate.py --auto-promote               # ledger + graph
+    python scripts/adjudicate.py --materialize                # retry graph projection
     python scripts/adjudicate.py --queue                      # write queue entries
     python scripts/adjudicate.py --auto-deny                  # deny noise candidates
     python scripts/adjudicate.py --all                        # promote + queue + deny
@@ -31,6 +32,7 @@ queue everything between 0.50 and 0.80, deny below 0.50.
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import logging
 import os
@@ -74,6 +76,8 @@ class Counts:
     queued: int = 0
     denied: int = 0
     skipped: int = 0
+    materialized: int = 0
+    materialize_failed: int = 0
 
 
 def _safe_filename(text: str, max_len: int = 80) -> str:
@@ -260,6 +264,26 @@ def auto_deny(
     return counts
 
 
+async def materialize_from_env(quarantine: QuarantineStore):
+    """Connect to configured Neo4j and retry every ledger-approved candidate."""
+    from neo4j import AsyncGraphDatabase
+
+    from atlas_core.ingestion import materialize_approved_candidates
+
+    driver = AsyncGraphDatabase.driver(
+        os.environ.get("NEO4J_URI", "bolt://localhost:7687"),
+        auth=(
+            os.environ.get("NEO4J_USER", "neo4j"),
+            os.environ.get("NEO4J_PASSWORD", "atlasdev"),
+        ),
+    )
+    try:
+        await driver.verify_connectivity()
+        return await materialize_approved_candidates(driver, quarantine)
+    finally:
+        await driver.close()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument(
@@ -288,6 +312,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--auto-deny", action="store_true")
     parser.add_argument("--all", action="store_true",
                         help="Equivalent to --auto-promote --queue --auto-deny")
+    parser.add_argument(
+        "--materialize", action="store_true",
+        help="Retry projection of all ledger-approved candidates into Neo4j",
+    )
+    parser.add_argument(
+        "--ledger-only", action="store_true",
+        help="Promote to the ledger without graph projection (explicit partial loop)",
+    )
     parser.add_argument("--dry-run", action="store_true",
                         help="Preview without mutating any state")
     parser.add_argument("--verbose", "-v", action="store_true")
@@ -309,7 +341,10 @@ def main(argv: list[str] | None = None) -> int:
     policy = PromotionPolicy(quarantine=quarantine, ledger=ledger)
 
     # Default action when no flags: report
-    if not any([args.report, args.auto_promote, args.queue, args.auto_deny, args.all]):
+    if not any([
+        args.report, args.auto_promote, args.queue, args.auto_deny,
+        args.all, args.materialize,
+    ]):
         args.report = True
 
     if args.report:
@@ -336,6 +371,7 @@ def main(argv: list[str] | None = None) -> int:
     do_promote = args.auto_promote or args.all
     do_queue = args.queue or args.all
     do_deny = args.auto_deny or args.all
+    do_materialize = args.materialize or (do_promote and not args.ledger_only)
 
     grand = Counts()
     if do_promote:
@@ -357,15 +393,31 @@ def main(argv: list[str] | None = None) -> int:
             quarantine=quarantine, noise_floor=args.noise_floor, dry_run=args.dry_run,
         )
         grand.denied += c.denied
+    if do_materialize and not args.dry_run:
+        try:
+            report = asyncio.run(materialize_from_env(quarantine))
+        except Exception as exc:
+            print(
+                f"materialization failed: {type(exc).__name__}: {exc}",
+                file=sys.stderr,
+            )
+            grand.materialize_failed += 1
+        else:
+            grand.materialized += report.materialized
+            grand.materialize_failed += report.failed
+            for error in report.errors:
+                print(f"materialization failed: {error}", file=sys.stderr)
 
     prefix = "DRY-RUN " if args.dry_run else ""
     print(
         f"\n{prefix}adjudication summary: "
         f"promoted={grand.promoted} (failed={grand.promoted_failed}) "
         f"queued={grand.queued} (skipped={grand.skipped}) "
-        f"denied={grand.denied}\n"
+        f"denied={grand.denied} "
+        f"materialized={grand.materialized} "
+        f"(failed={grand.materialize_failed})\n"
     )
-    return 0
+    return 2 if grand.promoted_failed or grand.materialize_failed else 0
 
 
 if __name__ == "__main__":

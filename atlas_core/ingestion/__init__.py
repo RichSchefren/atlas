@@ -49,6 +49,12 @@ from atlas_core.ingestion.imessage import (
     ImessageNotConfiguredError,
 )
 from atlas_core.ingestion.limitless import LimitlessExtractor
+from atlas_core.ingestion.materializer import (
+    MaterializationReport,
+    belief_kref_for_candidate,
+    materialize_approved_candidates,
+    materialize_candidate,
+)
 from atlas_core.ingestion.orchestrator import (
     IngestionOrchestrator,
     OrchestrationReport,
@@ -66,6 +72,10 @@ __all__ = [
     "STREAM_CONFIDENCE_FLOORS",
     "VaultExtractor",
     "LimitlessExtractor",
+    "MaterializationReport",
+    "belief_kref_for_candidate",
+    "materialize_candidate",
+    "materialize_approved_candidates",
     "ScreenpipeExtractor",
     "ClaudeSessionExtractor",
     "FirefliesExtractor",

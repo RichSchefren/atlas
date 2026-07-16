@@ -572,6 +572,15 @@ class QuarantineStore:
             ).fetchall()
         return [dict(r) for r in rows]
 
+    def list_approved(self) -> list[dict[str, Any]]:
+        """Return ledger-approved candidates awaiting or eligible for graph sync."""
+        with self._connection() as conn:
+            rows = conn.execute(
+                "SELECT * FROM candidates WHERE status = ? ORDER BY promoted_at ASC",
+                (CandidateStatus.APPROVED.value,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
     def upsert_dead_letter(
         self,
         *,

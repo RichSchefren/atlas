@@ -87,7 +87,8 @@ stays sharp.
 | Method | Class | What it does |
 |---|---|---|
 | `QuarantineStore.upsert_candidate(claim, ...)` | **MUTATION (non-graph)** | Writes / merges a candidate row in the quarantine SQLite DB. Computes trust score, may auto-promote to `auto_promoted` status. **Does not touch the typed graph** — promotion to graph happens later via `promote_candidate` chained through `revise`. |
-| `QuarantineStore.promote_candidate(candidate_id, ...)` | **MUTATION (non-graph)** | Marks the candidate as promoted in SQLite, may chain to `ledger.append_event`. **Still does not write to the typed graph by itself** — the caller (typically the orchestrator) is responsible for invoking `revise()` separately if a graph node should land. |
+| `QuarantineStore.promote_candidate(candidate_id, ...)` | **MUTATION (non-graph)** | Marks the candidate as promoted in SQLite after `ledger.append_event`. Graph projection is a separate, retryable materializer step. |
+| `materialize_approved_candidates(driver, quarantine)` | **MUTATION** | Idempotently projects every ledger-approved candidate as `(:Belief)-[:ABOUT]->(:AtlasItem)` in Neo4j. Ledger approval remains canonical; failed projections are reported and safe to retry. |
 | `QuarantineStore.deny_candidate(...)` | **MUTATION (non-graph)** | SQLite status update only. |
 | `QuarantineStore.upsert_dead_letter(...)` | **MUTATION (non-graph)** | SQLite write to the dead-letter table. |
 | `QuarantineStore.list_pending(...)` / `list_requires_approval(...)` / `get_candidate(...)` | **READ-ONLY** | SQLite reads. |

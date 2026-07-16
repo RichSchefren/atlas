@@ -82,11 +82,12 @@ Run the full pipeline once to seed (the daemon module runs one ingestion cycle p
 PYTHONPATH=. python -m atlas_core.daemon.cycle
 ```
 
-This walks the vault, quarantines new claims, promotes corroborated ones to
-the ledger, and runs Ripple on each promotion. The adjudication queue
-appears as markdown files under `~/.atlas/adjudication/` — open that folder
-in Obsidian alongside your main vault, and resolved entries archive to
-`~/.atlas/adjudication/archive/`.
+This walks the vault and quarantines new claims. Then run
+`python scripts/adjudicate.py --all` to promote eligible claims to the ledger
+and project every approved claim into Neo4j as a belief linked to its subject.
+The adjudication queue appears as markdown files under
+`~/.atlas/adjudication/` — open that folder in Obsidian alongside your main
+vault, and resolved entries archive to `~/.atlas/adjudication/archive/`.
 
 What you get:
 - LLM-driven extraction from free-text notes (uses Claude via the

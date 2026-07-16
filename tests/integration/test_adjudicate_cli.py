@@ -1,10 +1,11 @@
 """Integration tests for scripts/adjudicate.py.
 
-Exercises the three modes (auto-promote, queue, auto-deny) against a
+Exercises the adjudication modes (auto-promote, materialize, queue, auto-deny) against a
 fresh QuarantineStore + HashChainedLedger seeded with synthetic
 candidates. Confirms:
 
   - High-confidence vault candidates are promoted to ledger atomically.
+  - A promotion run invokes graph materialization unless ledger-only is explicit.
   - Medium-confidence candidates get rendered as Markdown queue entries
     with valid frontmatter.
   - Low-confidence candidates get terminal-denied.
@@ -161,6 +162,64 @@ def test_auto_promote_dry_run_mutates_nothing(stores):
     candidate = stores["quarantine"].get_candidate("DRY")
     assert candidate is not None
     assert candidate["status"] == "requires_approval"
+
+
+def test_cli_auto_promote_materializes_by_default(stores, monkeypatch):
+    """The public CLI closes the ledger -> graph loop after promotion."""
+    adj = _load_adjudicate()
+    _seed_candidate(
+        stores["quarantine"],
+        candidate_id="GRAPH1",
+        lane="atlas_vault",
+        confidence=0.95,
+    )
+    calls = []
+
+    async def fake_materialize(quarantine):
+        calls.append(quarantine.list_approved())
+        return MaterializationReport(
+            attempted=1,
+            materialized=1,
+            belief_krefs=["kref://Atlas/IngestedBeliefs/candidate_GRAPH1.belief"],
+        )
+
+    from atlas_core.ingestion import MaterializationReport
+
+    monkeypatch.setattr(adj, "materialize_from_env", fake_materialize)
+
+    exit_code = adj.main([
+        "--data-dir", str(stores["data_dir"]),
+        "--auto-promote",
+    ])
+
+    assert exit_code == 0
+    assert len(calls) == 1
+    assert [candidate["candidate_id"] for candidate in calls[0]] == ["GRAPH1"]
+
+
+def test_cli_ledger_only_skips_materialization(stores, monkeypatch):
+    """Operators can deliberately stop at the canonical ledger."""
+    adj = _load_adjudicate()
+    _seed_candidate(
+        stores["quarantine"],
+        candidate_id="LEDGER1",
+        lane="atlas_vault",
+        confidence=0.95,
+    )
+
+    async def fail_if_called(_quarantine):
+        raise AssertionError("materializer should not run")
+
+    monkeypatch.setattr(adj, "materialize_from_env", fail_if_called)
+
+    exit_code = adj.main([
+        "--data-dir", str(stores["data_dir"]),
+        "--auto-promote",
+        "--ledger-only",
+    ])
+
+    assert exit_code == 0
+    assert stores["quarantine"].get_candidate("LEDGER1")["status"] == "approved"
 
 
 def test_queue_writes_markdown_file(stores, tmp_path):

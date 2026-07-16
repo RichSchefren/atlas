@@ -22,6 +22,11 @@ MAX_BODY_BYTES = 2 * 1024 * 1024
 
 class CognitiveHTTPServer(ThreadingHTTPServer):
     daemon_threads = True
+    # http.server enables SO_REUSEADDR by default. On Windows that option is
+    # incompatible with SO_EXCLUSIVEADDRUSE and can either permit duplicate
+    # listeners or make both launchers fail. Keep normal Unix restart behavior
+    # while requiring exclusive ownership on Windows.
+    allow_reuse_address = os.name != "nt"
 
     def server_bind(self) -> None:
         # Windows permits multiple listeners on one address unless the socket

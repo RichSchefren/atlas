@@ -1,0 +1,45 @@
+{
+  "name": "@atlas-memory/openclaw",
+  "version": "0.1.0",
+  "description": "Native OpenClaw memory plugin backed by Atlas portable SQLite semantics.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.22.3 <23 || >=24.15 <25 || >=25.9"
+  },
+  "files": [
+    "dist/index.js",
+    "dist/src",
+    "openclaw.plugin.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "prepack": "npm run build"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.7.2"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "install": {
+      "minHostVersion": ">=2026.7.2"
+    },
+    "compat": {
+      "pluginApi": ">=2026.7.2"
+    }
+  }
+}

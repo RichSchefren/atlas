@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
@@ -18,6 +19,16 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
+
+
+def default_data_dir() -> Path:
+    """Resolve Atlas runtime state at instance creation time."""
+    return Path(os.environ.get("ATLAS_DATA_DIR", str(Path.home() / ".atlas"))).expanduser()
+
+
+def default_cursor_dir() -> Path:
+    """Keep ingestion cursors isolated with the selected Atlas data dir."""
+    return default_data_dir() / "state"
 
 
 class StreamType(str, Enum):
@@ -113,7 +124,7 @@ class StreamConfig:
     cadence_seconds: int = 1800  # default 30 min
     max_events_per_run: int = 5000
     confidence_floor: float = 0.4
-    cursor_dir: Path = Path.home() / ".atlas" / "state"
+    cursor_dir: Path = field(default_factory=default_cursor_dir)
     daily_token_budget_usd: float = 5.0
 
 

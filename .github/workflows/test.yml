@@ -1,6 +1,6 @@
 name: tests
 
-# Atlas CI: spin up Neo4j 5.26, run the 314-test suite + AGM
+# Atlas CI: spin up Neo4j 5.26, run the full suite + AGM
 # compliance check + the BusinessMemBench head-to-head matrix.
 # Every push and every PR must pass.
 
@@ -11,6 +11,21 @@ on:
     branches: [main, master]
 
 jobs:
+  windows-sqlite-and-unit:
+    name: windows py3.14 unit + sqlite lifecycle
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          allow-prereleases: true
+          cache: pip
+      - name: Install
+        run: python -m pip install -e .[dev]
+      - name: Run unit tests
+        run: python -m pytest tests/unit -q
+
   test:
     name: py${{ matrix.python-version }} + neo4j
     runs-on: ubuntu-latest

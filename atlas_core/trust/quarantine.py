@@ -16,6 +16,7 @@ import hashlib
 import json
 import logging
 import sqlite3
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
@@ -314,10 +315,25 @@ class QuarantineStore:
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
+    @contextmanager
+    def _connection(self):
+        """Yield a connection and always close its OS handle.
+
+        ``sqlite3.Connection`` commits or rolls back when used as a context
+        manager, but it does not close itself.  That difference is observable
+        on Windows, where an open handle prevents TemporaryDirectory cleanup.
+        """
+        conn = self._connect()
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
+
     def _init_schema(self) -> None:
         schema_path = Path(__file__).parent / "schemas" / "candidates.schema.sql"
         schema_sql = schema_path.read_text(encoding="utf-8")
-        with self._connect() as conn:
+        with self._connection() as conn:
             conn.executescript(schema_sql)
 
     # ── Public API ──────────────────────────────────────────────────────────
@@ -343,7 +359,7 @@ class QuarantineStore:
         risk_level = _classify_risk(claim)
         now = _utc_now()
 
-        with self._connect() as conn:
+        with self._connection() as conn:
             existing = conn.execute(
                 "SELECT * FROM candidates WHERE fingerprint = ?", (fingerprint,)
             ).fetchone()
@@ -480,7 +496,7 @@ class QuarantineStore:
         writing the ledger event first; this just updates the candidate row.
         """
         now = _utc_now()
-        with self._connect() as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 UPDATE candidates
@@ -509,7 +525,7 @@ class QuarantineStore:
     ) -> None:
         """Mark candidate as denied (terminal)."""
         now = _utc_now()
-        with self._connect() as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 UPDATE candidates
@@ -530,7 +546,7 @@ class QuarantineStore:
             )
 
     def get_candidate(self, candidate_id: str) -> dict[str, Any] | None:
-        with self._connect() as conn:
+        with self._connection() as conn:
             row = conn.execute(
                 "SELECT * FROM candidates WHERE candidate_id = ?", (candidate_id,)
             ).fetchone()
@@ -544,12 +560,12 @@ class QuarantineStore:
             sql += " AND lane = ?"
             params.append(lane)
         sql += " ORDER BY created_at ASC"
-        with self._connect() as conn:
+        with self._connection() as conn:
             rows = conn.execute(sql, params).fetchall()
         return [dict(r) for r in rows]
 
     def list_requires_approval(self) -> list[dict[str, Any]]:
-        with self._connect() as conn:
+        with self._connection() as conn:
             rows = conn.execute(
                 "SELECT * FROM candidates WHERE status = ? ORDER BY created_at ASC",
                 (CandidateStatus.REQUIRES_APPROVAL.value,),
@@ -567,7 +583,7 @@ class QuarantineStore:
         """Push a failed extraction into the dead letter queue. Returns DLQ id."""
         now = _utc_now()
         dlq_id = _new_ulid()
-        with self._connect() as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT INTO om_dead_letter_queue (

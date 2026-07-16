@@ -27,6 +27,13 @@ def write_md(path: Path, body: str) -> None:
 
 
 class TestCursorPersistence:
+    def test_default_cursor_follows_atlas_data_dir(self, tmp_path, monkeypatch):
+        from atlas_core.ingestion.base import StreamConfig
+
+        data_dir = tmp_path / "isolated-atlas"
+        monkeypatch.setenv("ATLAS_DATA_DIR", str(data_dir))
+        assert StreamConfig().cursor_dir == data_dir / "state"
+
     def test_fresh_cursor_when_no_file(self, tmp_dir, quarantine):
         from atlas_core.ingestion import VaultExtractor
         from atlas_core.ingestion.base import StreamConfig

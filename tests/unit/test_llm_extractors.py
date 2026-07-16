@@ -64,6 +64,17 @@ class TestTokenBudget:
 
 
 class TestLLMExtractorBase:
+    def test_client_loads_documented_dotenv_file(self, tmp_path, monkeypatch):
+        from atlas_core.ingestion.extractors.llm_base import LLMExtractor
+
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".env").write_text("ANTHROPIC_API_KEY=from-dotenv\n")
+
+        extractor = LLMExtractor()
+        extractor._ensure_client()
+        assert extractor._client.api_key == "from-dotenv"
+
     def test_load_prompt_template_finds_vault(self):
         from atlas_core.ingestion.extractors import load_prompt_template
         text = load_prompt_template("vault")

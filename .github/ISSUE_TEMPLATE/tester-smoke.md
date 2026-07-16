@@ -1,6 +1,6 @@
 ---
 name: Tester report — smoke test (`pytest tests/`)
-about: The 318-test suite went red on a clean checkout
+about: The full test suite went red on a clean checkout
 labels: tester-finding, smoke-test
 ---
 
@@ -14,7 +14,7 @@ labels: tester-finding, smoke-test
 
 ## Expected vs actual
 
-- Expected: 318 passed
+- Expected: 500+ passed with no failures or teardown errors
 - Actual: <N> passed, <M> failed
 
 ## Reproduction (exactly the commands you ran)

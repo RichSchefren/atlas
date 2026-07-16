@@ -82,7 +82,7 @@ def _seed_candidate(
     cols = ", ".join(payload.keys())
     placeholders = ", ".join("?" * len(payload))
     now = "2026-04-29T00:00:00Z"
-    with quarantine._connect() as conn:
+    with quarantine._connection() as conn:
         conn.execute(
             f"INSERT INTO candidates ({cols}, created_at, updated_at) "
             f"VALUES ({placeholders}, ?, ?)",

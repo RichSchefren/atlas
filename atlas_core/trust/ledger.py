@@ -22,6 +22,7 @@ import hashlib
 import json
 import logging
 import sqlite3
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -166,10 +167,20 @@ class HashChainedLedger:
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
+    @contextmanager
+    def _connection(self):
+        """Yield a connection and always release its SQLite file handle."""
+        conn = self._connect()
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
+
     def _init_schema(self) -> None:
         schema_path = Path(__file__).parent / "schemas" / "ledger.schema.sql"
         schema_sql = schema_path.read_text(encoding="utf-8")
-        with self._connect() as conn:
+        with self._connection() as conn:
             conn.executescript(schema_sql)
 
     # ── Append API ──────────────────────────────────────────────────────────
@@ -209,7 +220,7 @@ class HashChainedLedger:
         payload_json = _canonical_json(payload)
         metadata_json = _canonical_json(metadata or {})
 
-        with self._connect() as conn:
+        with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             try:
                 last = conn.execute(
@@ -314,7 +325,7 @@ class HashChainedLedger:
         Returns ChainVerificationResult with first breakage point if any.
         Also writes an entry to the chain_verifications audit table.
         """
-        with self._connect() as conn:
+        with self._connection() as conn:
             rows = conn.execute(
                 """
                 SELECT chain_sequence, event_id, previous_hash,
@@ -424,7 +435,7 @@ class HashChainedLedger:
     def _record_verification(
         self, *, last_seq: int, last_id: str, intact: bool, notes: str
     ) -> None:
-        with self._connect() as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT INTO chain_verifications (
@@ -445,7 +456,7 @@ class HashChainedLedger:
 
         Used by AtlasGraphiti.add_episode to gate Ripple — only ledger
         entries trigger Ripple cascades."""
-        with self._connect() as conn:
+        with self._connection() as conn:
             row = conn.execute(
                 """
                 SELECT 1 FROM change_events
@@ -459,7 +470,7 @@ class HashChainedLedger:
         return row is not None
 
     def get_event(self, event_id: str) -> dict[str, Any] | None:
-        with self._connect() as conn:
+        with self._connection() as conn:
             row = conn.execute(
                 "SELECT * FROM change_events WHERE event_id = ?", (event_id,)
             ).fetchone()
@@ -467,7 +478,7 @@ class HashChainedLedger:
 
     def get_root_lineage(self, root_id: str) -> list[dict[str, Any]]:
         """All events for a given root, oldest first."""
-        with self._connect() as conn:
+        with self._connection() as conn:
             rows = conn.execute(
                 """
                 SELECT * FROM change_events
@@ -480,21 +491,21 @@ class HashChainedLedger:
 
     def get_typed_root_state(self, root_id: str) -> dict[str, Any] | None:
         """Read materialized current state for a root."""
-        with self._connect() as conn:
+        with self._connection() as conn:
             row = conn.execute(
                 "SELECT * FROM typed_roots WHERE root_id = ?", (root_id,)
             ).fetchone()
         return dict(row) if row else None
 
     def chain_length(self) -> int:
-        with self._connect() as conn:
+        with self._connection() as conn:
             row = conn.execute(
                 "SELECT COUNT(*) AS n FROM change_events"
             ).fetchone()
         return int(row["n"])
 
     def latest_event(self) -> dict[str, Any] | None:
-        with self._connect() as conn:
+        with self._connection() as conn:
             row = conn.execute(
                 "SELECT * FROM change_events ORDER BY chain_sequence DESC LIMIT 1"
             ).fetchone()

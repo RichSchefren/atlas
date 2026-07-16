@@ -38,25 +38,31 @@ Every line is real Neo4j + real ledger. No mocks. ~6s on subsequent runs. **This
 
 ### What you should see
 
-The last lines of `./demo.sh` should look like this — if they don't, file an issue:
+The final stages of `./demo.sh` should look like this — if they don't, file an issue:
 
 ```text
-[3/6] Triggering Ripple cascade ...
-        impacted nodes:               1
-        reassessment proposals:       1
-        contradictions:               0
+▶ Stage 4 / 7 — RippleEngine.propagate()
+  ✓ cascade complete
+  impacted nodes: 2
+  contradictions: 0
+  routing — auto: 2, strategic: 0, core: 0
 
-[4/6] Resolving via AGM revise() ...
-        belief.confidence_score:      0.88 -> 0.77
+▶ Stage 5 / 7 — Reassessment proposals
+  1. kref://AtlasDemo/Beliefs/origins_accessible.belief
+     0.88 → 0.74  (-0.14)
+  2. kref://AtlasDemo/Decisions/marketing_to_newcomers.decision
+     0.80 → 0.66  (-0.14)
 
-[5/6] Verifying ledger ...
-        chain intact:                 True
-        last_verified_sequence:       1   (the 1 fact promoted to ledger this run)
+▶ Stage 6 / 7 — Resolve one through adjudication
+  ✓ resolved with decision='accept'
 
-[6/6] LOOP CLOSED.
+▶ Stage 7 / 7 — Verify SHA-256 ledger chain
+  ✓ chain intact at sequence 1
+
+LOOP CLOSED.
 ```
 
-`last_verified_sequence: 1` looks small because the demo plants exactly one promotion-eligible fact and verifies the chain holds with one entry — every later run extends the chain and the number grows. The point is the chain *intact*, not the count.
+`last_verified_sequence = 1` looks small because the demo plants exactly one promotion-eligible fact and verifies the chain holds with one entry — every later run extends the chain and the number grows. The point is the chain *intact*, not the count.
 
 ### What Atlas is not
 

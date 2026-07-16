@@ -88,6 +88,13 @@ class LLMExtractor:
     def _ensure_client(self):
         if self._client is not None:
             return
+        from dotenv import find_dotenv, load_dotenv
+
+        # Respect exported variables, while making the documented repo-local
+        # .env file work for both CLI entrypoints and direct Python API use.
+        env_path = find_dotenv(usecwd=True)
+        if env_path:
+            load_dotenv(env_path, override=False)
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
             raise RuntimeError(

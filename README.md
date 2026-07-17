@@ -73,7 +73,7 @@ To save you time:
 - **Not yet a Letta replacement.** Atlas does not run agent loops. It plugs into agent runtimes as a memory backend. If you want an agent stack with memory built in, Letta or Hermes is the right answer; Atlas slots underneath.
 - **Not yet automatic free-text understanding at scale.** The ingestion pipeline works on real Limitless / Fireflies / Claude transcripts, but extraction quality on truly unstructured text is uneven and improving — see `atlas_core/ingestion/extractors/` for the prompt set we're iterating on.
 
-### Hermes and OpenClaw: real packages, different proven boundaries
+### Hermes, OpenClaw, and GBrain: real independent packages
 
 The adapter cores now perform real local `store`, `search` / `recall`, `get`,
 `list`, and `forget` operations against Atlas's SQLite trust store. This path
@@ -84,32 +84,38 @@ PYTHONPATH=. python scripts/demo_runtime_adapters.py
 ```
 
 CI runs that proof with the Neo4j endpoint deliberately pointed at a dead port.
-Atlas also ships native packages for current Hermes Agent and OpenClaw:
+Atlas also ships native packages for current Hermes Agent, OpenClaw, and GBrain:
 [`integrations/hermes-atlas/`](integrations/hermes-atlas/) implements Hermes's
 `MemoryProvider` lifecycle, and
 [`integrations/openclaw-atlas/`](integrations/openclaw-atlas/) is a TypeScript
-memory-capability plugin. Both are tested inside pinned upstream hosts and
-provide real local retrieval without Neo4j or Docker.
+memory-capability plugin. [`integrations/gbrain-atlas/`](integrations/gbrain-atlas/)
+is a package-only MCP bridge that keeps GBrain pages authoritative while Atlas
+adds page-linked cognition. All three are tested against pinned upstream
+contracts and require no Neo4j or Docker for retrieval or the bounded
+AGM/Ripple service.
 
-Hermes now has an additional proven cognitive boundary: its native provider
+Hermes, OpenClaw, and GBrain now share one proven cognitive boundary: their native packages
 manages a profile-scoped, authenticated localhost service that owns AGM
 revision, dependency traversal, and persisted Ripple proposals. Cognitive
 records participate in recall, search, list, get, forget, audit, and restart.
 The service uses SQLite for persistence but keeps cognitive semantics in one
-Python owner, not in host-specific adapters or SQL. Its black-box suite covers
+Python owner, not in host-specific adapters or SQL. Hermes manages one service
+per profile, OpenClaw manages one per agent/session scope, and the GBrain
+bridge maps brain + source + slug to a stable Atlas identity. Its black-box suite covers
 49 AGM scenario IDs plus the canonical A-to-B cascade, and its 10k/20k
 performance contract is enforced in CI.
 
-OpenClaw remains deliberately retrieval-only today. Atlas does not claim
-OpenClaw cognition until a thin client passes the same service corpus inside
-the pinned host. The exact capability split and installation paths are in
+OpenClaw's protected host proof executes all seven tools, including dependency
+declaration and a revision that must emit a nonempty Ripple proposal set.
+GBrain's protected host proof installs the package-only tarball and drives the
+real pinned `gbrain serve` MCP lifecycle. The exact capability split and installation paths are in
 [`docs/RUNTIME_ADAPTERS.md`](docs/RUNTIME_ADAPTERS.md).
 
 ### Who Atlas is for, today
 
 The strongest early users are:
 
-- **Agent / tool builders** who need a memory backend with belief-revision semantics (MCP/HTTP surfaces plus native Hermes/OpenClaw packages ship today).
+- **Agent / tool builders** who need a memory backend with belief-revision semantics (MCP/HTTP surfaces plus native Hermes/OpenClaw/GBrain packages ship today).
 - **Power users with Obsidian / transcripts / vaults** who want their meetings + screen + chat captures cross-checked for emergent contradictions.
 - **Local-first AI builders** who can't or won't ship user data to a cloud memory service.
 - **Researchers** working on belief revision, AGM compliance, or non-monotonic reasoning who want a reproducible, instrumented baseline.
@@ -193,7 +199,7 @@ If you're shopping memory backends for an agent system, here's how Atlas stacks 
 | **Automatic downstream reassessment (Ripple)** | ✅ | ❌ flag-only | ❌ | ❌ | ❌ | ❌ |
 | Domain-typed business ontology shipped | ✅ 8 entity types | ❌ | ❌ | ❌ | ❌ | partial |
 | Continuous multi-stream ingestion | ✅ 6 streams | ❌ SDK only | ❌ | ❌ | ❌ | partial |
-| Runtime integration | ✅ Claude MCP + functional Hermes/OpenClaw cores | partial | ❌ | partial | ❌ | ❌ |
+| Runtime integration | ✅ Claude MCP + native Hermes/OpenClaw/GBrain | partial | ❌ | partial | ❌ | ❌ |
 
 #### What Atlas does *worse* (today)
 
@@ -219,7 +225,7 @@ Atlas is a Python service that maintains a continuously-updated typed knowledge 
 1. **Quarantines the claim** until corroborated by an independent source family
 2. **Promotes corroborated claims** to a hash-chained append-only ledger
 3. **Triggers Ripple propagation** when a ledger entry creates a revision: traverses `Depends_On` edges, re-evaluates downstream beliefs with confidence propagation, surfaces emergent contradictions
-4. **Routes resolution** — routine reassessments auto-apply via AGM operators; strategic contradictions go to a markdown adjudication queue you resolve in Obsidian
+4. **Routes resolution** — reassessments persist as proposals; strategic contradictions also go to a markdown adjudication queue you resolve in Obsidian. Atlas does not claim an automatic proposal consumer until that graph-tier writer ships.
 
 All revisions are AGM-compliant (K\*2–K\*6 + Hansson Relevance + Core-Retainment), formally verified against Kumiho's correspondence theorem (arxiv:2603.17244).
 
@@ -232,7 +238,7 @@ Honest accounting. Atlas's cost story shifts dramatically between v0.1.0a1 (toda
 **v0.1.0a1 (today): ≈ $0/month.**
 - Extractors are 100% deterministic — frontmatter parsing, YAML readers, regex pattern matching. No LLM calls.
 - Ripple's `HeuristicReassessor` (default) does no LLM call; it's a closed-form damped formula. The `LLMReassessor` exists but is opt-in and not the default.
-- Portable retrieval uses SQLite only. Native Hermes can add the bundled
+- Portable retrieval uses SQLite only. Native Hermes, OpenClaw, and GBrain can add the bundled
   localhost cognitive service for the bounded AGM/Ripple wedge without Docker
   or Neo4j. Neo4j 5.26 remains the documented local backend for the broader
   property-graph, ledger-projection, MCP, and adjudication stack. No telemetry,
@@ -299,7 +305,11 @@ PYTHONPATH=. python scripts/demo_runtime_adapters.py
 # 2b. Native Hermes: install its managed cognitive service (no Docker)
 bash integrations/hermes-atlas/install.sh
 
-# 2c. Optional broader property-graph/MCP/adjudication tier
+# 2c. Or install the native OpenClaw / GBrain cognitive package
+bash integrations/openclaw-atlas/install.sh
+bash integrations/gbrain-atlas/install.sh
+
+# 2d. Optional broader property-graph/MCP/adjudication tier
 docker compose up -d                               # bolt://localhost:7687
 
 # 3. Install — base is deterministic + $0/month; opt in to extras as you need them
@@ -373,7 +383,8 @@ Atlas ships with three concurrent surfaces:
 - **MCP**: 17 Atlas-original tools — the graph/Ripple, adjudication, quarantine, ledger, working-memory, lineage, and sharing tools plus portable `memory.search`, `memory.get`, `memory.list`, and `memory.forget`. Stdio JSON-RPC bridge for Claude Code via `python -m atlas_core.adapters.claude_code`. Read-only vs mutation classification at [`docs/PROPOSAL_VS_MUTATION.md`](docs/PROPOSAL_VS_MUTATION.md).
 - **HTTP**: FastAPI on `localhost:9879` mirrors the MCP surface for non-MCP clients (the dashboard, curl, integration tests). Endpoints: `/health`, `/tools`, `/tools/{name}`, `/verify-chain`.
 - **Portable cognitive HTTP**: the authenticated, single-scope localhost v1
-  service in `integrations/cognitive-service/`. Native Hermes manages this
+  service in `integrations/cognitive-service/`. Native Hermes, OpenClaw, and
+  the GBrain bridge manage this
   sidecar automatically; it is separate from the broader FastAPI/MCP server so
   host clients cannot accidentally inherit Neo4j or Atlas-core dependencies.
 - **gRPC** (Phase 2 W7+): scaffold with all 51 Kumiho-compatible RPC method names registered. Existing Kumiho SDK code switches to Atlas by setting `endpoint="localhost:50051"`.
@@ -385,6 +396,7 @@ Plus runtime adapters:
 - `atlas_core.adapters.openclaw.AtlasOpenClawPlugin` — functional SQLite-backed OpenClaw-shaped core
 - `integrations/hermes-atlas/` — native current-Hermes `MemoryProvider` plugin
 - `integrations/openclaw-atlas/` — native current-OpenClaw TypeScript memory plugin
+- `integrations/gbrain-atlas/` — independent GBrain MCP-to-Atlas cognitive bridge
 
 See [`docs/RUNTIME_ADAPTERS.md`](docs/RUNTIME_ADAPTERS.md) for the portable
 core/native package boundary and proof matrix.
@@ -482,6 +494,7 @@ If you want to break Atlas, [TESTING.md](TESTING.md) has five concrete paths fro
 | 17 MCP tools dispatch correctly via stdio JSON-RPC | `pytest tests/integration/test_mcp_server.py tests/integration/test_claude_code_stdio.py -v` |
 | FastAPI surface with CORS + Server-Sent Events stream | `pytest tests/integration/test_http_server.py tests/unit/test_events_broadcaster.py -v` |
 | Hermes/OpenClaw adapter storage, retrieval, fetch, list, and forget without Neo4j | `python scripts/demo_runtime_adapters.py` |
+| Native OpenClaw host cognition and GBrain page-linked cognition | `.github/workflows/openclaw-native.yml` and `.github/workflows/gbrain-native.yml` |
 | Kumiho-compat gRPC handlers (10 of 51 methods wired, 41 return UNIMPLEMENTED) | `pytest tests/integration/test_grpc_handlers.py -v` |
 | Property-based AGM testing (hypothesis-driven) | `pytest tests/unit/test_agm_property_based.py -v` |
 | BusinessMemBench at 1.000 vs Graphiti 0.711 on 149 deterministic questions | `python scripts/run_bmb.py` |

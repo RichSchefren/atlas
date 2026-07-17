@@ -48,6 +48,7 @@ and launch-fixed scope. The performance gate uses 10,000 items, 20,000
 dependency edges, and 9,999 returned and persisted proposals; p95 must remain
 below two seconds.
 
-OpenClaw does not claim this cognitive service yet. Its existing native Atlas
-package remains a real retrieval integration until a thin client passes this
-same corpus inside the pinned OpenClaw host.
+Hermes, OpenClaw, and GBrain packages all use this same semantic owner.
+OpenClaw's managed Node client is exercised through the pinned host's real MCP
+tool executor; the GBrain package uses the same compiled client while GBrain
+pages remain authoritative. Host clients contain lifecycle and transport only.

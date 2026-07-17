@@ -1,0 +1,188 @@
+name: GBrain native bridge
+
+on:
+  pull_request:
+    paths:
+      - "integrations/gbrain-atlas/**"
+      - "integrations/openclaw-atlas/src/cognitive-client.ts"
+      - "integrations/cognitive-service/**"
+      - ".github/workflows/gbrain-native.yml"
+  push:
+    branches: [master]
+    paths:
+      - "integrations/gbrain-atlas/**"
+      - "integrations/openclaw-atlas/src/cognitive-client.ts"
+      - "integrations/cognitive-service/**"
+      - ".github/workflows/gbrain-native.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-gbrain-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22.22.3"
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: "1.3.13"
+
+      - name: Check out pinned GBrain contract fixture
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: garrytan/gbrain
+          ref: 26d2f8abfc0e7c6fead5ea89b6494ce8c3cf737f
+          path: .contract/gbrain
+
+      - name: Install pinned package dependencies
+        run: npm ci --prefix integrations/gbrain-atlas
+
+      - name: Install pinned GBrain dependencies
+        working-directory: .contract/gbrain
+        run: bun install --frozen-lockfile
+
+      - name: Test bridge and authoritative cognitive client
+        run: npm test --prefix integrations/gbrain-atlas
+
+      - name: Verify reproducible release tarball
+        working-directory: integrations/gbrain-atlas
+        run: |
+          shasum -a 256 -c CHECKSUMS.sha256
+          mkdir -p ../../.contract/gbrain-package-committed ../../.contract/gbrain-package-rebuilt
+          cp atlas-memory-gbrain-0.1.0.tgz ../../.contract/atlas-memory-gbrain-committed.tgz
+          tar -xzf atlas-memory-gbrain-0.1.0.tgz -C ../../.contract/gbrain-package-committed
+          npm pack
+          tar -xzf atlas-memory-gbrain-0.1.0.tgz -C ../../.contract/gbrain-package-rebuilt
+          diff -ru ../../.contract/gbrain-package-committed/package ../../.contract/gbrain-package-rebuilt/package
+          mv ../../.contract/atlas-memory-gbrain-committed.tgz atlas-memory-gbrain-0.1.0.tgz
+
+      - name: Initialize zero-server pinned GBrain
+        env:
+          GBRAIN_HOME: ${{ runner.temp }}/gbrain-home
+        working-directory: .contract/gbrain
+        run: |
+          unset DATABASE_URL GBRAIN_DATABASE_URL
+          bun run src/cli.ts init --pglite --no-embedding --non-interactive
+
+      - name: Install package-only artifact
+        run: |
+          mkdir -p "${RUNNER_TEMP}/atlas-gbrain-install"
+          npm install --prefix "${RUNNER_TEMP}/atlas-gbrain-install" "${GITHUB_WORKSPACE}/integrations/gbrain-atlas/atlas-memory-gbrain-0.1.0.tgz"
+
+      - name: Exercise real GBrain MCP lifecycle and Atlas cognition
+        env:
+          ATLAS_GBRAIN_HOME: ${{ runner.temp }}/atlas-gbrain-home
+          GBRAIN_ARGS: '["run","src/cli.ts","serve"]'
+          GBRAIN_CWD: ${{ github.workspace }}/.contract/gbrain
+          GBRAIN_HOME: ${{ runner.temp }}/gbrain-home
+        run: |
+          set -euo pipefail
+          export GBRAIN_COMMAND="$(command -v bun)"
+          BRIDGE="${RUNNER_TEMP}/atlas-gbrain-install/node_modules/.bin/atlas-gbrain"
+          mkdir -p "${RUNNER_TEMP}/atlas-gbrain-pages"
+          cat > "${RUNNER_TEMP}/atlas-gbrain-pages/support.md" <<'EOF'
+          ---
+          title: Atlas GBrain support proof
+          ---
+
+          # Atlas GBrain support proof
+
+          The launch is Friday.
+          EOF
+          cat > "${RUNNER_TEMP}/atlas-gbrain-pages/dependent.md" <<'EOF'
+          ---
+          title: Atlas GBrain dependent proof
+          ---
+
+          # Atlas GBrain dependent proof
+
+          The campaign starts Thursday.
+          EOF
+          "$BRIDGE" put --slug proof/atlas-support --file "${RUNNER_TEMP}/atlas-gbrain-pages/support.md" --confidence-ppm 900000 > "${RUNNER_TEMP}/support-create.json"
+          "$BRIDGE" put --slug proof/atlas-dependent --file "${RUNNER_TEMP}/atlas-gbrain-pages/dependent.md" --confidence-ppm 800000 > "${RUNNER_TEMP}/dependent-create.json"
+          "$BRIDGE" depend --dependent-slug proof/atlas-dependent --support-slug proof/atlas-support --strength-ppm 1000000 > "${RUNNER_TEMP}/dependency.json"
+          cat > "${RUNNER_TEMP}/atlas-gbrain-pages/support.md" <<'EOF'
+          ---
+          title: Atlas GBrain support proof
+          ---
+
+          # Atlas GBrain support proof
+
+          The launch moved to Monday.
+          EOF
+          "$BRIDGE" put --slug proof/atlas-support --file "${RUNNER_TEMP}/atlas-gbrain-pages/support.md" --confidence-ppm 200000 --reason "Pinned GBrain calendar change" > "${RUNNER_TEMP}/support-revise.json"
+          "$BRIDGE" get --slug proof/atlas-support > "${RUNNER_TEMP}/get.json"
+          "$BRIDGE" audit --slug proof/atlas-support > "${RUNNER_TEMP}/audit.json"
+          "$BRIDGE" search --query "launch moved Monday" --limit 5 > "${RUNNER_TEMP}/search.json"
+          "$BRIDGE" status > "${RUNNER_TEMP}/status.json"
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const read = (name) => JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/${name}.json`, "utf8"));
+          if (read("support-create").action !== "created") throw new Error("support create failed");
+          if (read("dependent-create").action !== "created") throw new Error("dependent create failed");
+          if (read("dependency").dependency.strength_ppm !== 1000000) throw new Error("dependency failed");
+          const revised = read("support-revise");
+          if (revised.action !== "revised" || revised.proposals.length < 1) throw new Error("Ripple reassessment failed");
+          if (!read("get").page.compiled_truth.includes("moved to Monday")) throw new Error("GBrain get is stale");
+          if (read("audit").audit.lineage.length !== 2) throw new Error("Atlas lineage failed");
+          if (read("search").pages.length < 1 || read("search").cognitive.length < 1) throw new Error("dual search failed");
+          const status = read("status");
+          if (status.gbrain.version !== "0.42.61.0" || status.atlas.service_version !== "0.1.0") throw new Error("host pin mismatch");
+          NODE
+
+  windows-bridge-package:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22.22.3"
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: "1.3.13"
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: garrytan/gbrain
+          ref: 26d2f8abfc0e7c6fead5ea89b6494ce8c3cf737f
+          path: .contract/gbrain
+      - run: npm ci --prefix integrations/gbrain-atlas
+      - run: npm test --prefix integrations/gbrain-atlas
+      - working-directory: .contract/gbrain
+        run: bun install --frozen-lockfile
+      - shell: pwsh
+        run: |
+          $env:GBRAIN_HOME = Join-Path $env:RUNNER_TEMP "gbrain-win-home"
+          Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
+          Remove-Item Env:GBRAIN_DATABASE_URL -ErrorAction SilentlyContinue
+          Push-Location .contract/gbrain
+          bun run src/cli.ts init --pglite --no-embedding --non-interactive
+          Pop-Location
+
+          & .\integrations\gbrain-atlas\install.ps1
+          $env:ATLAS_GBRAIN_HOME = Join-Path $env:RUNNER_TEMP "atlas-gbrain-win-home"
+          $env:GBRAIN_COMMAND = (Get-Command bun).Source
+          $env:GBRAIN_ARGS = '["run","src/cli.ts","serve"]'
+          $env:GBRAIN_CWD = (Resolve-Path .contract/gbrain).Path
+          $Page = Join-Path $env:RUNNER_TEMP "atlas-gbrain-windows.md"
+          Set-Content -Path $Page -Encoding utf8 -Value "# Atlas GBrain Windows proof`n`nThe launch is Monday.`n"
+          $Created = atlas-gbrain put --slug proof/windows --file $Page --confidence-ppm 850000 | ConvertFrom-Json
+          if ($Created.action -ne "created") { throw "GBrain Windows create failed" }
+          $Fetched = atlas-gbrain get --slug proof/windows | ConvertFrom-Json
+          if (-not $Fetched.page.compiled_truth.Contains("launch is Monday")) { throw "GBrain Windows get failed" }
+          if ($Fetched.cognitive.current_revision.content.page_snapshot.compiled_truth -notmatch "launch is Monday") { throw "Atlas Windows sync failed" }
+          $Status = atlas-gbrain status | ConvertFrom-Json
+          if ($Status.gbrain.version -ne "0.42.61.0" -or $Status.atlas.service_version -ne "0.1.0") { throw "GBrain Windows host pin mismatch" }

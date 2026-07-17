@@ -8,7 +8,7 @@ needs and skips the rest.
 |---|---|---|---|
 | **Researcher / dev** | You're reading the source, running benchmarks, contributing PRs | ~5 min | $0 |
 | **Obsidian power-user** | You have a vault and want Atlas watching it for contradictions | ~10 min | $0–$1/day in API calls if you turn on LLM extraction |
-| **Agent-runtime integration** | You're building a Python/MCP integration or installing native Hermes/OpenClaw memory | varies | $0 |
+| **Agent-runtime integration** | You're building a Python/MCP integration or installing native Hermes/OpenClaw/GBrain memory | varies | $0 |
 
 Each section is self-contained — you should not need to read the others to
 get going.
@@ -114,12 +114,11 @@ plain Python process, no system services to uninstall).
 
 ## Mode 3 — Agent-runtime integration
 
-You're building on Hermes, OpenClaw, Claude Code, or any MCP-speaking client.
-Start with the portable SQLite memory surface. Native Hermes can also run the
-bundled local cognitive service for the bounded AGM/Ripple wedge without
-Neo4j; OpenClaw remains retrieval-only until its service client clears the
-same conformance gate. Add Neo4j for Atlas's broader typed graph, canonical
-ledger projection, and adjudication stack.
+You're building on Hermes, OpenClaw, GBrain, Claude Code, or any MCP-speaking
+client. Start with the portable SQLite memory surface. Native Hermes,
+OpenClaw, and GBrain packages can run the bundled local cognitive service for
+the bounded AGM/Ripple wedge without Neo4j. Add Neo4j only for Atlas's broader
+typed graph, canonical ledger projection, and adjudication stack.
 
 ```bash
 git clone https://github.com/RichSchefren/atlas && cd atlas
@@ -199,17 +198,36 @@ The factory returns the SDK-neutral Python core, `AtlasOpenClawPlugin`. For nati
 the checksum-pinned tarball from
 [`integrations/openclaw-atlas/`](../integrations/openclaw-atlas/), then select
 `atlas-memory` as the memory slot. That TypeScript package is tested through
-the real pinned OpenClaw CLI and runtime loader.
+the real pinned OpenClaw CLI, runtime loader, and MCP tool executor. Its seven
+tools include cognitive revision, dependency declaration, audit, and Ripple.
+
+### GBrain
+
+Install the checksum-pinned package in
+[`integrations/gbrain-atlas/`](../integrations/gbrain-atlas/), then run:
+
+```bash
+atlas-gbrain put --slug plans/launch --file launch.md --confidence-ppm 900000
+atlas-gbrain depend --dependent-slug plans/campaign --support-slug plans/launch
+atlas-gbrain audit --slug plans/launch
+```
+
+The bridge calls GBrain's real MCP page/search operations. GBrain markdown
+remains authoritative; Atlas links brain + source + slug to cognitive lineage
+and Ripple. This is an independent bridge rather than a false GBrain tool
+plugin, because GBrain's current plugin contract cannot declare tools.
 
 What you get without Neo4j:
 - SQLite-backed storage, deterministic lexical retrieval, fetch/list, and
   auditable forgetting.
 - Four portable tools: `memory.search`, `memory.get`, `memory.list`, and
   `memory.forget`.
-- In native Hermes: idempotent fact/belief revision, dependency traversal,
+- In native Hermes, OpenClaw, and GBrain: idempotent fact/belief revision, dependency traversal,
   immutable lineage, transactional audit, and persisted Ripple proposals via
   the bundled cognitive service.
-- In OpenClaw: the four working retrieval tools only; no cognitive claim yet.
+- In OpenClaw: seven working native tools plus safe recall/capture lifecycle.
+- In GBrain: page-linked cognition over the public MCP contract while GBrain
+  remains the page system of record.
 
 What Neo4j adds:
 - The broader typed property graph and existing Cypher-backed AGM/Ripple path.

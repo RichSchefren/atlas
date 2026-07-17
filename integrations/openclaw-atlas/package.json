@@ -1,7 +1,7 @@
 {
   "name": "@atlas-memory/openclaw",
-  "version": "0.1.0",
-  "description": "Native OpenClaw memory plugin backed by Atlas portable SQLite semantics.",
+  "version": "0.2.0",
+  "description": "Native OpenClaw cognitive-memory plugin backed by the Atlas AGM/Ripple service.",
   "type": "module",
   "license": "Apache-2.0",
   "engines": {
@@ -10,6 +10,7 @@
   "files": [
     "dist/index.js",
     "dist/src",
+    "service",
     "openclaw.plugin.json",
     "README.md",
     "LICENSE"
@@ -17,7 +18,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test dist/tests/*.test.js",
-    "prepack": "npm run build"
+    "assemble:service": "node scripts/assemble-service.mjs",
+    "prepack": "npm run build && npm run assemble:service",
+    "postpack": "node -e \"require('node:fs').rmSync('service',{recursive:true,force:true})\""
   },
   "peerDependencies": {
     "openclaw": ">=2026.7.2"

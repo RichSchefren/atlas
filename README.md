@@ -224,7 +224,7 @@ Atlas is a Python service that maintains a continuously-updated typed knowledge 
 
 1. **Quarantines the claim** until corroborated by an independent source family
 2. **Promotes corroborated claims** to a hash-chained append-only ledger
-3. **Triggers Ripple propagation** when a ledger entry creates a revision: traverses `Depends_On` edges, re-evaluates downstream beliefs with confidence propagation, surfaces emergent contradictions
+3. **Triggers Ripple propagation** after a ledger-approved belief is materialized: traverses declared `Depends_On` edges, re-evaluates downstream beliefs with confidence propagation, surfaces emergent contradictions. Atlas does not infer dependency edges from prose; callers declare them through the AGM/MCP surfaces.
 4. **Routes resolution** — reassessments persist as proposals; strategic contradictions also go to a markdown adjudication queue you resolve in Obsidian. Atlas does not claim an automatic proposal consumer until that graph-tier writer ships.
 
 All revisions are AGM-compliant (K\*2–K\*6 + Hansson Relevance + Core-Retainment), formally verified against Kumiho's correspondence theorem (arxiv:2603.17244).
@@ -381,7 +381,7 @@ Full design docs are checked into the repo at [`paper/atlas.md`](paper/atlas.md)
 Atlas ships with three concurrent surfaces:
 
 - **MCP**: 17 Atlas-original tools — the graph/Ripple, adjudication, quarantine, ledger, working-memory, lineage, and sharing tools plus portable `memory.search`, `memory.get`, `memory.list`, and `memory.forget`. Stdio JSON-RPC bridge for Claude Code via `python -m atlas_core.adapters.claude_code`. Read-only vs mutation classification at [`docs/PROPOSAL_VS_MUTATION.md`](docs/PROPOSAL_VS_MUTATION.md).
-- **HTTP**: FastAPI on `localhost:9879` mirrors the MCP surface for non-MCP clients (the dashboard, curl, integration tests). Endpoints: `/health`, `/tools`, `/tools/{name}`, `/verify-chain`.
+- **HTTP**: FastAPI on `localhost:9879` mirrors the MCP surface for non-MCP clients. `/health` is public; every data or mutation route requires `Authorization: Bearer $(cat ~/.atlas/http-token)`. Browser access is limited to an explicit origin allowlist (`ATLAS_HTTP_ALLOWED_ORIGINS`). Endpoints: `/health`, `/tools`, `/tools/{name}`, `/verify-chain`, `/events`.
 - **Portable cognitive HTTP**: the authenticated, single-scope localhost v1
   service in `integrations/cognitive-service/`. Native Hermes, OpenClaw, and
   the GBrain bridge manage this
@@ -482,7 +482,7 @@ If you want to break Atlas, [TESTING.md](TESTING.md) has five concrete paths fro
 |---|---|
 | `RippleEngine.propagate()` runs the full cascade end-to-end | `./demo.sh` |
 | AGM compliance — K\*2 / K\*3 / K\*4 / K\*5 / K\*6 / Hansson Relevance / Core-Retainment | `pytest tests/integration/test_agm_compliance.py -v` (49/49) |
-| Hash-chained SHA-256 ledger with `verify_chain()` tamper detection | `pytest tests/unit/test_ledger.py -v` |
+| Versioned SHA-256 ledger that hash-binds content and audit fields, with legacy-chain verification | `pytest tests/unit/test_ledger.py -v` |
 | Trust quarantine → corroboration → ledger state machine | `pytest tests/unit/test_quarantine.py -v` |
 | Six ingestion extractors (Vault, Limitless, Screenpipe, Claude sessions, Fireflies stub, iMessage) | `pytest tests/unit/test_ingestion.py tests/unit/test_ingestion_extra.py -v` |
 | Entity resolution cascade (alias → fuzzy → LLM fallback) | `pytest tests/unit/test_resolution.py -v` |
@@ -492,7 +492,8 @@ If you want to break Atlas, [TESTING.md](TESTING.md) has five concrete paths fro
 | Multi-tenant tenant context + sharing policy + federated adjudication | `pytest tests/unit/test_multi_tenant.py -v` |
 | Adjudication round-trip — markdown queue → AGM revise → ledger SUPERSEDE → archive | `pytest tests/integration/test_adjudication_resolver.py -v` |
 | 17 MCP tools dispatch correctly via stdio JSON-RPC | `pytest tests/integration/test_mcp_server.py tests/integration/test_claude_code_stdio.py -v` |
-| FastAPI surface with CORS + Server-Sent Events stream | `pytest tests/integration/test_http_server.py tests/unit/test_events_broadcaster.py -v` |
+| Bearer-authenticated FastAPI surface with allowlisted CORS + Server-Sent Events | `pytest tests/unit/test_http_server_security.py tests/integration/test_http_server.py tests/unit/test_events_broadcaster.py -v` |
+| Ledger-approved graph materialization triggers Ripple once per ledger event | `pytest tests/unit/test_materializer_ripple.py tests/integration/test_candidate_materialization.py -v` |
 | Hermes/OpenClaw adapter storage, retrieval, fetch, list, and forget without Neo4j | `python scripts/demo_runtime_adapters.py` |
 | Native OpenClaw host cognition and GBrain page-linked cognition | `.github/workflows/openclaw-native.yml` and `.github/workflows/gbrain-native.yml` |
 | Kumiho-compat gRPC handlers (10 of 51 methods wired, 41 return UNIMPLEMENTED) | `pytest tests/integration/test_grpc_handlers.py -v` |

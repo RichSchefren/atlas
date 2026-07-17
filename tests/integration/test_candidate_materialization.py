@@ -28,8 +28,11 @@ async def driver():
         await drv.close()
 
 
-async def test_approved_candidate_materializes_once_with_about_edge(driver, tmp_path):
+async def test_approved_candidate_materializes_as_agm_revision_and_runs_ripple(
+    driver, tmp_path
+):
     from atlas_core.ingestion import materialize_approved_candidates
+    from atlas_core.ripple.engine import RippleEngine
     from atlas_core.trust import (
         CandidateClaim,
         EvidenceRef,
@@ -63,12 +66,31 @@ async def test_approved_candidate_materializes_once_with_about_edge(driver, tmp_
     assert promoted.promoted is True
     assert len(quarantine.list_approved()) == 1
 
+    class RecordingRipple:
+        def __init__(self):
+            self.engine = RippleEngine(driver, emit_events=False)
+            self.calls = []
+
+        async def propagate(self, upstream_kref, **kwargs):
+            result = await self.engine.propagate(upstream_kref, **kwargs)
+            self.calls.append((upstream_kref, kwargs, result))
+            return result
+
+    ripple = RecordingRipple()
+
     try:
-        first = await materialize_approved_candidates(driver, quarantine)
-        second = await materialize_approved_candidates(driver, quarantine)
+        first = await materialize_approved_candidates(
+            driver, quarantine, ripple_engine=ripple
+        )
+        second = await materialize_approved_candidates(
+            driver, quarantine, ripple_engine=ripple
+        )
         assert first.materialized == 1 and first.failed == 0
         assert second.materialized == 1 and second.failed == 0
         assert first.belief_krefs == second.belief_krefs
+        assert first.ripple_completed == 1
+        assert second.ripple_completed == 0
+        assert len(ripple.calls) == 1
 
         async with driver.session() as session:
             result = await session.run(
@@ -86,9 +108,71 @@ async def test_approved_candidate_materializes_once_with_about_edge(driver, tmp_
         assert row["edges"] == 1
         assert row["ledger_event_id"] == promoted.ledger_event.event_id
         assert row["object_value"] == "$3,495"
+
+        dependent_kref = f"kref://{project}/Decisions/pricing.decision"
+        async with driver.session() as session:
+            await session.run(
+                "MATCH (belief:Belief {candidate_id: $cid}) "
+                "MERGE (dependent:AtlasItem:Belief {kref: $dependent_kref}) "
+                "SET dependent.confidence_score = 0.8, "
+                "dependent.hypothesis = 'keep the current offer', "
+                "dependent.deprecated = false, dependent.stakes = 'low', "
+                "dependent.is_core_conviction = false "
+                "MERGE (dependent)-[:DEPENDS_ON {dependency_strength: 1.0}]"
+                "->(belief)",
+                cid=upsert.candidate_id,
+                dependent_kref=dependent_kref,
+            )
+
+        revised_upsert = quarantine.upsert_candidate(CandidateClaim(
+            lane="atlas_vault",
+            assertion_type="factual_assertion",
+            subject_kref=subject_kref,
+            predicate="pricing_belief",
+            object_value="$3,995",
+            confidence=0.97,
+            evidence_ref=EvidenceRef(
+                source="test-revision",
+                source_family="vault",
+                kref=f"kref://{project}/Vault/pricing-revision.note",
+                timestamp="2026-07-17T00:00:00+00:00",
+            ),
+        ), auto_promote_enabled=False)
+        revised = PromotionPolicy(quarantine=quarantine, ledger=ledger).promote(
+            revised_upsert.candidate_id,
+            actor_id="test.materializer",
+        )
+        assert revised.promoted is True
+
+        ripple.calls.clear()
+        revision_report = await materialize_approved_candidates(
+            driver, quarantine, ripple_engine=ripple
+        )
+        assert revision_report.failed == 0
+        assert revision_report.ripple_completed == 1
+        assert len(ripple.calls) == 1
+        assert ripple.calls[0][0] == first.belief_krefs[0]
+        assert ripple.calls[0][2].n_impacted == 1
+
+        async with driver.session() as session:
+            result = await session.run(
+                "MATCH (b:Belief {candidate_id: $cid}) "
+                "MATCH (rev:AtlasRevision {root_kref: b.root_kref}) "
+                "OPTIONAL MATCH (:AtlasRevision {root_kref: b.root_kref})"
+                "-[s:SUPERSEDES]->(:AtlasRevision) "
+                "RETURN b.object_value AS object_value, "
+                "count(DISTINCT rev) AS revisions, count(DISTINCT s) AS supersedes",
+                cid=revised_upsert.candidate_id,
+            )
+            revision_row = await result.single()
+        assert revision_row is not None
+        assert revision_row["object_value"] == "$3,995"
+        assert revision_row["revisions"] == 2
+        assert revision_row["supersedes"] == 1
     finally:
         async with driver.session() as session:
             await session.run(
-                "MATCH (n) WHERE n.kref STARTS WITH $prefix DETACH DELETE n",
+                "MATCH (n) WHERE n.kref STARTS WITH $prefix "
+                "OR n.root_kref STARTS WITH $prefix DETACH DELETE n",
                 prefix=f"kref://{project}/",
             )

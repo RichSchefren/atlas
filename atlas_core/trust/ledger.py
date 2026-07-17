@@ -4,7 +4,7 @@ Bicameral's change_ledger.py uses random event_ids with no `previous_hash`
 field — the README claims hash-chained but the code is a sketch. Atlas
 implements the actual cryptographic chain:
 
-  event_id = SHA-256(previous_hash + canonical_payload)
+  event_id = SHA-256(canonical event envelope)
   chain_sequence: monotonic UNIQUE INTEGER for gap detection
   verify_chain(): walks from genesis to latest, validates every link
 
@@ -102,7 +102,8 @@ GENESIS_PREVIOUS_HASH: str = "genesis"
 """Sentinel used for the previous_hash field of the genesis event when
 computing event_id. Stored as NULL in the previous_hash column."""
 
-VERIFIER_VERSION: str = "atlas-verify-v1"
+VERIFIER_VERSION: str = "atlas-verify-v2"
+CURRENT_HASH_VERSION: int = 2
 
 
 def _utc_now() -> str:
@@ -139,13 +140,53 @@ def _compute_event_id(
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _compute_event_id_v2(
+    *,
+    previous_hash: str | None,
+    chain_sequence: int,
+    event_type: str,
+    recorded_at: str,
+    actor_id: str,
+    reason: str | None,
+    object_id: str,
+    target_object_id: str | None,
+    object_type: str,
+    root_id: str,
+    parent_id: str | None,
+    candidate_id: str | None,
+    policy_version: str | None,
+    payload_json: str,
+    metadata_json: str,
+) -> str:
+    """Hash every semantic and audit field in the v2 event envelope."""
+    envelope = {
+        "hash_version": CURRENT_HASH_VERSION,
+        "previous_hash": previous_hash or GENESIS_PREVIOUS_HASH,
+        "chain_sequence": chain_sequence,
+        "event_type": event_type,
+        "recorded_at": recorded_at,
+        "actor_id": actor_id,
+        "reason": reason,
+        "object_id": object_id,
+        "target_object_id": target_object_id,
+        "object_type": object_type,
+        "root_id": root_id,
+        "parent_id": parent_id,
+        "candidate_id": candidate_id,
+        "policy_version": policy_version,
+        "payload_json": payload_json,
+        "metadata_json": metadata_json,
+    }
+    return hashlib.sha256(_canonical_json(envelope).encode("utf-8")).hexdigest()
+
+
 # ─── HashChainedLedger ───────────────────────────────────────────────────────
 
 
 class HashChainedLedger:
     """Atlas's tamper-evident append-only ledger.
 
-    Every event is identified by SHA-256(previous_hash + canonical_payload).
+    Every v2 event hashes the complete canonical event envelope.
     Modifying ANY past event breaks `verify_chain()` because subsequent
     event_ids no longer match their stored values.
 
@@ -182,6 +223,32 @@ class HashChainedLedger:
         schema_sql = schema_path.read_text(encoding="utf-8")
         with self._connection() as conn:
             conn.executescript(schema_sql)
+            columns = {
+                row["name"]
+                for row in conn.execute("PRAGMA table_info(change_events)").fetchall()
+            }
+            if "hash_version" not in columns:
+                # Databases created before v2 retain their legacy hash contract.
+                conn.execute(
+                    "ALTER TABLE change_events "
+                    "ADD COLUMN hash_version INTEGER NOT NULL DEFAULT 1"
+                )
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO promotion_claims (candidate_id, event_id)
+                SELECT event.candidate_id, event.event_id
+                FROM change_events AS event
+                JOIN (
+                    SELECT candidate_id, MAX(chain_sequence) AS canonical_sequence
+                    FROM change_events
+                    WHERE event_type = ? AND candidate_id IS NOT NULL
+                    GROUP BY candidate_id
+                ) AS canonical
+                  ON canonical.candidate_id = event.candidate_id
+                 AND canonical.canonical_sequence = event.chain_sequence
+                """,
+                (EventType.PROMOTE.value,),
+            )
 
     # ── Append API ──────────────────────────────────────────────────────────
 
@@ -223,6 +290,15 @@ class HashChainedLedger:
         with self._connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             try:
+                if (
+                    event_type_str == EventType.PROMOTE.value
+                    and candidate_id is not None
+                ):
+                    existing = self._promotion_event_row(conn, candidate_id)
+                    if existing is not None:
+                        conn.execute("COMMIT")
+                        return self._ledger_event_from_row(existing)
+
                 last = conn.execute(
                     "SELECT event_id, chain_sequence FROM change_events "
                     "ORDER BY chain_sequence DESC LIMIT 1"
@@ -235,32 +311,54 @@ class HashChainedLedger:
                     previous_hash = last["event_id"]
                     next_sequence = last["chain_sequence"] + 1
 
-                event_id = _compute_event_id(
+                event_id = _compute_event_id_v2(
                     previous_hash=previous_hash,
+                    chain_sequence=next_sequence,
                     event_type=event_type_str,
                     recorded_at=recorded_at,
+                    actor_id=actor_id,
+                    reason=reason,
                     object_id=object_id,
+                    target_object_id=target_object_id,
+                    object_type=object_type,
+                    root_id=root_id,
+                    parent_id=parent_id,
+                    candidate_id=candidate_id,
+                    policy_version=policy_version,
                     payload_json=payload_json,
+                    metadata_json=metadata_json,
                 )
 
                 conn.execute(
                     """
                     INSERT INTO change_events (
                         event_id, previous_hash, chain_sequence,
+                        hash_version,
                         event_type, recorded_at, actor_id, reason,
                         object_id, target_object_id, object_type,
                         root_id, parent_id, candidate_id, policy_version,
                         payload_json, metadata_json
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         event_id, previous_hash, next_sequence,
+                        CURRENT_HASH_VERSION,
                         event_type_str, recorded_at, actor_id, reason,
                         object_id, target_object_id, object_type,
                         root_id, parent_id, candidate_id, policy_version,
                         payload_json, metadata_json,
                     ),
                 )
+
+                if (
+                    event_type_str == EventType.PROMOTE.value
+                    and candidate_id is not None
+                ):
+                    conn.execute(
+                        "INSERT INTO promotion_claims (candidate_id, event_id) "
+                        "VALUES (?, ?)",
+                        (candidate_id, event_id),
+                    )
 
                 # Maintain typed_roots materialized view
                 if event_type_str in CREATE_EVENT_TYPES:
@@ -320,7 +418,7 @@ class HashChainedLedger:
 
     def verify_chain(self) -> ChainVerificationResult:
         """Walk the chain in chain_sequence order. Validate every event_id is
-        SHA-256(previous_hash + canonical_payload).
+        SHA-256 over its versioned hash contract.
 
         Returns ChainVerificationResult with first breakage point if any.
         Also writes an entry to the chain_verifications audit table.
@@ -328,8 +426,11 @@ class HashChainedLedger:
         with self._connection() as conn:
             rows = conn.execute(
                 """
-                SELECT chain_sequence, event_id, previous_hash,
-                       event_type, recorded_at, object_id, payload_json
+                SELECT chain_sequence, event_id, previous_hash, hash_version,
+                       event_type, recorded_at, actor_id, reason,
+                       object_id, target_object_id, object_type, root_id,
+                       parent_id, candidate_id, policy_version,
+                       payload_json, metadata_json
                 FROM change_events
                 ORDER BY chain_sequence ASC
                 """
@@ -390,13 +491,35 @@ class HashChainedLedger:
                 )
 
             # Recompute event_id from stored fields and compare
-            recomputed_id = _compute_event_id(
-                previous_hash=stored_prev_hash,
-                event_type=row["event_type"],
-                recorded_at=row["recorded_at"],
-                object_id=row["object_id"],
-                payload_json=row["payload_json"],
-            )
+            hash_version = int(row["hash_version"])
+            if hash_version == 1:
+                recomputed_id = _compute_event_id(
+                    previous_hash=stored_prev_hash,
+                    event_type=row["event_type"],
+                    recorded_at=row["recorded_at"],
+                    object_id=row["object_id"],
+                    payload_json=row["payload_json"],
+                )
+            elif hash_version == CURRENT_HASH_VERSION:
+                recomputed_id = _compute_event_id_v2(
+                    previous_hash=stored_prev_hash,
+                    chain_sequence=seq,
+                    event_type=row["event_type"],
+                    recorded_at=row["recorded_at"],
+                    actor_id=row["actor_id"],
+                    reason=row["reason"],
+                    object_id=row["object_id"],
+                    target_object_id=row["target_object_id"],
+                    object_type=row["object_type"],
+                    root_id=row["root_id"],
+                    parent_id=row["parent_id"],
+                    candidate_id=row["candidate_id"],
+                    policy_version=row["policy_version"],
+                    payload_json=row["payload_json"],
+                    metadata_json=row["metadata_json"] or "{}",
+                )
+            else:
+                recomputed_id = ""
             if recomputed_id != stored_event_id:
                 self._record_verification(
                     last_seq=last_intact_sequence,
@@ -454,8 +577,7 @@ class HashChainedLedger:
         """True iff there is at least one event in the ledger whose
         object_id, target_object_id, or candidate_id matches `edge_uuid`.
 
-        Used by AtlasGraphiti.add_episode to gate Ripple — only ledger
-        entries trigger Ripple cascades."""
+        Used by trust-boundary callers to confirm ledger promotion."""
         with self._connection() as conn:
             row = conn.execute(
                 """
@@ -475,6 +597,49 @@ class HashChainedLedger:
                 "SELECT * FROM change_events WHERE event_id = ?", (event_id,)
             ).fetchone()
         return dict(row) if row else None
+
+    @staticmethod
+    def _promotion_event_row(
+        conn: sqlite3.Connection, candidate_id: str
+    ) -> sqlite3.Row | None:
+        return conn.execute(
+            """
+            SELECT event.*
+            FROM promotion_claims AS claim
+            JOIN change_events AS event ON event.event_id = claim.event_id
+            WHERE claim.candidate_id = ?
+              AND event.candidate_id = claim.candidate_id
+              AND event.event_type = ?
+            """,
+            (candidate_id, EventType.PROMOTE.value),
+        ).fetchone()
+
+    @staticmethod
+    def _ledger_event_from_row(row: sqlite3.Row) -> LedgerEvent:
+        return LedgerEvent(
+            event_id=row["event_id"],
+            previous_hash=row["previous_hash"],
+            chain_sequence=int(row["chain_sequence"]),
+            event_type=row["event_type"],
+            recorded_at=row["recorded_at"],
+            actor_id=row["actor_id"],
+            object_id=row["object_id"],
+            object_type=row["object_type"],
+            root_id=row["root_id"],
+            payload=json.loads(row["payload_json"]),
+            target_object_id=row["target_object_id"],
+            parent_id=row["parent_id"],
+            candidate_id=row["candidate_id"],
+            policy_version=row["policy_version"],
+            reason=row["reason"],
+            metadata=json.loads(row["metadata_json"] or "{}"),
+        )
+
+    def get_promotion_event(self, candidate_id: str) -> LedgerEvent | None:
+        """Return the canonical promotion event claimed by a candidate."""
+        with self._connection() as conn:
+            row = self._promotion_event_row(conn, candidate_id)
+        return self._ledger_event_from_row(row) if row is not None else None
 
     def get_root_lineage(self, root_id: str) -> list[dict[str, Any]]:
         """All events for a given root, oldest first."""

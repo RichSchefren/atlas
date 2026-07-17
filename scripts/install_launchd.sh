@@ -137,5 +137,6 @@ echo "  ~/.atlas/health/com.atlas.ingestion.jsonl"
 echo "  ~/.atlas/health/com.atlas.api-server.stdout.log"
 echo
 echo "API server: http://localhost:9879/health"
+echo "API token:  $HOME/.atlas/http-token"
 echo
 echo "To stop:  ./scripts/install_launchd.sh stop"

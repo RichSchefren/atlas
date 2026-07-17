@@ -33,6 +33,13 @@ cp main.js manifest.json ~/Obsidian/<your-vault>/.obsidian/plugins/atlas-memory/
 ```
 
 Then in Obsidian → Settings → Community plugins → enable "Atlas Memory."
+Open the plugin settings and paste the per-install token printed by:
+
+```bash
+cat ~/.atlas/http-token
+```
+
+The API requires this token for every route except `/health`.
 
 ## Distribution roadmap
 

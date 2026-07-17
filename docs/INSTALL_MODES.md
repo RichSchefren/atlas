@@ -85,6 +85,10 @@ PYTHONPATH=. python -m atlas_core.daemon.cycle
 This walks the vault and quarantines new claims. Then run
 `python scripts/adjudicate.py --all` to promote eligible claims to the ledger
 and project every approved claim into Neo4j as a belief linked to its subject.
+That materialization step creates an immutable AGM revision and runs Ripple
+once for the approved ledger event; a retry records and reuses completion
+state instead of duplicating a cascade.
+Dependency edges are explicit graph state and are not inferred from prose.
 The adjudication queue appears as markdown files under
 `~/.atlas/adjudication/` — open that folder in Obsidian alongside your main
 vault, and resolved entries archive to `~/.atlas/adjudication/archive/`.

@@ -148,6 +148,7 @@ async def revise(
       ON CREATE SET root.created_at = $timestamp,
                     root.kind = $kind,
                     root.deprecated = false
+    SET root.kref = $root_kref
     WITH root
 
     // Find prior revision at this tag (if any)

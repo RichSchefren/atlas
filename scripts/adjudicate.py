@@ -265,10 +265,11 @@ def auto_deny(
 
 
 async def materialize_from_env(quarantine: QuarantineStore):
-    """Connect to configured Neo4j and retry every ledger-approved candidate."""
+    """Project approved candidates and finish their pending Ripple cascades."""
     from neo4j import AsyncGraphDatabase
 
     from atlas_core.ingestion import materialize_approved_candidates
+    from atlas_core.ripple.engine import RippleEngine
 
     driver = AsyncGraphDatabase.driver(
         os.environ.get("NEO4J_URI", "bolt://localhost:7687"),
@@ -279,7 +280,11 @@ async def materialize_from_env(quarantine: QuarantineStore):
     )
     try:
         await driver.verify_connectivity()
-        return await materialize_approved_candidates(driver, quarantine)
+        return await materialize_approved_candidates(
+            driver,
+            quarantine,
+            ripple_engine=RippleEngine(driver),
+        )
     finally:
         await driver.close()
 
@@ -404,7 +409,7 @@ def main(argv: list[str] | None = None) -> int:
             grand.materialize_failed += 1
         else:
             grand.materialized += report.materialized
-            grand.materialize_failed += report.failed
+            grand.materialize_failed += report.failed + report.ripple_failed
             for error in report.errors:
                 print(f"materialization failed: {error}", file=sys.stderr)
 

@@ -9,6 +9,8 @@ import pytest
 
 pytestmark = pytest.mark.integration
 
+HTTP_TOKEN = "integration-test-token-with-at-least-32-characters"
+
 
 @pytest.fixture(scope="module")
 def neo4j_uri() -> str:
@@ -53,7 +55,7 @@ def http_app(driver, tmp_dir):
     quarantine = QuarantineStore(tmp_dir / "candidates.db")
     ledger = HashChainedLedger(tmp_dir / "ledger.db")
     server = AtlasMCPServer(driver=driver, quarantine=quarantine, ledger=ledger)
-    return create_http_app(mcp_server=server)
+    return create_http_app(mcp_server=server, bearer_token=HTTP_TOKEN)
 
 
 @pytest.fixture
@@ -61,7 +63,11 @@ async def client(http_app):
     from httpx import ASGITransport, AsyncClient
 
     transport = ASGITransport(app=http_app)
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {HTTP_TOKEN}"},
+    ) as c:
         yield c
 
 

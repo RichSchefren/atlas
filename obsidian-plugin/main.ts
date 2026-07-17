@@ -22,12 +22,14 @@ const ATLAS_VIEW_TYPE = "atlas-adjudication-view";
 
 interface AtlasSettings {
   apiUrl: string;
+  apiToken: string;
   adjudicationDir: string;
   agentId: string;
 }
 
 const DEFAULT_SETTINGS: AtlasSettings = {
   apiUrl: "http://localhost:9879",
+  apiToken: "",
   adjudicationDir: "00 Atlas/adjudication",
   agentId: "rich",
 };
@@ -101,6 +103,13 @@ export default class AtlasMemoryPlugin extends Plugin {
       && file.extension === "md";
   }
 
+  apiHeaders(): Record<string, string> {
+    return {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${this.settings.apiToken}`,
+    };
+  }
+
   async handleAdjudicationSave(file: TFile) {
     const text = await this.app.vault.read(file);
     const proposalId = this.extractFrontmatterValue(text, "proposal_id");
@@ -118,7 +127,7 @@ export default class AtlasMemoryPlugin extends Plugin {
         `${this.settings.apiUrl}/tools/adjudication.resolve`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: this.apiHeaders(),
           body: JSON.stringify({
             params: {
               proposal_id: proposalId,
@@ -190,7 +199,7 @@ export default class AtlasMemoryPlugin extends Plugin {
         `${this.settings.apiUrl}/tools/adjudication.queue`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: this.apiHeaders(),
           body: JSON.stringify({ params: { limit: 50 } }),
         },
       );
@@ -275,6 +284,20 @@ class AtlasSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }),
       );
+
+    new Setting(containerEl)
+      .setName("Atlas API token")
+      .setDesc("Read from ~/.atlas/http-token on the machine running Atlas.")
+      .addText((text) => {
+        text.inputEl.type = "password";
+        return text
+          .setPlaceholder("Paste the local API token")
+          .setValue(this.plugin.settings.apiToken)
+          .onChange(async (value) => {
+            this.plugin.settings.apiToken = value.trim();
+            await this.plugin.saveSettings();
+          });
+      });
 
     new Setting(containerEl)
       .setName("Adjudication directory")

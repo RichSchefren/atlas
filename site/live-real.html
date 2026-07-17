@@ -164,6 +164,10 @@ or:           PYTHONPATH=. uvicorn atlas_core.api.api_app:app --port 9879
     <p style="margin-top:6px;font-size:11px;color:var(--muted)">
       Press Enter to reconnect.
     </p>
+    <input id="token-input" type="password" placeholder="~/.atlas/http-token" />
+    <p style="margin-top:6px;font-size:11px;color:var(--muted)">
+      Atlas API token. The server origin allowlist must include this page.
+    </p>
 
     <h3>Counters</h3>
     <div class="stat"><span class="num" id="ct-total">0</span><span class="label">total events</span></div>
@@ -185,8 +189,9 @@ or:           PYTHONPATH=. uvicorn atlas_core.api.api_app:app --port 9879
   const log = document.getElementById("log");
   const status = document.getElementById("status");
   const endpoint = document.getElementById("endpoint-input");
+  const tokenInput = document.getElementById("token-input");
 
-  let source = null;
+  let activeRequest = null;
 
   function setStatus(text, cls) {
     status.textContent = text;
@@ -197,11 +202,15 @@ or:           PYTHONPATH=. uvicorn atlas_core.api.api_app:app --port 9879
     const div = document.createElement("div");
     div.className = "ev " + eventData.kind;
     const tsShort = (eventData.occurred_at || "").slice(11, 19);
-    div.innerHTML = `
-      <span class="ts">${tsShort}</span>
-      <span class="kind">${eventData.kind}</span>
-      <pre>${JSON.stringify(eventData.payload, null, 2)}</pre>
-    `;
+    const timestamp = document.createElement("span");
+    timestamp.className = "ts";
+    timestamp.textContent = tsShort;
+    const kind = document.createElement("span");
+    kind.className = "kind";
+    kind.textContent = eventData.kind;
+    const payload = document.createElement("pre");
+    payload.textContent = JSON.stringify(eventData.payload, null, 2);
+    div.append(timestamp, kind, payload);
     log.insertBefore(div, log.firstChild);
     counters.total += 1;
     counters[eventData.kind] = (counters[eventData.kind] || 0) + 1;
@@ -211,23 +220,42 @@ or:           PYTHONPATH=. uvicorn atlas_core.api.api_app:app --port 9879
     document.getElementById("ct-ledger").textContent = counters.ledger_supersede || 0;
   }
 
-  function connect(url) {
-    if (source) source.close();
+  async function connect(url) {
+    if (activeRequest) activeRequest.abort();
+    activeRequest = new AbortController();
     setStatus("connecting", "");
     document.getElementById("endpoint").textContent = url;
     try {
-      source = new EventSource(url);
-      source.onopen = () => setStatus("live", "live");
-      source.onerror = () => setStatus("error — is the API server running?", "error");
-      source.onmessage = (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          addEvent(data);
-        } catch (err) {
-          console.error("malformed event", err);
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${tokenInput.value.trim()}` },
+        signal: activeRequest.signal,
+      });
+      if (!response.ok || !response.body) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      setStatus("live", "live");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const blocks = buffer.split(/\r?\n\r?\n/);
+        buffer = blocks.pop() || "";
+        for (const block of blocks) {
+          const dataLine = block.split(/\r?\n/).find((line) => line.startsWith("data: "));
+          if (!dataLine) continue;
+          try {
+            addEvent(JSON.parse(dataLine.slice(6)));
+          } catch (err) {
+            console.error("malformed event", err);
+          }
         }
-      };
+      }
+      setStatus("disconnected", "error");
     } catch (err) {
+      if (err.name === "AbortError") return;
       setStatus("error: " + err, "error");
     }
   }
@@ -235,8 +263,11 @@ or:           PYTHONPATH=. uvicorn atlas_core.api.api_app:app --port 9879
   endpoint.addEventListener("keydown", (e) => {
     if (e.key === "Enter") connect(endpoint.value.trim());
   });
+  tokenInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") connect(endpoint.value.trim());
+  });
 
-  connect(endpoint.value.trim());
+  setStatus("token required", "");
 </script>
 
 </body>

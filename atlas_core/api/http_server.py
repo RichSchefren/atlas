@@ -13,6 +13,8 @@ Spec: 05 - Atlas Architecture & Schema § 2
 from __future__ import annotations
 
 import logging
+import secrets
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -27,19 +29,32 @@ log = logging.getLogger(__name__)
 DEFAULT_HTTP_PORT: int = 9879
 """Atlas HTTP port — vault-search uses 9878, Atlas takes 9879."""
 
+DEFAULT_ALLOWED_ORIGINS: tuple[str, ...] = (
+    "app://obsidian.md",
+    "http://localhost:8765",
+    "http://127.0.0.1:8765",
+)
+"""Browser origins trusted by the local API unless explicitly configured."""
+
 
 # Defined at module scope (not inside create_http_app) so FastAPI can resolve
 # the annotation. `from __future__ import annotations` turns annotations into
 # strings, and FastAPI resolves them against module globals.
 from pydantic import BaseModel as _BaseModel  # noqa: E402  (intentional placement; see comment above)
 from pydantic import Field as _Field  # noqa: E402
+from starlette.requests import Request as _Request  # noqa: E402
 
 
 class DispatchBody(_BaseModel):
     params: dict[str, Any] = _Field(default_factory=dict)
 
 
-def create_http_app(*, mcp_server: AtlasMCPServer) -> FastAPI:
+def create_http_app(
+    *,
+    mcp_server: AtlasMCPServer,
+    bearer_token: str,
+    allowed_origins: Sequence[str] = DEFAULT_ALLOWED_ORIGINS,
+) -> FastAPI:
     """Build the FastAPI app wrapping the MCP server.
 
     Endpoints:
@@ -48,8 +63,14 @@ def create_http_app(*, mcp_server: AtlasMCPServer) -> FastAPI:
       POST /tools/{name}    — dispatch a tool with JSON body params
       GET  /verify-chain    — shortcut for ledger.verify_chain
     """
-    from fastapi import FastAPI, HTTPException
+    from fastapi import Depends, FastAPI, HTTPException, status
     from fastapi.middleware.cors import CORSMiddleware
+
+    if len(bearer_token) < 32:
+        raise ValueError("bearer_token must contain at least 32 characters")
+    trusted_origins = list(allowed_origins)
+    if "*" in trusted_origins:
+        raise ValueError("wildcard CORS origins are not permitted")
 
     app = FastAPI(
         title="Atlas API",
@@ -60,20 +81,30 @@ def create_http_app(*, mcp_server: AtlasMCPServer) -> FastAPI:
         ),
     )
 
-    # Permissive CORS — Atlas runs local-first on the user's own
-    # machine, so the threat model is empty here. The Obsidian plugin
-    # and the local viewer pages (served from :8765 or any other port)
-    # need to subscribe to /events from a different origin; without
-    # CORS, browsers block the EventSource handshake and the page
-    # shows "error — is the API server running?" even when the API
-    # is healthy. See site/live-real.html for the consumer.
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=trusted_origins,
         allow_credentials=False,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST"],
+        allow_headers=["Authorization", "Content-Type"],
     )
+
+    async def require_bearer(request: _Request) -> None:
+        supplied = request.headers.get("Authorization", "")
+        scheme, _, token = supplied.partition(" ")
+        valid = (
+            scheme.lower() == "bearer"
+            and bool(token)
+            and secrets.compare_digest(token, bearer_token)
+        )
+        if not valid:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="valid bearer token required",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+    authenticated = [Depends(require_bearer)]
 
     @app.get("/health")
     async def health() -> dict[str, Any]:
@@ -83,25 +114,25 @@ def create_http_app(*, mcp_server: AtlasMCPServer) -> FastAPI:
             "version": "0.1.0a1",
         }
 
-    @app.get("/tools")
+    @app.get("/tools", dependencies=authenticated)
     async def list_tools() -> dict[str, Any]:
         return {"tools": mcp_server.list_tools()}
 
-    @app.post("/tools/{tool_name}")
+    @app.post("/tools/{tool_name}", dependencies=authenticated)
     async def dispatch_tool(tool_name: str, body: DispatchBody) -> dict[str, Any]:
         result = await mcp_server.dispatch(tool_name, body.params)
         if not result.ok:
             raise HTTPException(status_code=400, detail=result.error)
         return {"ok": True, "result": result.result}
 
-    @app.get("/verify-chain")
+    @app.get("/verify-chain", dependencies=authenticated)
     async def verify_chain() -> dict[str, Any]:
         result = await mcp_server.dispatch("ledger.verify_chain", {})
         if not result.ok:
             raise HTTPException(status_code=500, detail=result.error)
         return result.result
 
-    @app.get("/events")
+    @app.get("/events", dependencies=authenticated)
     async def events_stream():
         """Server-Sent Events stream for live Atlas activity. The
         Obsidian plugin and live-Ripple visualization both subscribe.
@@ -123,7 +154,7 @@ def create_http_app(*, mcp_server: AtlasMCPServer) -> FastAPI:
             event_generator(), media_type="text/event-stream",
         )
 
-    @app.get("/events/stats")
+    @app.get("/events/stats", dependencies=authenticated)
     async def events_stats() -> dict[str, Any]:
         """Liveness check for the event broadcaster — useful for
         debugging when the Obsidian plugin shows no events."""

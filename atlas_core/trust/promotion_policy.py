@@ -6,9 +6,9 @@ wiring. Four gates run in order; any failure blocks promotion:
   Gate 1 — Policy: candidate must satisfy quarantine auto_promote rules
   Gate 2 — Verification: corroboration must be >= verification floor
   Gate 3 — Hard-block: configurable safety predicates (defaults: deny-list)
-  Gate 4 — Ledger write: atomic — ledger event THEN candidate.promoted
+  Gate 4 — Ledger write: idempotent ledger event THEN candidate.promoted
 
-Phase 2 W4 ships the gate scaffolding + ledger-write atomicity. The hard-block
+Phase 2 W4 ships the gate scaffolding + recoverable ledger writes. The hard-block
 predicate registry is intentionally minimal in v1; production deployments
 extend via register_hard_block().
 
@@ -119,10 +119,10 @@ def _check_hard_blocks(candidate: dict) -> str | None:
 class PromotionPolicy:
     """Coordinates promotion from quarantine → ledger.
 
-    Wires the trust quarantine + hash-chained ledger into a single atomic
-    pipeline. Caller invokes promote(candidate_id); pipeline runs the
-    four gates and either promotes (writing both a ledger event and
-    updating the candidate row) or returns the gate failure.
+    Wires the trust quarantine + hash-chained ledger into a recoverable
+    pipeline. The stores are separate SQLite databases, so the ledger claims
+    one canonical promotion event per candidate and retries reuse that event
+    before updating the candidate row.
     """
 
     def __init__(
@@ -145,9 +145,9 @@ class PromotionPolicy:
     ) -> PromotionResult:
         """Run the 4-gate pipeline. Returns PromotionResult with gates list.
 
-        Atomic: either the ledger event AND the candidate row update both
-        succeed, or neither does (the ledger append is itself atomic via
-        BEGIN IMMEDIATE; candidate update follows).
+        Recoverable: if the candidate-row update fails after the ledger commit,
+        retrying reuses the candidate's canonical promotion event instead of
+        extending the chain again.
         """
         result = PromotionResult(candidate_id=candidate_id, promoted=False)
 
@@ -161,6 +161,24 @@ class PromotionPolicy:
             result.blocked_at_gate = "lookup"
             result.blocked_reason = "candidate not found"
             return result
+
+        if candidate["status"] == CandidateStatus.APPROVED.value:
+            existing_event = self.ledger.get_promotion_event(candidate_id)
+            if (
+                existing_event is not None
+                and candidate.get("ledger_event_id") == existing_event.event_id
+            ):
+                result.gates.append(GateResult(
+                    gate="ledger_write",
+                    outcome=GateOutcome.PASS,
+                    reason=(
+                        f"already promoted at chain_seq="
+                        f"{existing_event.chain_sequence}"
+                    ),
+                ))
+                result.promoted = True
+                result.ledger_event = existing_event
+                return result
 
         # Gate 1: Policy — candidate must be in auto_promoted state OR caller
         # is explicitly approving a requires_approval candidate.
@@ -187,7 +205,7 @@ class PromotionPolicy:
             result.blocked_reason = gate3.reason
             return result
 
-        # Gate 4: Ledger write — atomic event creation + candidate update
+        # Gate 4: idempotent ledger event + recoverable candidate update
         try:
             ledger_event = self._write_ledger_event(
                 candidate=candidate, actor_id=actor_id,

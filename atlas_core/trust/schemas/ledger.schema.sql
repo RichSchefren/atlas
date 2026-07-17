@@ -8,9 +8,10 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS change_events (
     -- HASH CHAIN (Atlas-original; Bicameral lacks these fields)
-    event_id        TEXT PRIMARY KEY,        -- SHA-256(previous_hash + canonical_payload)
+    event_id        TEXT PRIMARY KEY,        -- Versioned SHA-256 event-envelope hash
     previous_hash   TEXT,                    -- NULL for genesis; SHA-256 of prior row's event_id
     chain_sequence  INTEGER NOT NULL UNIQUE, -- Monotonic; gap detection signal
+    hash_version    INTEGER NOT NULL DEFAULT 2,
 
     -- Event content (port from Bicameral)
     event_type      TEXT NOT NULL,           -- assert | supersede | invalidate |
@@ -41,6 +42,15 @@ CREATE INDEX IF NOT EXISTS idx_change_events_root      ON change_events(root_id,
 CREATE INDEX IF NOT EXISTS idx_change_events_object    ON change_events(object_id, recorded_at);
 CREATE INDEX IF NOT EXISTS idx_change_events_chain     ON change_events(chain_sequence);
 CREATE INDEX IF NOT EXISTS idx_change_events_candidate ON change_events(candidate_id);
+
+-- Cross-database promotion recovery. The candidate row lives in candidates.db,
+-- so this ledger-local claim makes one PROMOTE event per candidate idempotent
+-- even if the candidates.db update fails after the append commits.
+CREATE TABLE IF NOT EXISTS promotion_claims (
+    candidate_id TEXT PRIMARY KEY,
+    event_id     TEXT NOT NULL UNIQUE,
+    FOREIGN KEY (event_id) REFERENCES change_events(event_id)
+);
 
 -- Materialized view: current state per root lineage (port from Bicameral)
 CREATE TABLE IF NOT EXISTS typed_roots (

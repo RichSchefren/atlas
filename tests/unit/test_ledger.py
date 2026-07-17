@@ -65,7 +65,7 @@ class TestGenesisEvent:
 
     def test_genesis_event_id_is_deterministic(self, tmp_ledger):
         """Recompute event_id and verify it matches stored value."""
-        from atlas_core.trust.ledger import EventType, _compute_event_id
+        from atlas_core.trust.ledger import EventType, _compute_event_id_v2
 
         ev = tmp_ledger.append_event(
             event_type=EventType.ASSERT,
@@ -79,12 +79,22 @@ class TestGenesisEvent:
         # Manually recompute
         import json
         canonical_payload = json.dumps({"a": 1}, sort_keys=True, separators=(",", ":"))
-        recomputed = _compute_event_id(
+        recomputed = _compute_event_id_v2(
             previous_hash=None,
+            chain_sequence=1,
             event_type="assert",
             recorded_at=ev.recorded_at,
+            actor_id="atlas",
+            reason=None,
             object_id="kref://test/Beliefs/x.belief?r=1",
+            target_object_id=None,
+            object_type="StrategicBelief",
+            root_id="kref://test/Beliefs/x.belief",
+            parent_id=None,
+            candidate_id=None,
+            policy_version=None,
             payload_json=canonical_payload,
+            metadata_json="{}",
         )
         assert recomputed == ev.event_id
 
@@ -166,6 +176,36 @@ class TestVerifyChain:
         result = tmp_ledger.verify_chain()
         assert result.intact is True
         assert result.last_verified_sequence == 1
+
+    def test_legacy_v1_event_remains_verifiable(self, tmp_ledger):
+        """The v2 verifier preserves chains written before full-envelope hashes."""
+        from atlas_core.trust.ledger import EventType, _compute_event_id
+
+        event = tmp_ledger.append_event(
+            event_type=EventType.ASSERT,
+            actor_id="atlas",
+            object_id="kref://test/x.belief?r=1",
+            object_type="StrategicBelief",
+            root_id="kref://test/x.belief",
+            payload={"v": 1},
+        )
+        legacy_id = _compute_event_id(
+            previous_hash=None,
+            event_type="assert",
+            recorded_at=event.recorded_at,
+            object_id=event.object_id,
+            payload_json='{"v":1}',
+        )
+        with tmp_ledger._connection() as conn:
+            conn.execute(
+                "UPDATE change_events SET event_id = ?, hash_version = 1 "
+                "WHERE chain_sequence = 1",
+                (legacy_id,),
+            )
+
+        result = tmp_ledger.verify_chain()
+        assert result.intact is True
+        assert result.last_verified_event_id == legacy_id
 
     def test_three_event_chain_intact(self, tmp_ledger):
         from atlas_core.trust.ledger import EventType
@@ -356,6 +396,40 @@ class TestTypedRootsMaterializedView:
 
 
 class TestReadAPI:
+    def test_duplicate_promotion_backfill_uses_latest_legacy_event(self, tmp_ledger):
+        """Legacy retries may contain duplicates; the latest one was committed."""
+        from atlas_core.trust.ledger import EventType, HashChainedLedger
+
+        first = tmp_ledger.append_event(
+            event_type=EventType.PROMOTE,
+            actor_id="atlas",
+            object_id="kref://test/x.belief",
+            object_type="StrategicBelief",
+            root_id="kref://test/x.belief",
+            payload={"v": 1},
+            candidate_id="candidate-legacy",
+        )
+        with tmp_ledger._connection() as conn:
+            conn.execute("DELETE FROM promotion_claims")
+        second = tmp_ledger.append_event(
+            event_type=EventType.PROMOTE,
+            actor_id="atlas",
+            object_id="kref://test/x.belief",
+            object_type="StrategicBelief",
+            root_id="kref://test/x.belief",
+            payload={"v": 1},
+            candidate_id="candidate-legacy",
+        )
+        assert first.event_id != second.event_id
+        with tmp_ledger._connection() as conn:
+            conn.execute("DELETE FROM promotion_claims")
+
+        reopened = HashChainedLedger(tmp_ledger.db_path)
+        canonical = reopened.get_promotion_event("candidate-legacy")
+
+        assert canonical is not None
+        assert canonical.event_id == second.event_id
+
     def test_get_event_by_id(self, tmp_ledger):
         from atlas_core.trust.ledger import EventType
 

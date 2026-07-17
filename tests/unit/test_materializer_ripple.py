@@ -13,7 +13,9 @@ class _FakeResult:
 
 class _FakeDriver:
     def __init__(self):
-        self.confidence = None
+        self.revisions = {}
+        self.current_revision = None
+        self.current_content_json = None
         self.ripple_ledger_event_id = None
 
     def session(self):
@@ -30,13 +32,33 @@ class _FakeDriver:
             self.ripple_ledger_event_id = params["ledger_event_id"]
             return _FakeResult()
 
-        previous_confidence = self.confidence
-        self.confidence = params["confidence"]
-        return _FakeResult({
-            "belief_kref": params["belief_kref"],
-            "previous_confidence": previous_confidence,
-            "ripple_ledger_event_id": self.ripple_ledger_event_id,
-        })
+        if "existing_revision_kref" in query:
+            existing = self.revisions.get(params["ledger_event_id"])
+            return _FakeResult({
+                "existing_revision_kref": existing["revision_kref"] if existing else None,
+                "existing_previous_confidence": (
+                    existing["previous_confidence"] if existing else None
+                ),
+                "prior_content_json": None,
+                "current_revision_kref": self.current_revision,
+                "current_content_json": self.current_content_json,
+                "ripple_ledger_event_id": self.ripple_ledger_event_id,
+            })
+
+        if "RETURN belief.kref AS belief_kref" in query:
+            import json
+
+            self.revisions[params["ledger_event_id"]] = {
+                "revision_kref": params["revision_kref"],
+                "previous_confidence": params["previous_confidence"],
+            }
+            self.current_revision = params["revision_kref"]
+            self.current_content_json = json.dumps({
+                "confidence": params["confidence"],
+            })
+            return _FakeResult({"belief_kref": params["belief_kref"]})
+
+        raise AssertionError(f"unexpected Cypher: {query}")
 
 
 class _FakeQuarantine:
@@ -68,8 +90,11 @@ class _StrictRippleEngine:
         return SimpleNamespace(succeeded=True)
 
 
-async def test_materialization_triggers_ripple_once_with_current_signature():
-    from atlas_core.ingestion import materialize_approved_candidates
+async def test_materialization_triggers_ripple_once_with_current_signature(monkeypatch):
+    from atlas_core.ingestion import (
+        belief_kref_for_candidate,
+        materialize_approved_candidates,
+    )
 
     candidate = {
         "candidate_id": "candidate-1",
@@ -89,6 +114,16 @@ async def test_materialization_triggers_ripple_once_with_current_signature():
     quarantine = _FakeQuarantine(candidate)
     ripple = _StrictRippleEngine()
 
+    async def fake_revise(_driver, target_kref, _content, **_kwargs):
+        return SimpleNamespace(
+            new_revision_kref=target_kref.with_revision("revision-1")
+        )
+
+    monkeypatch.setattr(
+        "atlas_core.ingestion.materializer.revise",
+        fake_revise,
+    )
+
     first = await materialize_approved_candidates(
         driver, quarantine, ripple_engine=ripple
     )
@@ -101,10 +136,24 @@ async def test_materialization_triggers_ripple_once_with_current_signature():
     assert second.materialized == 1
     assert second.ripple_completed == 0
     assert ripple.calls == [{
-        "upstream_kref": (
-            "kref://test/IngestedBeliefs/candidate_candidate-1.belief"
-        ),
+        "upstream_kref": belief_kref_for_candidate(candidate),
         "old_confidence": 0.0,
         "new_confidence": 0.95,
         "belief_text": "pref.theme: dark",
     }]
+
+
+def test_belief_identity_is_stable_across_value_revisions():
+    from atlas_core.ingestion import belief_kref_for_candidate
+
+    base = {
+        "subject_kref": "kref://test/People/rich.person",
+        "predicate": "pref.theme",
+        "scope": "global",
+        "object_value": "dark",
+    }
+    changed_value = {**base, "object_value": "light"}
+    changed_predicate = {**base, "predicate": "pref.font"}
+
+    assert belief_kref_for_candidate(base) == belief_kref_for_candidate(changed_value)
+    assert belief_kref_for_candidate(base) != belief_kref_for_candidate(changed_predicate)

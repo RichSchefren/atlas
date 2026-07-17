@@ -4,7 +4,11 @@
 Spec: 05 - Atlas Architecture & Schema § 2 (API Layer)
 """
 
-from atlas_core.api.http_server import DEFAULT_HTTP_PORT, create_http_app
+from atlas_core.api.http_server import (
+    DEFAULT_ALLOWED_ORIGINS,
+    DEFAULT_HTTP_PORT,
+    create_http_app,
+)
 from atlas_core.api.mcp_server import (
     ATLAS_MCP_TOOLS,
     AtlasMCPServer,
@@ -19,4 +23,5 @@ __all__ = [
     "MCPToolResult",
     "create_http_app",
     "DEFAULT_HTTP_PORT",
+    "DEFAULT_ALLOWED_ORIGINS",
 ]

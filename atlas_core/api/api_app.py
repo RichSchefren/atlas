@@ -13,6 +13,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from atlas_core.api.auth import load_or_create_http_token
+
 
 def _build_app():
     from neo4j import AsyncGraphDatabase
@@ -24,6 +26,15 @@ def _build_app():
         "ATLAS_DATA_DIR", str(Path.home() / ".atlas"),
     ))
     data_dir.mkdir(parents=True, exist_ok=True)
+    bearer_token = load_or_create_http_token(data_dir)
+    allowed_origins = tuple(
+        origin.strip()
+        for origin in os.environ.get(
+            "ATLAS_HTTP_ALLOWED_ORIGINS",
+            "app://obsidian.md,http://localhost:8765,http://127.0.0.1:8765",
+        ).split(",")
+        if origin.strip()
+    )
 
     driver = AsyncGraphDatabase.driver(
         os.environ.get("NEO4J_URI", "bolt://localhost:7687"),
@@ -37,7 +48,11 @@ def _build_app():
     server = AtlasMCPServer(
         driver=driver, quarantine=quarantine, ledger=ledger,
     )
-    return create_http_app(mcp_server=server)
+    return create_http_app(
+        mcp_server=server,
+        bearer_token=bearer_token,
+        allowed_origins=allowed_origins,
+    )
 
 
 app = _build_app()

@@ -498,7 +498,7 @@ class QuarantineStore:
         """
         now = _utc_now()
         with self._connection() as conn:
-            conn.execute(
+            cursor = conn.execute(
                 """
                 UPDATE candidates
                 SET status = ?, ledger_event_id = ?, decision_id = ?,
@@ -516,6 +516,8 @@ class QuarantineStore:
                     candidate_id,
                 ),
             )
+            if cursor.rowcount != 1:
+                raise KeyError(f"candidate {candidate_id!r} not found")
 
     def deny_candidate(
         self,

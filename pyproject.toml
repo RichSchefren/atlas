@@ -112,6 +112,13 @@ adapters = [
     # Reserved for future version-pinned native wrapper packages.
 ]
 
+[project.scripts]
+# The `atlas` umbrella CLI — a thin dispatch layer over the existing
+# search / queue / status / ingest / demo surfaces. Without this, a
+# pip-installed user has no bare command and must know the underlying
+# `python -m ...` incantations.
+atlas = "atlas_core.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/RichSchefren/atlas"
 Documentation = "https://github.com/RichSchefren/atlas/tree/main/docs"

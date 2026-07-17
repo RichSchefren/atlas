@@ -45,11 +45,11 @@ The final stages of `./demo.sh` should look like this — if they don't, file an
   ✓ cascade complete
   impacted nodes: 2
   contradictions: 0
-  routing — auto: 2, strategic: 0, core: 0
+  routing — auto: 1, strategic: 1, core: 0
 
 ▶ Stage 5 / 7 — Reassessment proposals
   1. kref://AtlasDemo/Beliefs/origins_accessible.belief
-     0.88 → 0.74  (-0.14)
+     0.88 → 0.75  (-0.13)
   2. kref://AtlasDemo/Decisions/marketing_to_newcomers.decision
      0.80 → 0.66  (-0.14)
 
@@ -63,6 +63,20 @@ LOOP CLOSED.
 ```
 
 `last_verified_sequence = 1` looks small because the demo plants exactly one promotion-eligible fact and verifies the chain holds with one entry — every later run extends the chain and the number grows. The point is the chain *intact*, not the count.
+
+The installed Python package also exposes an `atlas` command:
+
+```bash
+atlas --help
+atlas status
+atlas queue --json
+atlas search "current pricing belief"
+atlas ingest
+```
+
+`atlas demo` delegates to the complete repository `demo.sh`, so that one
+command requires a source checkout. The operational commands work from an
+installed package.
 
 ### What Atlas is not
 
@@ -95,7 +109,7 @@ contracts and require no Neo4j or Docker for retrieval or the bounded
 AGM/Ripple service.
 
 Hermes, OpenClaw, and GBrain now share one proven cognitive boundary: their native packages
-manages a profile-scoped, authenticated localhost service that owns AGM
+manage a profile-scoped, authenticated localhost service that owns AGM
 revision, dependency traversal, and persisted Ripple proposals. Cognitive
 records participate in recall, search, list, get, forget, audit, and restart.
 The service uses SQLite for persistence but keeps cognitive semantics in one

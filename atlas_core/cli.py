@@ -16,7 +16,7 @@ Subcommands:
                            (atlas_core.daemon.health.HealthLogger.latest)
   atlas ingest           — run one ingestion cycle
                            (atlas_core.daemon.cycle.run_ingestion_cycle)
-  atlas demo             — run the end-to-end demo (delegates to demo.sh)
+  atlas demo             — run the source-checkout demo (delegates to demo.sh)
 
 Registered as the `atlas` console script in pyproject.toml.
 """
@@ -249,7 +249,10 @@ def build_parser() -> argparse.ArgumentParser:
     # demo passes any extra flags (e.g. --quiet, --reset) straight through to
     # demo.sh. Those are collected as unrecognized args in main() rather than
     # declared here, so leading-dash flags aren't intercepted by this parser.
-    p_demo = sub.add_parser("demo", help="run the end-to-end demo (delegates to demo.sh)")
+    p_demo = sub.add_parser(
+        "demo",
+        help="run the end-to-end demo from a source checkout (requires demo.sh)",
+    )
     p_demo.set_defaults(func=cmd_demo, demo_args=[])
 
     return parser

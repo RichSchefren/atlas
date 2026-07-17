@@ -192,5 +192,8 @@ jobs:
           # (missing prereqs, cascade failure -> sys.exit(2), etc.); pipefail
           # propagates that through the tee.
           ./demo.sh | tee demo_output.log
-          # Guard against a silent partial pass: the loop MUST close.
+          # Guard against a narrated partial pass: one real proposal must
+          # route to review, resolve, and close the loop.
+          grep -q "strategic: 1" demo_output.log
+          grep -q "resolved with decision='accept'" demo_output.log
           grep -q "LOOP CLOSED" demo_output.log

@@ -14,7 +14,37 @@ def test_token_is_created_owner_only_and_reused(tmp_path, monkeypatch):
 
     assert len(first) >= 32
     assert second == first
-    assert (tmp_path / "http-token").stat().st_mode & 0o777 == 0o600
+    if os.name != "nt":
+        assert (tmp_path / "http-token").stat().st_mode & 0o777 == 0o600
+
+
+def test_windows_acl_removes_inheritance_and_grants_current_user(
+    tmp_path, monkeypatch
+):
+    from atlas_core.api import auth
+
+    token_path = tmp_path / "http-token"
+    token_path.write_text("x" * 40, encoding="utf-8")
+    monkeypatch.setenv("USERNAME", "atlas-user")
+    monkeypatch.setenv("USERDOMAIN", "ATLAS-PC")
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+
+    monkeypatch.setattr(auth.subprocess, "run", fake_run)
+    auth._secure_windows_token_file(token_path)
+
+    assert calls == [(
+        [
+            "icacls",
+            str(token_path),
+            "/inheritance:r",
+            "/grant:r",
+            "ATLAS-PC\\atlas-user:(F)",
+        ],
+        {"check": True, "capture_output": True, "text": True},
+    )]
 
 
 def test_environment_token_takes_precedence(tmp_path, monkeypatch):

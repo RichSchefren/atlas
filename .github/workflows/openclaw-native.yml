@@ -2,16 +2,8 @@ name: OpenClaw native plugin
 
 on:
   pull_request:
-    paths:
-      - "integrations/openclaw-atlas/**"
-      - "integrations/cognitive-service/**"
-      - ".github/workflows/openclaw-native.yml"
   push:
     branches: [master]
-    paths:
-      - "integrations/openclaw-atlas/**"
-      - "integrations/cognitive-service/**"
-      - ".github/workflows/openclaw-native.yml"
 
 permissions:
   contents: read

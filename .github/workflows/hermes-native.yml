@@ -2,18 +2,8 @@ name: Hermes native provider
 
 on:
   pull_request:
-    paths:
-      - "integrations/hermes-atlas/**"
-      - "integrations/cognitive-service/**"
-      - "tests/hermes/**"
-      - ".github/workflows/hermes-native.yml"
   push:
     branches: [master]
-    paths:
-      - "integrations/hermes-atlas/**"
-      - "integrations/cognitive-service/**"
-      - "tests/hermes/**"
-      - ".github/workflows/hermes-native.yml"
 
 permissions:
   contents: read

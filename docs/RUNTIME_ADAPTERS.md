@@ -66,6 +66,12 @@ lineage, dependencies, audit, and Ripple. Brain and source tenancy axes remain
 separate, remote MCP trust rules remain GBrain-owned, and cross-source Atlas
 dependencies fail closed.
 
+GBrain's public identity operation does not currently return the selected
+mount id. Local stdio routing is enforced by GBrain's `GBRAIN_BRAIN_ID` startup
+resolver; for remote MCP, the server URL and its operator-assigned Atlas brain
+label are one explicit configuration trust decision rather than a per-call
+routing claim.
+
 Protected CI pins GBrain commit
 `26d2f8abfc0e7c6fead5ea89b6494ce8c3cf737f` (0.42.61.0), initializes its
 zero-server PGLite backend on Ubuntu, installs only the Atlas tarball, and

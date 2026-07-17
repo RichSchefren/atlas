@@ -50,7 +50,12 @@ For local stdio, the bridge passes that brain id to GBrain as
 `GBRAIN_BRAIN_ID`, so it selects the actual mounted database as well as the
 Atlas identity. For remote MCP, the URL already selects a single served brain;
 the supplied brain id is its explicit Atlas identity label and cannot reroute
-an HTTP request to a different database.
+an HTTP request to a different database. GBrain's current public
+`get_brain_identity` result exposes version, engine, and counters but not the
+selected mount id, so the bridge cannot independently attest a remote server's
+operator-assigned label; configure that label with the server URL as one trust
+decision. For local stdio, GBrain's own startup resolver accepts or rejects the
+requested mount before any Atlas command can run.
 
 ## Use
 

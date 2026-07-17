@@ -126,7 +126,8 @@ async def main():
     # Wipe demo namespace
     async with driver.session() as s:
         await s.run(
-            "MATCH (n) WHERE n.kref STARTS WITH $p DETACH DELETE n",
+            "MATCH (n) WHERE n.kref STARTS WITH $p "
+            "OR n.root_kref STARTS WITH $p DETACH DELETE n",
             p=f"kref://{NS}/",
         )
 

@@ -130,3 +130,46 @@ async def test_duplicate_kref_rejected_after_ensure_schema(driver, ns):
         assert await _count(driver, ns) == 1, "duplicate must not have been created"
     finally:
         await _delete_ns(driver, ns)
+
+
+async def test_agm_revise_reuses_existing_kref_root_after_constraints(driver, ns):
+    """AGM revision must attach to a live belief, not create a duplicate root."""
+    from atlas_core.migrations.schema import ensure_schema
+    from atlas_core.revision.agm import revise
+    from atlas_core.revision.uri import Kref
+
+    await ensure_schema(driver)
+    async with driver.session() as session:
+        await session.run(
+            "MATCH (n) WHERE n.kref = $k OR n.root_kref = $k DETACH DELETE n",
+            k=ns,
+        )
+        await session.run(
+            "CREATE (:AtlasItem:Belief {kref: $k, confidence_score: 0.8})",
+            k=ns,
+        )
+    try:
+        await revise(
+            driver,
+            Kref.parse(ns),
+            {"confidence": 0.7},
+            revision_reason="schema identity regression",
+        )
+        async with driver.session() as session:
+            result = await session.run(
+                "MATCH (n:AtlasItem) "
+                "WHERE n.kref = $k OR n.root_kref = $k "
+                "RETURN count(n) AS roots, "
+                "collect(n.root_kref) AS root_krefs",
+                k=ns,
+            )
+            record = await result.single()
+        assert int(record["roots"]) == 1
+        assert record["root_krefs"] == [ns]
+    finally:
+        async with driver.session() as session:
+            await session.run(
+                "MATCH (n) WHERE n.kref = $k OR n.root_kref = $k "
+                "DETACH DELETE n",
+                k=ns,
+            )

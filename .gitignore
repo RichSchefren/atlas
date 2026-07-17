@@ -31,7 +31,6 @@ neo4j-plugins/
 .env.local
 node_modules/
 obsidian-plugin/main.js
-obsidian-plugin/package-lock.json
 
 # Ruff cache
 .ruff_cache/

@@ -143,12 +143,14 @@ async def revise(
     new_kref_str = root.with_revision(chash[:12]).to_string()
 
     cypher = """
-    // Ensure root item exists
-    MERGE (root:AtlasItem {root_kref: $root_kref})
+    // Ensure root item exists. `kref` is AtlasItem's canonical identity;
+    // matching it first lets AGM revise an existing live Belief node instead
+    // of creating a second root that collides with the uniqueness constraint.
+    MERGE (root:AtlasItem {kref: $root_kref})
       ON CREATE SET root.created_at = $timestamp,
                     root.kind = $kind,
                     root.deprecated = false
-    SET root.kref = $root_kref
+    SET root.root_kref = $root_kref
     WITH root
 
     // Find prior revision at this tag (if any)

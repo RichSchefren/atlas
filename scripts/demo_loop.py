@@ -129,7 +129,8 @@ async def main() -> None:
     # Wipe any prior demo state
     async with driver.session() as session:
         await session.run(
-            "MATCH (n) WHERE n.kref STARTS WITH 'kref://demo/' DETACH DELETE n"
+            "MATCH (n) WHERE n.kref STARTS WITH 'kref://demo/' "
+            "OR n.root_kref STARTS WITH 'kref://demo/' DETACH DELETE n"
         )
 
     banner("ATLAS — open-source local-first cognitive memory")

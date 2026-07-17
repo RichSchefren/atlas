@@ -10,7 +10,9 @@ implements the actual cryptographic chain:
 
 Ripple's gating rule fires only on facts promoted to this ledger
 (trust = 1.0). Once promoted, the entry is cryptographically chained and
-tamper-evident — any post-hoc modification breaks `verify_chain()`.
+integrity-checkable — an uncoordinated post-hoc modification breaks
+`verify_chain()`. A local writer with database access can still rewrite the
+chain and recompute hashes unless the head hash is externally anchored.
 
 Spec: 05 - Atlas Architecture & Schema § 6
       03 - Atlas Technical Foundation § 4.4
@@ -184,11 +186,12 @@ def _compute_event_id_v2(
 
 
 class HashChainedLedger:
-    """Atlas's tamper-evident append-only ledger.
+    """Atlas's hash-chained append-only ledger.
 
     Every v2 event hashes the complete canonical event envelope.
-    Modifying ANY past event breaks `verify_chain()` because subsequent
-    event_ids no longer match their stored values.
+    Modifying a past event without recomputing the chain breaks
+    `verify_chain()` because subsequent event_ids no longer match their stored
+    values. This detects corruption; it is not a signature or external anchor.
 
     Atomic append via BEGIN IMMEDIATE; no concurrent writers can introduce
     chain gaps. `previous_hash` is stored explicitly as a column so the

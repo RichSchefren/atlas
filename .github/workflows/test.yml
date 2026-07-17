@@ -11,6 +11,25 @@ on:
     branches: [main, master]
 
 jobs:
+  obsidian-plugin:
+    name: obsidian plugin bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: obsidian-plugin/package-lock.json
+      - name: Install locked plugin dependencies
+        run: npm ci --prefix obsidian-plugin
+      - name: Reject vulnerable plugin dependencies
+        run: npm audit --prefix obsidian-plugin --audit-level=moderate
+      - name: Build production plugin bundle
+        run: |
+          npm run build --prefix obsidian-plugin
+          test -s obsidian-plugin/main.js
+
   windows-sqlite-and-unit:
     name: windows py3.14 unit + sqlite lifecycle
     runs-on: windows-latest

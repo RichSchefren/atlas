@@ -27,7 +27,7 @@ test("bridge writes GBrain pages and adds Atlas lineage, dependencies, and Rippl
   }));
   try {
     const status = run("status", "--brain-id", "team-brain");
-    assert.equal(status.gbrain.selected_brain_id, "team-brain");
+    assert.equal(status.gbrain.fixture_received_brain_id, "team-brain");
     assert.equal(status.scope.brain_id, "team-brain");
 
     writeFileSync(supportFile, "# Launch\n\nThe launch is Friday.\n");

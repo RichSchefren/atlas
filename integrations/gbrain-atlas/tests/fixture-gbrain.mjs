@@ -44,7 +44,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       engine: "fixture",
       page_count: Object.keys(data.pages).length,
       chunk_count: 0,
-      selected_brain_id: process.env.GBRAIN_BRAIN_ID ?? null,
+      fixture_received_brain_id: process.env.GBRAIN_BRAIN_ID ?? null,
     });
   }
   if (request.params.name === "put_page") {

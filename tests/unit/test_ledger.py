@@ -261,6 +261,43 @@ class TestVerifyChain:
         assert result.intact is False
         assert result.broken_at_sequence == 2
 
+    @pytest.mark.parametrize(
+        ("column", "tampered_value"),
+        [
+            ("actor_id", "mallory"),
+            ("reason", "rewritten after approval"),
+            ("metadata_json", '{"reviewed":false}'),
+        ],
+    )
+    def test_tamper_detection_covers_audit_fields(
+        self, tmp_ledger, column, tampered_value
+    ):
+        """Audit context is part of the event, so it must be hash-bound."""
+        from atlas_core.trust.ledger import EventType
+
+        tmp_ledger.append_event(
+            event_type=EventType.PROMOTE,
+            actor_id="reviewer",
+            object_id="kref://test/x.belief?r=1",
+            object_type="StrategicBelief",
+            root_id="kref://test/x.belief",
+            payload={"v": 1},
+            candidate_id="candidate-1",
+            policy_version="v1",
+            reason="approved after review",
+            metadata={"reviewed": True},
+        )
+        with tmp_ledger._connection() as conn:
+            conn.execute(
+                f"UPDATE change_events SET {column} = ? WHERE chain_sequence = 1",
+                (tampered_value,),
+            )
+
+        result = tmp_ledger.verify_chain()
+        assert result.intact is False
+        assert result.broken_at_sequence == 1
+        assert "event_id mismatch" in (result.breakage_reason or "")
+
 
 # ─── typed_roots materialized view ───────────────────────────────────────────
 

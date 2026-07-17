@@ -206,6 +206,38 @@ class TestGate4LedgerWrite:
         # Ledger has no events
         assert ledger.chain_length() == 0
 
+    def test_retry_after_candidate_update_failure_reuses_ledger_event(
+        self, quarantine, ledger, policy, monkeypatch
+    ):
+        """A recoverable cross-database failure must not duplicate promotion."""
+        from atlas_core.trust import CandidateStatus
+
+        upsert = quarantine.upsert_candidate(make_claim())
+        original_promote = quarantine.promote_candidate
+        attempts = 0
+
+        def fail_once(*args, **kwargs):
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise RuntimeError("simulated candidates.db write failure")
+            return original_promote(*args, **kwargs)
+
+        monkeypatch.setattr(quarantine, "promote_candidate", fail_once)
+
+        first = policy.promote(upsert.candidate_id)
+        assert first.promoted is False
+        assert ledger.chain_length() == 1
+
+        second = policy.promote(upsert.candidate_id)
+        assert second.promoted is True
+        assert ledger.chain_length() == 1
+        assert second.ledger_event.event_id == ledger.latest_event()["event_id"]
+
+        candidate = quarantine.get_candidate(upsert.candidate_id)
+        assert candidate["status"] == CandidateStatus.APPROVED.value
+        assert candidate["ledger_event_id"] == second.ledger_event.event_id
+
 
 # ─── End-to-end ──────────────────────────────────────────────────────────────
 

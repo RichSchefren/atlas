@@ -1,119 +1,99 @@
-# Hermes and OpenClaw integration: what is real today
+# Runtime integrations: what is real today
 
-Atlas previously overstated these integrations. The Python modules exposed
-`put` / `store`, but their retrieval and deletion methods returned empty or
-false values. They were adapter-shaped stubs, and the README called them
-drop-in plugins even though both upstream plugin contracts had changed.
+Atlas once described adapter-shaped stubs as integrations. The current release
+has executable, separately installable surfaces for Hermes, OpenClaw, and
+GBrain, with protected upstream-host evidence.
 
-That is no longer the implementation state.
+## Shared cognitive boundary
 
-## Runnable proof without Neo4j or Docker
+One Python service in `integrations/cognitive-service/` owns cognitive
+semantics. It stores immutable fact/belief revisions, confidence, dependencies,
+audit events, and persisted Ripple reassessment proposals. Host packages are
+thin authenticated transport/lifecycle clients; cognition is not reimplemented
+in TypeScript, host plugins, or SQL.
 
-From the Atlas repository:
+The service:
+
+- binds only to loopback and requires a private bearer token on every route;
+- fixes one profile/agent/session/brain-source scope at launch;
+- uses Python's standard library and SQLite;
+- needs no Neo4j, Docker, embedding provider, or API key;
+- passes the 49 AGM scenario ids, canonical dependency cascade, restart,
+  idempotency, authentication, scope isolation, and 10k-item performance gates.
+
+Neo4j remains optional for Atlas's broader typed property graph, canonical
+ledger projection, Cypher MCP tools, and adjudication workflows.
+
+## Hermes
+
+`integrations/hermes-atlas/` subclasses the current Hermes `MemoryProvider`.
+It implements host lifecycle, recall, capture, backup, managed service startup
+and shutdown, cognitive create/revise, dependencies, audit, and forget. Linux
+and Windows CI load it through pinned Hermes commit
+`b5bd0ef38b538627a0e5d2cbe5d3eef2c38ec792`.
+
+## OpenClaw
+
+`integrations/openclaw-atlas/` is a TypeScript `kind: memory` plugin using only
+OpenClaw's public plugin SDK. Package 0.2.0 exposes:
+
+- `memory_search`, `memory_get`, and `memory_store`;
+- `memory_revise`, which appends lineage and runs Ripple;
+- `memory_depend`, which creates weighted support edges;
+- `memory_audit` and `memory_forget`.
+
+New records live in the cognitive service. The 0.1.0 profile-local SQLite store
+is retained as a read/redact compatibility source, not as a second cognitive
+owner. The normal gateway owns the service pool; standalone OpenClaw tool
+bridges safely start/attach on first call.
+
+Protected Linux and Windows jobs build pinned OpenClaw commit
+`d830fda0893bb0a716f015478269d344eba7a6f7`, install only the checksum-pinned
+tarball, load it through the real CLI, and invoke all seven tools through the
+real host bridge. Passing requires a dependency and nonempty Ripple proposal.
+
+## GBrain
+
+GBrain is a memory system and MCP server, not an agent host. Its plugin-v1
+contract can add definitions but cannot declare tools, so Atlas does not claim
+a fictional native tool plugin. `integrations/gbrain-atlas/` is an independent
+CLI bridge over GBrain's public `put_page`, `get_page`, `search`, and
+`get_brain_identity` MCP operations.
+
+GBrain remains the markdown/page system of record. Atlas hashes brain id,
+source id, and slug into a stable cognitive identity, then adds confidence,
+lineage, dependencies, audit, and Ripple. Brain and source tenancy axes remain
+separate, remote MCP trust rules remain GBrain-owned, and cross-source Atlas
+dependencies fail closed.
+
+Protected CI pins GBrain commit
+`26d2f8abfc0e7c6fead5ea89b6494ce8c3cf737f` (0.42.61.0), initializes its
+zero-server PGLite backend on Ubuntu, installs only the Atlas tarball, and
+drives the real `gbrain serve` lifecycle through create, dependency, revision,
+Ripple, get, audit, search, and status. Windows runs the package/service bridge
+test. The pinned upstream marks PGLite incompatible on macOS 26 Apple Silicon;
+that platform uses GBrain's native Postgres option, while Atlas itself still
+adds no server dependency.
+
+## SDK-neutral portable cores
+
+`atlas_core.adapters.hermes` and `atlas_core.adapters.openclaw` remain
+functional Python-shaped cores for custom runtimes. Run:
 
 ```bash
-pip install -e .
 PYTHONPATH=. python scripts/demo_runtime_adapters.py
 ```
 
-The script creates an isolated SQLite trust store and proves:
+That proof covers local SQLite store/search/get/list/forget with a dead Neo4j
+endpoint. It is useful for custom integration work, but it is not substituted
+for the native host proofs above.
 
-- Hermes-shaped `put` -> `search` -> `get` -> `delete`;
-- OpenClaw-shaped `store` -> `recall` -> `list_memories` -> `forget`;
-- forgotten memories disappear from retrieval but remain auditable;
-- no Neo4j connection or Docker process is started.
+## Acceptance files
 
-CI runs the same proof in
-`tests/integration/test_runtime_adapter_demo.py` with `NEO4J_URI` deliberately
-pointed at a dead port.
+- `.github/workflows/cognitive-service.yml`
+- `.github/workflows/hermes-native.yml`
+- `.github/workflows/openclaw-native.yml`
+- `.github/workflows/gbrain-native.yml`
 
-## The two capability tiers
-
-### Portable memory tier — SQLite only
-
-The portable tier is usable by Python hosts and integration wrappers today:
-
-- trust-aware local storage;
-- deterministic lexical retrieval;
-- fetch and list operations;
-- auditable forgetting;
-- no API key, embedding model, Neo4j, or Docker requirement.
-
-Portable `forget` is retrieval suppression, not AGM contraction. If a memory
-has already been promoted into the canonical ledger and Neo4j graph, use the
-graph adjudication/revision path to change that canonical state as well.
-
-The shared MCP/HTTP surface exposes `memory.search`, `memory.get`,
-`memory.list`, and `memory.forget`. Both adapter cores call those same tools,
-so their behavior is not duplicated or mocked.
-
-### Portable cognitive service — Hermes today
-
-The native Hermes package also ships a managed, profile-scoped localhost
-service. It stores facts and beliefs, immutable revisions, `depends_on` edges,
-lineage, audit events, and persisted Ripple reassessment proposals without
-Neo4j or Docker. The service owns AGM/Ripple semantics once; Hermes is an
-authenticated HTTP client and does not reimplement the formula or graph walk.
-
-This is a real but deliberately bounded cognitive wedge:
-
-- `atlas_memory_store` creates or revises a fact/belief idempotently;
-- `atlas_memory_depend` records a dependency;
-- a contradictory revision persists downstream proposals without mutating the
-  dependent belief;
-- cognitive records participate in automatic recall, search, list, get,
-  audit-preserving forget, backup, and restart;
-- one managed service is fixed to one Hermes profile/platform/user scope.
-
-The black-box service suite exercises the public authenticated HTTP boundary,
-including 49 AGM scenario IDs and the canonical A-to-B Ripple example. The
-10k-item/20k-edge gate persists 9,999 proposals below the two-second p95
-threshold. See `integrations/cognitive-service/` and
-`.github/workflows/cognitive-service.yml`.
-
-OpenClaw does **not** claim this cognitive tier yet. Its native package remains
-the working portable retrieval package until a thin service client passes the
-same host and conformance gates.
-
-### Full property-graph tier — Neo4j
-
-Neo4j remains the broader Atlas graph deployment for the typed ontology,
-canonical ledger projection, graph adjudication workflows, and existing
-Cypher-backed MCP tools. Docker is the documented local setup, not the only
-deployment: Neo4j Desktop, a native service, or Aura can provide the Bolt
-endpoint.
-
-## Native upstream packages
-
-The modules `atlas_core.adapters.hermes` and `atlas_core.adapters.openclaw`
-remain functional SDK-neutral Python cores. Native host packages now ship too:
-
-- `integrations/hermes-atlas/` subclasses Hermes's current `MemoryProvider`
-  and implements initialization, prefetch, nonblocking turn capture, tools,
-  pre-compression, backup/config, and acknowledged shutdown.
-- `integrations/openclaw-atlas/` is a TypeScript `kind: memory` package using
-  OpenClaw's public plugin SDK and `registerMemoryCapability`. It registers
-  `memory_search`, `memory_get`, `memory_store`, and `memory_forget`.
-
-Dedicated CI installs each package into its pinned upstream host with Neo4j
-pointed at a dead endpoint. The OpenClaw gate also installs the release tarball
-through the real CLI and requires a loaded runtime, all four tools, and zero
-diagnostics. Package-specific setup is in each integration's README.
-
-## Integration choices today
-
-1. Python runtimes can construct `AtlasHermesProvider.from_config(...)` or
-   `AtlasOpenClawPlugin` and use the portable operations directly.
-2. Any runtime can call the four `memory.*` tools through Atlas MCP or HTTP.
-3. Hermes and OpenClaw users can install working native retrieval packages
-   without Neo4j.
-4. Hermes users can use the bundled managed cognitive service for the bounded
-   AGM/Ripple wedge without Neo4j or Docker.
-5. OpenClaw remains retrieval-only until its service client passes the same
-   corpus; teams needing the broader graph/ledger/adjudication stack use the
-   Neo4j tier.
-
-The native and service acceptance standards are enforced in
-`.github/workflows/hermes-native.yml`,
-`.github/workflows/openclaw-native.yml`, and
-`.github/workflows/cognitive-service.yml`.
+Package-specific install and verification commands are in each integration's
+README.

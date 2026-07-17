@@ -1,0 +1,32 @@
+{
+  "name": "@atlas-memory/gbrain",
+  "version": "0.1.0",
+  "description": "Native Atlas cognitive-memory bridge for GBrain's public MCP contract.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "bin": {
+    "atlas-gbrain": "bin/atlas-gbrain.mjs"
+  },
+  "engines": {
+    "node": ">=22.22.3 <23 || >=24.15 <25 || >=25.9"
+  },
+  "files": [
+    "bin",
+    "vendor",
+    "service",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "assemble": "node scripts/assemble.mjs",
+    "test": "npm run assemble && node --test tests/*.test.mjs",
+    "prepack": "npm run assemble",
+    "postpack": "node scripts/clean-generated.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}

@@ -1,10 +1,10 @@
 {
   "id": "atlas-memory",
   "name": "Atlas Memory",
-  "description": "Auditable SQLite-backed long-term memory with lexical retrieval, safe auto-recall, and opt-in capture.",
+  "description": "Auditable cognitive memory with immutable revision lineage, dependencies, Ripple reassessment, safe recall, and opt-in capture.",
   "kind": "memory",
   "contracts": {
-    "tools": ["memory_forget", "memory_get", "memory_search", "memory_store"]
+    "tools": ["memory_audit", "memory_depend", "memory_forget", "memory_get", "memory_revise", "memory_search", "memory_store"]
   },
   "uiHints": {
     "scope": {
@@ -18,6 +18,10 @@
     "autoCapture": {
       "label": "Auto-capture",
       "help": "Opt-in capture of bounded user preferences, facts, and explicit decisions."
+    },
+    "pythonCommand": {
+      "label": "Python executable",
+      "help": "Optional Python 3 executable path. Defaults to python3 on Unix and python on Windows."
     }
   },
   "configSchema": {
@@ -43,6 +47,10 @@
         "type": "integer",
         "minimum": 100,
         "maximum": 2000
+      },
+      "pythonCommand": {
+        "type": "string",
+        "minLength": 1
       }
     }
   }

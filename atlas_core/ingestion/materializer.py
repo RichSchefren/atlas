@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
+from atlas_core.migrations.schema import ensure_schema
 from atlas_core.revision.agm import revise
 from atlas_core.revision.uri import Kref
 
@@ -298,8 +299,13 @@ async def materialize_approved_candidates(
 
     Graph projection and Ripple are recoverable, at-least-once steps. The graph
     records the ledger event whose cascade completed, so routine materializer
-    retries do not emit duplicate cascades.
+    retries do not emit duplicate cascades. Schema constraints are installed
+    before projection so concurrent writers cannot mint duplicate belief roots.
     """
+    # Guarantee the belief-node uniqueness constraints exist before any MERGE,
+    # so concurrent materialization can never mint duplicate belief nodes.
+    await ensure_schema(driver)
+
     report = MaterializationReport()
     for candidate in quarantine.list_approved():
         report.attempted += 1

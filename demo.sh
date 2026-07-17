@@ -115,10 +115,8 @@ async def main():
     from atlas_core.ripple.resolver import resolve_adjudication
     from atlas_core.ripple.adjudication import (
         AdjudicationRoute,
-        RoutingDecision,
         write_adjudication_entry,
     )
-    from atlas_core.ripple.reassess import ReassessmentProposal
     from atlas_core.trust import HashChainedLedger
 
     driver = AsyncGraphDatabase.driver(
@@ -144,12 +142,13 @@ async def main():
             "  a.confidence_score = 0.95, a.text = 'Origins is $89/mo' "
             "MERGE (b:AtlasItem:Belief {kref: $b}) SET b.deprecated = false, "
             "  b.confidence_score = 0.88, b.last_evidence_days = 0, "
+            "  b.stakes = 'high', "
             "  b.text = 'Origins is most accessible' "
             "MERGE (c:AtlasItem:Decision {kref: $c}) SET c.deprecated = false, "
             "  c.confidence_score = 0.80, c.last_evidence_days = 0, "
             "  c.text = 'Market Origins to newcomers' "
-            "MERGE (b)-[:DEPENDS_ON {strength: 0.9}]->(a) "
-            "MERGE (c)-[:DEPENDS_ON {strength: 0.7}]->(b)",
+            "MERGE (b)-[:DEPENDS_ON {dependency_strength: 0.9}]->(a) "
+            "MERGE (c)-[:DEPENDS_ON {dependency_strength: 0.7}]->(b)",
             a=upstream, b=belief, c=decision,
         )
     print(f"  {GREEN}✓{RESET} 3 nodes + 2 Depends_On edges planted")
@@ -209,13 +208,12 @@ async def main():
         ledger_path = Path(tempfile.mkdtemp(prefix="atlas_demo_ledger_")) / "ledger.db"
         ledger = HashChainedLedger(ledger_path)
 
-        decision_obj = RoutingDecision(
-            proposal_kref=proposal.target_kref,
-            route=AdjudicationRoute.STRATEGIC_REVIEW,
-            rationale="Demo — review the price-cascade outcome",
-            contradictions_count=len(cascade.contradictions),
-            confidence_delta=proposal.new_confidence - proposal.old_confidence,
-        )
+        decision_obj = cascade.routing[0]
+        if decision_obj.route == AdjudicationRoute.AUTO_APPLY:
+            print(f"  {YELLOW}⚠ first proposal unexpectedly routed AUTO_APPLY; "
+                  f"refusing to narrate a manual resolution as automatic{RESET}")
+            await driver.close()
+            sys.exit(3)
         path = await write_adjudication_entry(
             proposal=proposal,
             decision=decision_obj,

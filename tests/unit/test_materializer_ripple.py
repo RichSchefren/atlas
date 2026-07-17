@@ -17,6 +17,7 @@ class _FakeDriver:
         self.current_revision = None
         self.current_content_json = None
         self.ripple_ledger_event_id = None
+        self.schema_statements = []
 
     def session(self):
         return self
@@ -28,6 +29,10 @@ class _FakeDriver:
         return None
 
     async def run(self, query, **params):
+        if query.startswith("CREATE CONSTRAINT "):
+            self.schema_statements.append(query)
+            return _FakeResult()
+
         if "SET belief.ripple_ledger_event_id" in query:
             self.ripple_ledger_event_id = params["ledger_event_id"]
             return _FakeResult()
@@ -135,6 +140,7 @@ async def test_materialization_triggers_ripple_once_with_current_signature(monke
     assert first.ripple_completed == 1
     assert second.materialized == 1
     assert second.ripple_completed == 0
+    assert len(driver.schema_statements) == 6
     assert ripple.calls == [{
         "upstream_kref": belief_kref_for_candidate(candidate),
         "old_confidence": 0.0,

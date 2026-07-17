@@ -2,20 +2,8 @@ name: Cognitive service conformance
 
 on:
   pull_request:
-    paths:
-      - "integrations/cognitive-service/**"
-      - "integrations/hermes-atlas/**"
-      - "tests/service/**"
-      - "tests/hermes/**"
-      - ".github/workflows/cognitive-service.yml"
   push:
     branches: [master]
-    paths:
-      - "integrations/cognitive-service/**"
-      - "integrations/hermes-atlas/**"
-      - "tests/service/**"
-      - "tests/hermes/**"
-      - ".github/workflows/cognitive-service.yml"
 
 permissions:
   contents: read

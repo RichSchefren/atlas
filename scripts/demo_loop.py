@@ -168,7 +168,7 @@ async def main() -> None:
         )
         await session.run(
             "MATCH (b {kref: $b}), (p {kref: $p}) "
-            "MERGE (b)-[:DEPENDS_ON {strength: 0.9, dependency_strength: 0.9}]->(p)",
+            "MERGE (b)-[:DEPENDS_ON {dependency_strength: 0.9}]->(p)",
             b="kref://demo/Beliefs/most_accessible.belief",
             p="kref://demo/Programs/origins.belief",
         )

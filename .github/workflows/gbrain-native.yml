@@ -2,18 +2,8 @@ name: GBrain native bridge
 
 on:
   pull_request:
-    paths:
-      - "integrations/gbrain-atlas/**"
-      - "integrations/openclaw-atlas/src/cognitive-client.ts"
-      - "integrations/cognitive-service/**"
-      - ".github/workflows/gbrain-native.yml"
   push:
     branches: [master]
-    paths:
-      - "integrations/gbrain-atlas/**"
-      - "integrations/openclaw-atlas/src/cognitive-client.ts"
-      - "integrations/cognitive-service/**"
-      - ".github/workflows/gbrain-native.yml"
 
 permissions:
   contents: read

@@ -215,7 +215,7 @@ class AtlasSystem:
                                 "MERGE (s {kref: $obj}) "
                                 "WITH s "
                                 "MATCH (b:Belief {kref: $k}) "
-                                "MERGE (b)-[:DEPENDS_ON {strength: 0.85}]->(s)",
+                                "MERGE (b)-[:DEPENDS_ON {dependency_strength: 0.85}]->(s)",
                                 k=subject, obj=obj,
                             )
                 elif kind == "decision":

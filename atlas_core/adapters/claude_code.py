@@ -129,19 +129,23 @@ async def _handle(server, req: dict[str, Any]) -> dict[str, Any] | None:
 
 
 async def _stdio_loop() -> None:
-    """Read JSON-RPC requests from stdin, dispatch, write responses to stdout."""
+    """Read JSON-RPC requests from stdin, dispatch, write responses to stdout.
+
+    Reads via a blocking sys.stdin.readline() off-loaded to a thread rather
+    than loop.connect_read_pipe(): on Windows, ProactorEventLoop's pipe
+    transport requires an overlapped-I/O handle, which an inherited stdin
+    pipe is not, and connect_read_pipe(..., sys.stdin) fails with
+    OSError: [WinError 6] The handle is invalid. A thread-backed readline
+    works identically on Windows, Linux, and macOS.
+    """
     server, driver = await _build_server()
-    loop = asyncio.get_running_loop()
-    reader = asyncio.StreamReader()
-    transport_protocol = asyncio.StreamReaderProtocol(reader)
-    await loop.connect_read_pipe(lambda: transport_protocol, sys.stdin)
 
     try:
         while True:
-            line = await reader.readline()
+            line = await asyncio.to_thread(sys.stdin.readline)
             if not line:
                 break
-            line_str = line.decode("utf-8").strip()
+            line_str = line.strip()
             if not line_str:
                 continue
             try:

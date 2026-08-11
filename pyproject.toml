@@ -3,7 +3,7 @@ requires = ["hatchling>=1.21.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "atlas-core"
+name = "atlas-cognitive-memory"
 version = "0.1.0-alpha.1"
 description = "Open-source local-first cognitive memory with AGM-compliant belief revision and automatic downstream reassessment (Ripple)"
 readme = "README.md"
@@ -51,7 +51,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# pip install atlas-core[llm]
+# pip install atlas-cognitive-memory[llm]
 #   Pulls Anthropic SDK. Required for: LLM-driven extraction
 #   (atlas_core.ingestion.extractors), entity-resolution LLM fallback
 #   (atlas_core.resolution.llm_fallback), block auto-summarizer
@@ -61,7 +61,7 @@ llm = [
     "anthropic>=0.49.0",
 ]
 
-# pip install atlas-core[embeddings]
+# pip install atlas-cognitive-memory[embeddings]
 #   Pulls sentence-transformers (~2GB with torch). Required for:
 #   semantic retrieval beyond what vault-search provides. Today
 #   atlas_core.retrieval delegates to the user's existing
@@ -70,7 +70,7 @@ embeddings = [
     "sentence-transformers>=2.7",
 ]
 
-# pip install atlas-core[benchmarks]
+# pip install atlas-cognitive-memory[benchmarks]
 #   Baseline-system clients for the BusinessMemBench head-to-head
 #   matrix. Mem0/Letta need OPENAI_API_KEY at runtime; Memori needs
 #   MEMORI_API_KEY.
@@ -79,7 +79,7 @@ benchmarks = [
     "letta",
 ]
 
-# pip install atlas-core[full]
+# pip install atlas-cognitive-memory[full]
 #   Convenience meta-extra: everything except dev tooling.
 full = [
     "anthropic>=0.49.0",
@@ -88,7 +88,7 @@ full = [
     "letta",
 ]
 
-# pip install atlas-core[dev]
+# pip install atlas-cognitive-memory[dev]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",

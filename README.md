@@ -400,7 +400,7 @@ Atlas ships with three concurrent surfaces:
   service in `integrations/cognitive-service/`. Native Hermes, OpenClaw, and
   the GBrain bridge manage this
   sidecar automatically; it is separate from the broader FastAPI/MCP server so
-  host clients cannot accidentally inherit Neo4j or Atlas-core dependencies.
+  host clients cannot accidentally inherit Neo4j or Atlas's broader dependencies.
 - **gRPC** (Phase 2 W7+): scaffold with all 51 Kumiho-compatible RPC method names registered. Existing Kumiho SDK code switches to Atlas by setting `endpoint="localhost:50051"`.
 
 Plus runtime adapters:

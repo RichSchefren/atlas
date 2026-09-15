@@ -66,6 +66,8 @@ def create_http_app(
     from fastapi import Depends, FastAPI, HTTPException, status
     from fastapi.middleware.cors import CORSMiddleware
 
+    from atlas_core.api.access_log import AccessLogMiddleware, ensure_access_log_handler
+
     if len(bearer_token) < 32:
         raise ValueError("bearer_token must contain at least 32 characters")
     trusted_origins = list(allowed_origins)
@@ -88,6 +90,10 @@ def create_http_app(
         allow_methods=["GET", "POST"],
         allow_headers=["Authorization", "Content-Type"],
     )
+    # Outermost application middleware: times every request, including
+    # CORS preflights and 401s, and logs it with a UTC timestamp.
+    ensure_access_log_handler()
+    app.add_middleware(AccessLogMiddleware)
 
     async def require_bearer(request: _Request) -> None:
         supplied = request.headers.get("Authorization", "")

@@ -18,8 +18,11 @@ Spec: 05 - Atlas Architecture & Schema § 2
 
 from __future__ import annotations
 
+import asyncio
+import functools
 import logging
 from collections.abc import Awaitable, Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -109,6 +112,10 @@ class AtlasMCPServer:
         self.driver = driver
         self.quarantine = quarantine
         self.ledger = ledger
+        # One worker on purpose: see the note above ``_run_in_store_thread``.
+        self._store_executor = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="atlas-sqlite",
+        )
         self._tools: dict[str, MCPTool] = {}
         self._register_atlas_tools()
 
@@ -730,6 +737,26 @@ class AtlasMCPServer:
             "count": len(rows),
         }
 
+    async def _run_in_store_thread(self, fn: Callable[..., Any], /, *args: Any, **kwargs: Any) -> Any:
+        """Run a synchronous SQLite store call off the event loop.
+
+        uvicorn serves every client from one event loop, so a store call
+        made inline (a ``busy_timeout`` wait of up to 5 s, or simply a
+        large read) delayed every queued request and produced client-side
+        timeouts on 20-40 ms calls (2026-09-14 MCC atlas-owner incident).
+
+        The executor has exactly one worker. ``QuarantineStore`` and
+        ``HashChainedLedger`` open a fresh connection per call, so parallel
+        calls would be safe, but they are GIL-bound (row conversion) and a
+        measured 20-way burst of ``memory.list`` limit=500 took 2.7 s wall
+        on 32 threads against 0.37 s serialized. One worker keeps the old
+        throughput and ordering; the loop stays free either way.
+        """
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            self._store_executor, functools.partial(fn, *args, **kwargs),
+        )
+
     @staticmethod
     def _memory_row(row: dict[str, Any]) -> dict[str, Any]:
         """Stable public shape shared by MCP and runtime adapters."""
@@ -753,12 +780,14 @@ class AtlasMCPServer:
         limit: int = 10,
         lane: str | None = None,
     ) -> dict[str, Any]:
-        rows = self.quarantine.search_memories(query, limit=limit, lane=lane)
+        rows = await self._run_in_store_thread(
+            self.quarantine.search_memories, query, limit=limit, lane=lane,
+        )
         memories = [self._memory_row(row) for row in rows]
         return {"memories": memories, "count": len(memories), "backend": "sqlite"}
 
     async def _tool_memory_get(self, memory_id: str) -> dict[str, Any]:
-        row = self.quarantine.get_candidate(memory_id)
+        row = await self._run_in_store_thread(self.quarantine.get_candidate, memory_id)
         if row is None or row["status"] == "denied":
             return {"memory": None}
         return {"memory": self._memory_row(row)}
@@ -768,7 +797,9 @@ class AtlasMCPServer:
         lane: str | None = None,
         limit: int = 50,
     ) -> dict[str, Any]:
-        rows = self.quarantine.list_memories(lane=lane, limit=limit)
+        rows = await self._run_in_store_thread(
+            self.quarantine.list_memories, lane=lane, limit=limit,
+        )
         memories = [self._memory_row(row) for row in rows]
         return {"memories": memories, "count": len(memories), "backend": "sqlite"}
 
@@ -785,7 +816,8 @@ class AtlasMCPServer:
         return {"forgotten": True, "memory_id": memory_id}
 
     async def _tool_ledger_verify_chain(self) -> dict[str, Any]:
-        result = self.ledger.verify_chain()
+        # Walks the whole ledger; keep it off the event loop.
+        result = await self._run_in_store_thread(self.ledger.verify_chain)
         return {
             "intact": result.intact,
             "last_verified_sequence": result.last_verified_sequence,

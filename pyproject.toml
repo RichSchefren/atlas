@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "atlas-cognitive-memory"
-version = "0.1.0-alpha.1"
+version = "0.1.0a1"
 description = "Open-source local-first cognitive memory with AGM-compliant belief revision and automatic downstream reassessment (Ripple)"
 readme = "README.md"
 license = { text = "Apache-2.0" }

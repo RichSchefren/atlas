@@ -2,6 +2,14 @@
 
 > **Open-source local-first cognitive memory — alpha.** Implements AGM-compliant belief revision on a property graph. Adds a propagation engine — Ripple — that recomputes downstream beliefs when an upstream fact changes. Runs entirely on your laptop.
 
+## Why this exists
+
+AI can remember information about a person while still not knowing how that
+person would rule when facts change. Atlas addresses the related problem of
+keeping downstream beliefs coherent when new facts revise the record. This
+project is part of Rich Schefren's
+[Imprinted AI](https://aistrategist.com/imprinted-ai) work.
+
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Tests](https://github.com/RichSchefren/atlas/actions/workflows/test.yml/badge.svg)](https://github.com/RichSchefren/atlas/actions/workflows/test.yml)
 [![AGM Compliance](https://img.shields.io/badge/AGM-49%2F49%20at%20100%25-brightgreen.svg)](docs/AGM_COMPLIANCE.md)
